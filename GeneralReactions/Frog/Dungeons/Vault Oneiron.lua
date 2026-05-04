@@ -170,7 +170,8 @@ local tbl =
 				{
 					data = 
 					{
-						aType = "ACR",
+						aType = "Lua",
+						actionLua = "_G[\"ACR_\" .. gACRSelectedProfiles[TensorCore.mGetPlayer().job] .. \"_AOE\"] = false\nself.used = true",
 						conditions = 
 						{
 							
@@ -186,6 +187,7 @@ local tbl =
 						},
 						gVar = "ACR_TensorMagnum3_AOE",
 						gVarValue = 2,
+						name = "Disable AOE toggle",
 						uuid = "5f2746e9-1b49-8955-b0e5-c4c3216f48b7",
 						version = 2.1,
 					},
@@ -194,7 +196,8 @@ local tbl =
 				{
 					data = 
 					{
-						aType = "ACR",
+						aType = "Lua",
+						actionLua = "_G[\"ACR_\" .. gACRSelectedProfiles[TensorCore.mGetPlayer().job] .. \"_AOE\"] = true\nself.used = true",
 						conditions = 
 						{
 							
@@ -209,6 +212,7 @@ local tbl =
 							},
 						},
 						gVar = "ACR_TensorMagnum3_AOE",
+						name = "Enable AOE toggle",
 						uuid = "ebdc92ad-3c18-4f03-b72a-2263cf3be528",
 						version = 2.1,
 					},
@@ -315,6 +319,7 @@ local tbl =
 							},
 						},
 						matchAnyBuff = true,
+						name = "Any vege alive?",
 						partyTargetNumber = 0,
 						uuid = "23d16a6c-1e12-71c0-88bb-dfe79f9d0fc6",
 						version = 3,
@@ -332,6 +337,7 @@ local tbl =
 					},
 				},
 			},
+			enabled = false,
 			name = "TARGET",
 			uuid = "f6cf29b0-6e15-f9d7-8b58-046f290f6545",
 			version = 2,
