@@ -122,12 +122,7 @@ local tbl =
 							},
 							
 							{
-								"3ba69176-7120-0c40-aa53-c1d8588f61f6",
-								false,
-							},
-							
-							{
-								"fae4c7c0-5a0a-28d1-a18b-ab33a448cdc9",
+								"f335628c-c536-104b-837d-edcd3071116a",
 								false,
 							},
 							
@@ -165,12 +160,12 @@ local tbl =
 						{
 							
 							{
-								"b7d9f8d2-e9fc-82e6-96c4-1492ce99c8f7",
+								"6231559f-7893-343a-afb2-e6f8e3291819",
 								true,
 							},
 							
 							{
-								"6231559f-7893-343a-afb2-e6f8e3291819",
+								"b7d9f8d2-e9fc-82e6-96c4-1492ce99c8f7",
 								true,
 							},
 							
@@ -180,12 +175,7 @@ local tbl =
 							},
 							
 							{
-								"3ba69176-7120-0c40-aa53-c1d8588f61f6",
-								false,
-							},
-							
-							{
-								"fae4c7c0-5a0a-28d1-a18b-ab33a448cdc9",
+								"f335628c-c536-104b-837d-edcd3071116a",
 								false,
 							},
 						},
@@ -351,6 +341,32 @@ local tbl =
 						version = 3,
 					},
 					inheritedIndex = 7,
+				},
+				
+				{
+					data = 
+					{
+						category = "Filter",
+						conditions = 
+						{
+							
+							{
+								"3ba69176-7120-0c40-aa53-c1d8588f61f6",
+								true,
+							},
+							
+							{
+								"fae4c7c0-5a0a-28d1-a18b-ab33a448cdc9",
+								true,
+							},
+						},
+						matchAnyBuff = true,
+						name = "F - Wing OR",
+						partyTargetNumber = 0,
+						uuid = "f335628c-c536-104b-837d-edcd3071116a",
+						version = 3,
+					},
+					inheritedIndex = 11,
 				},
 				
 				{
