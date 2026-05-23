@@ -132,11 +132,6 @@ local tbl =
 							},
 							
 							{
-								"c3ac15fa-e9b3-07bc-8ec1-538dc0f35f46",
-								true,
-							},
-							
-							{
 								"43450aa2-aafa-f438-bf54-95f1ffae3b27",
 								true,
 							},
@@ -160,12 +155,12 @@ local tbl =
 						{
 							
 							{
-								"6231559f-7893-343a-afb2-e6f8e3291819",
+								"b7d9f8d2-e9fc-82e6-96c4-1492ce99c8f7",
 								true,
 							},
 							
 							{
-								"b7d9f8d2-e9fc-82e6-96c4-1492ce99c8f7",
+								"6231559f-7893-343a-afb2-e6f8e3291819",
 								true,
 							},
 							
@@ -398,7 +393,6 @@ local tbl =
 			mechanicTime = 283.095,
 			name = "Shinryu Target",
 			timelineIndex = 67,
-			timeout = 6,
 			uuid = "672be9bd-d0bf-cca2-aac9-b06289cc10cc",
 			version = 2,
 		},
