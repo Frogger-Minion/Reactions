@@ -1,7 +1,7 @@
 # Reactions
-General and maybe eventually timeline reactions
+General and timeline reactions
 
 ## Importing
 
-Open Anyonecore, go to the third party tab on the left and click the sources header. 
-Click add and paste the link, it will change from red, to yellow and then green if downloaded successfully.
+Open Anyonecore, under the system header to the left click Third Party then swap to the sources tab.
+Click add and paste https://github.com/Frogger-Minion/Reactions, the source will turn yellow while validating and green once confirmed.
