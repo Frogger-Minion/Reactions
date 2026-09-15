@@ -793,7 +793,7 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "local state = data.sam_hiemal_meteor\nif state == nil or state.marked == nil or state.markerCount < 2 then\n    return\nend\n\nlocal player = TensorCore.mGetPlayer()\nif player == nil or player.id == nil or player.pos == nil then\n    return\nend\n\nif state.slotOrder == nil then\n    state.slotOrder = {\"MT\", \"OT\", \"H1\", \"H2\", \"M1\", \"M2\", \"R1\", \"R2\"}\n    state.definitions = {\n        {name = \"MT\", cardinal = \"N\"},\n        {name = \"OT\", cardinal = \"S\"},\n        {name = \"H1\", cardinal = \"W\"},\n        {name = \"H2\", cardinal = \"E\"},\n        {name = \"M1\", cardinal = \"W\"},\n        {name = \"M2\", cardinal = \"E\"},\n        {name = \"R1\", cardinal = \"N\"},\n        {name = \"R2\", cardinal = \"S\"}\n    }\nend\n\nif state.meteorSolverVersion ~= 4 then\n    state.meteorSolverVersion = 4\n    state.assignmentsReady = false\n    state.towersResolved = false\n    state.towerByID = nil\nend\n\nif state.assignmentsReady ~= true then\nlocal rosterSlotByName = {\n    MT = \"T1\",\n    OT = \"T2\",\n    H1 = \"H1\",\n    H2 = \"H2\",\n    M1 = \"M1\",\n    M2 = \"M2\",\n    R1 = \"R1\",\n    R2 = \"R2\"\n}\nlocal refreshedSlots = {}\nlocal refreshedInitialCardinal = {}\nlocal rosterIDs = {}\n\n-- Replay-safe roster join:\n-- Roster.members() contains the logical slots and human names, while\n-- getAgnosticPartyList() contains the current live entity IDs.\nlocal rosterMembers = AnyoneCore.Roster.members()\nlocal agnosticParty = AnyoneCore.API.getAgnosticPartyList()\nif type(rosterMembers) ~= \"table\" or type(agnosticParty) ~= \"table\" then\n    return\nend\n\nlocal actorByJob, actorJobCount, rosterJobCount = {}, {}, {}\nfor _, actor in pairs(agnosticParty) do\n    if actor.id ~= nil and actor.job ~= nil then\n        actorByJob[actor.job] = actor\n        actorJobCount[actor.job] = (actorJobCount[actor.job] or 0) + 1\n    end\nend\nfor _, member in pairs(rosterMembers) do\n    if member.job ~= nil then\n        rosterJobCount[member.job] = (rosterJobCount[member.job] or 0) + 1\n    end\nend\nlocal actorByNameJob = {}\nfor _, actor in pairs(agnosticParty) do\n    if actor ~= nil and actor.id ~= nil and actor.name ~= nil and actor.job ~= nil then\n        local key = tostring(actor.name) .. \"\\31\" .. tostring(actor.job)\n        actorByNameJob[key] = actor\n    end\nend\n\nfor _, definition in ipairs(state.definitions) do\n    local rosterSlot = rosterSlotByName[definition.name]\n    local member = rosterMembers[rosterSlot]\n    if member == nil or member.name == nil or member.job == nil then\n        return\n    end\n\n    local key = tostring(member.name) .. \"\\31\" .. tostring(member.job)\n    local actor = actorByNameJob[key]\n    -- Anonymized replay names can differ; use only an unambiguous job join.\n    if actor == nil and actorJobCount[member.job] == 1 and rosterJobCount[member.job] == 1 then\n        actor = actorByJob[member.job]\n    end\n    if actor == nil or actor.id == nil then\n        return\n    end\n\n    local kind\n    if definition.name == \"MT\" or definition.name == \"OT\"\n        or definition.name == \"H1\" or definition.name == \"H2\" then\n        kind = \"SUPPORT\"\n    else\n        kind = \"DPS\"\n    end\n\n    local id = actor.id\n    refreshedSlots[definition.name] = {\n        id = id,\n        cardinal = definition.cardinal,\n        kind = kind\n    }\n    refreshedInitialCardinal[id] = definition.cardinal\n    rosterIDs[#rosterIDs + 1] = definition.name .. \"=\" .. tostring(id)\nend\n\nlocal rosterSignature = table.concat(rosterIDs, \":\")\nif state.rosterSignature ~= rosterSignature then\n    state.rosterSignature = rosterSignature\n    state.assignmentsReady = false\n    state.towersResolved = false\n    state.finalCardinal = nil\n    state.rotatedFrom = nil\n    state.meteorPlayers = nil\n    state.towerByID = nil\n    state.quadrants = nil\nend\n\nstate.slots = refreshedSlots\nstate.initialCardinal = refreshedInitialCardinal\n\nlocal meteorPlayers = {}\nlocal meteorKind = nil\nfor _, slotName in ipairs(state.slotOrder) do\n    local slot = state.slots[slotName]\n    if slot ~= nil and state.marked[slot.id] == true then\n        meteorPlayers[#meteorPlayers + 1] = slot\n        if meteorKind == nil then\n            meteorKind = slot.kind\n        elseif meteorKind ~= slot.kind then\n            return\n        end\n    end\nend\n\nif #meteorPlayers < 2 or meteorKind == nil then\n    return\nend\n\nif state.assignmentsReady ~= true then\n    state.finalCardinal = {}\n    state.rotatedFrom = {}\n    state.meteorPlayers = meteorPlayers\n\n    local occupied = {N = false, S = false}\n    for _, slot in ipairs(state.slotOrder) do\n        local entry = state.slots[slot]\n        state.finalCardinal[entry.id] = entry.cardinal\n        if state.marked[entry.id] == true\n            and (entry.cardinal == \"N\" or entry.cardinal == \"S\") then\n            occupied[entry.cardinal] = true\n        end\n    end\n\n    -- Meteor players already starting north or south stay fixed.\n    -- West rotates clockwise to north; east rotates clockwise to south.\n    -- If that destination is already occupied by a meteor, use the other\n    -- fixed cardinal instead.\n    for _, slotName in ipairs(state.slotOrder) do\n        local entry = state.slots[slotName]\n        if state.marked[entry.id] == true\n            and (entry.cardinal == \"W\" or entry.cardinal == \"E\") then\n            local target = entry.cardinal == \"W\" and \"N\" or \"S\"\n            if occupied[target] == true then\n                target = target == \"N\" and \"S\" or \"N\"\n            end\n            state.finalCardinal[entry.id] = target\n            state.rotatedFrom[target] = entry.cardinal\n            occupied[target] = true\n        end\n    end\n\n    -- The non-meteor support/DPS player who originally owned the fixed\n    -- cardinal flexes into the quadrant vacated by the rotating meteor.\n    for target, originalCardinal in pairs(state.rotatedFrom) do\n        for _, slotName in ipairs(state.slotOrder) do\n            local entry = state.slots[slotName]\n            if entry.kind == meteorKind\n                and state.marked[entry.id] ~= true\n                and entry.cardinal == target then\n                state.finalCardinal[entry.id] = originalCardinal\n                break\n            end\n        end\n    end\n\n    state.meteorKind = meteorKind\n    state.assignmentsReady = true\nend\n\nend -- roster and flex assignment are captured once per mechanic\n\nlocal fixedSpot = {\n    N = {x = 100.0, z = 89.5},\n    E = {x = 110.5, z = 100.0},\n    S = {x = 100.0, z = 110.5},\n    W = {x = 89.5, z = 100.0}\n}\n\nlocal drawer = TensorCore.getCachedFlatDrawer(\n    nil, nil, 0xFF0000FF, nil, 1.0, 0, 0\n)\n\nif TensorReactions_CurrentTimer < 415.2 then\n    local initialCardinal = state.finalCardinal[player.id]\n    if initialCardinal ~= nil then\n        local destination = fixedSpot[initialCardinal]\n        if destination ~= nil then\n            drawer:addLine(\n                player.pos.x, player.pos.y, player.pos.z,\n                destination.x, destination.y or 0.05, destination.z,\n                8.0, 2.0\n            )\n        end\n    end\nend\n\nif state.towersResolved ~= true then\n    if state.towerCount ~= 8 then return end\n    local outer = {N = {}, E = {}, S = {}, W = {}}\n    local inner = {}\n    local cardinals = {\"N\", \"E\", \"S\", \"W\"}\n    local axis = {N = {0,-1}, E = {1,0}, S = {0,1}, W = {-1,0}}\n    local function inside(t)\n        local x,z = t.x-100,t.z-100\n        return x*x+z*z < 64\n    end\n    local function lateral(t,c)\n        local a = axis[c]\n        return -(t.x-100)*a[2]+(t.z-100)*a[1]\n    end\n    local function distance(a,b)\n        return (a.x-b.x)^2+(a.z-b.z)^2\n    end\n    for _,t in pairs(state.towers) do\n        if inside(t) then\n            inner[#inner+1] = t\n        else\n            local x,z = t.x-100,t.z-100\n            local c\n            if math.abs(z)>=math.abs(x) then c=z<0 and \"N\" or \"S\"\n            else c=x>0 and \"E\" or \"W\" end\n            outer[c][#outer[c]+1]=t\n        end\n    end\n    -- Stable ordering makes equal geometric choices deterministic.\n    local function order(a,b)\n        if a.x ~= b.x then return a.x < b.x end\n        return a.z < b.z\n    end\n    table.sort(inner,order)\n    for _,c in ipairs(cardinals) do table.sort(outer[c],order) end\n    local assigned,used = {},{}\n    local first,second = state.meteorPlayers[1],state.meteorPlayers[2]\n    local c1,c2 = state.finalCardinal[first.id],state.finalCardinal[second.id]\n    if not ((c1==\"N\" and c2==\"S\") or (c1==\"S\" and c2==\"N\")) then return end\n    local bestA,bestB,bestCenters,bestDistance,bestPreference = nil,nil,-1,-1,-math.huge\n    for _,a in ipairs(outer[c1]) do\n        for _,b in ipairs(outer[c2]) do\n            -- Center means the OUTER cardinal tower, never an inner tower.\n            local centers = (math.abs(lateral(a,c1))<0.5 and 1 or 0)\n                +(math.abs(lateral(b,c2))<0.5 and 1 or 0)\n            local d=math.sqrt(distance(a,b))\n            -- Symmetric towers differ slightly in logged coordinates.\n            -- Within 0.1 yalm, leave the CCW tower for the non-meteor role.\n            local preference=lateral(a,c1)+lateral(b,c2)\n            if centers>bestCenters or (centers==bestCenters and\n                (d>bestDistance+0.1 or\n                    (math.abs(d-bestDistance)<=0.1 and preference>bestPreference))) then\n                bestA,bestB,bestCenters,bestDistance,bestPreference=a,b,centers,d,preference\n            end\n        end\n    end\n    if bestA==nil or bestB==nil then return end\n    assigned[first.id],assigned[second.id]=bestA,bestB\n    used[bestA],used[bestB]=true,true\n    local innerPlayers={}\n    for _,c in ipairs(cardinals) do\n        local other,meteorRole\n        for _,name in ipairs(state.slotOrder) do\n            local entry=state.slots[name]\n            if state.finalCardinal[entry.id]==c then\n                if entry.kind==state.meteorKind then meteorRole=entry else other=entry end\n            end\n        end\n        if other==nil or meteorRole==nil or #outer[c]<1 then return end\n        if #outer[c]==1 then\n            -- Every meteor-role player owns the outer tower in this case.\n            local t=outer[c][1]\n            if assigned[meteorRole.id]~=nil and assigned[meteorRole.id]~=t then return end\n            assigned[meteorRole.id]=t\n            used[t]=true\n            innerPlayers[#innerPlayers+1]={id=other.id,cardinal=c}\n        else\n            -- Unmarked opposite-role player: CCW outer first, respecting\n            -- the outer tower already reserved for a marked meteor player.\n            local best\n            for _,t in ipairs(outer[c]) do\n                if not used[t] and (best==nil or lateral(t,c)<lateral(best,c)) then best=t end\n            end\n            if best==nil then return end\n            assigned[other.id]=best\n            used[best]=true\n            if assigned[meteorRole.id]==nil then\n                local remaining\n                for _,t in ipairs(outer[c]) do\n                    if not used[t] then remaining=t break end\n                end\n                if remaining==nil then return end\n                assigned[meteorRole.id]=remaining\n                used[remaining]=true\n            end\n        end\n    end\n    if #innerPlayers~=#inner then return end\n    -- Match all inner players together. Maximize fulfilled immediate-CW\n    -- claims before choosing the shortest remaining clockwise rotations.\n    local picks,bestPicks={},nil\n    local bestClaims,bestTravel=-1,math.huge\n    local function search(i,claims,travel)\n        if i>#innerPlayers then\n            if claims>bestClaims or (claims==bestClaims and travel<bestTravel) then\n                bestClaims,bestTravel=claims,travel\n                bestPicks={}\n                for k,t in ipairs(picks) do bestPicks[k]=t end\n            end\n            return\n        end\n        local a=axis[innerPlayers[i].cardinal]\n        for _,t in ipairs(inner) do\n            if not used[t] then\n                local x,z=t.x-100,t.z-100\n                local forward=x*a[1]+z*a[2]\n                local side=-x*a[2]+z*a[1]\n                local angle=math.atan2(side,forward)\n                if angle<0 then angle=angle+2*math.pi end\n                local claim=(forward>0.5 and side>0.5) and 1 or 0\n                picks[i]=t\n                used[t]=true\n                search(i+1,claims+claim,travel+angle)\n                used[t]=nil\n                picks[i]=nil\n            end\n        end\n    end\n    search(1,0,0)\n    if bestPicks==nil then return end\n    for i,entry in ipairs(innerPlayers) do assigned[entry.id]=bestPicks[i] end\n    -- Publish only a complete, unique assignment satisfying role rules.\n    local check={}\n    for _,name in ipairs(state.slotOrder) do\n        local entry=state.slots[name]\n        local t=assigned[entry.id]\n        if t==nil or check[t] then return end\n        check[t]=true\n        if entry.kind==state.meteorKind and inside(t) then return end\n        if entry.kind~=state.meteorKind and #outer[state.finalCardinal[entry.id]]==1\n            and not inside(t) then return end\n    end\n    state.quadrants=outer\n    state.towerByID=assigned\n    state.towersResolved=true\nend\nself.used=true\n",
+							actionLua = "local state = data.sam_hiemal_meteor\nif state == nil or state.marked == nil or state.markerCount < 2 then\n    return\nend\n\nlocal player = TensorCore.mGetPlayer()\nif player == nil or player.id == nil or player.pos == nil then\n    return\nend\n\nif state.slotOrder == nil then\n    state.slotOrder = {\"MT\", \"OT\", \"H1\", \"H2\", \"M1\", \"M2\", \"R1\", \"R2\"}\n    state.definitions = {\n        {name = \"MT\", cardinal = \"N\"},\n        {name = \"OT\", cardinal = \"S\"},\n        {name = \"H1\", cardinal = \"W\"},\n        {name = \"H2\", cardinal = \"E\"},\n        {name = \"M1\", cardinal = \"W\"},\n        {name = \"M2\", cardinal = \"E\"},\n        {name = \"R1\", cardinal = \"N\"},\n        {name = \"R2\", cardinal = \"S\"}\n    }\nend\n\nif state.meteorSolverVersion ~= 4 then\n    state.meteorSolverVersion = 4\n    state.assignmentsReady = false\n    state.towersResolved = false\n    state.towerByID = nil\nend\n\nif state.assignmentsReady ~= true then\nlocal rosterSlotByName = {\n    MT = \"T1\",\n    OT = \"T2\",\n    H1 = \"H1\",\n    H2 = \"H2\",\n    M1 = \"M1\",\n    M2 = \"M2\",\n    R1 = \"R1\",\n    R2 = \"R2\"\n}\nlocal refreshedSlots = {}\nlocal refreshedInitialCardinal = {}\nlocal rosterIDs = {}\n\n-- Replay-safe roster join:\n-- Roster.members() contains the logical slots and human names, while\n-- getAgnosticPartyList() contains the current live entity IDs.\nlocal rosterMembers = AnyoneCore.Roster.members()\nlocal agnosticParty = AnyoneCore.API.getAgnosticPartyList()\nif type(rosterMembers) ~= \"table\" or type(agnosticParty) ~= \"table\" then\n    return\nend\n\nlocal actorByJob, actorJobCount, rosterJobCount = {}, {}, {}\nfor _, actor in pairs(agnosticParty) do\n    if actor.id ~= nil and actor.job ~= nil then\n        actorByJob[actor.job] = actor\n        actorJobCount[actor.job] = (actorJobCount[actor.job] or 0) + 1\n    end\nend\nfor _, member in pairs(rosterMembers) do\n    if member.job ~= nil then\n        rosterJobCount[member.job] = (rosterJobCount[member.job] or 0) + 1\n    end\nend\nlocal actorByNameJob = {}\nfor _, actor in pairs(agnosticParty) do\n    if actor ~= nil and actor.id ~= nil and actor.name ~= nil and actor.job ~= nil then\n        local key = tostring(actor.name) .. \"\\31\" .. tostring(actor.job)\n        actorByNameJob[key] = actor\n    end\nend\n\nfor _, definition in ipairs(state.definitions) do\n    local rosterSlot = rosterSlotByName[definition.name]\n    local member = rosterMembers[rosterSlot]\n    if member == nil or member.name == nil or member.job == nil then\n        return\n    end\n\n    local key = tostring(member.name) .. \"\\31\" .. tostring(member.job)\n    local actor = actorByNameJob[key]\n    -- Anonymized replay names can differ; use only an unambiguous job join.\n    if actor == nil and actorJobCount[member.job] == 1 and rosterJobCount[member.job] == 1 then\n        actor = actorByJob[member.job]\n    end\n    if actor == nil or actor.id == nil then\n        return\n    end\n\n    local kind\n    if definition.name == \"MT\" or definition.name == \"OT\"\n        or definition.name == \"H1\" or definition.name == \"H2\" then\n        kind = \"SUPPORT\"\n    else\n        kind = \"DPS\"\n    end\n\n    local id = actor.id\n    refreshedSlots[definition.name] = {\n        id = id,\n        cardinal = definition.cardinal,\n        kind = kind\n    }\n    refreshedInitialCardinal[id] = definition.cardinal\n    rosterIDs[#rosterIDs + 1] = definition.name .. \"=\" .. tostring(id)\nend\n\nlocal rosterSignature = table.concat(rosterIDs, \":\")\nif state.rosterSignature ~= rosterSignature then\n    state.rosterSignature = rosterSignature\n    state.assignmentsReady = false\n    state.towersResolved = false\n    state.finalCardinal = nil\n    state.rotatedFrom = nil\n    state.meteorPlayers = nil\n    state.towerByID = nil\n    state.quadrants = nil\nend\n\nstate.slots = refreshedSlots\nstate.initialCardinal = refreshedInitialCardinal\n\nlocal meteorPlayers = {}\nlocal meteorKind = nil\nfor _, slotName in ipairs(state.slotOrder) do\n    local slot = state.slots[slotName]\n    if slot ~= nil and state.marked[slot.id] == true then\n        meteorPlayers[#meteorPlayers + 1] = slot\n        if meteorKind == nil then\n            meteorKind = slot.kind\n        elseif meteorKind ~= slot.kind then\n            return\n        end\n    end\nend\n\nif #meteorPlayers < 2 or meteorKind == nil then\n    return\nend\n\nif state.assignmentsReady ~= true then\n    state.finalCardinal = {}\n    state.rotatedFrom = {}\n    state.meteorPlayers = meteorPlayers\n\n    local occupied = {N = false, S = false}\n    for _, slot in ipairs(state.slotOrder) do\n        local entry = state.slots[slot]\n        state.finalCardinal[entry.id] = entry.cardinal\n        if state.marked[entry.id] == true\n            and (entry.cardinal == \"N\" or entry.cardinal == \"S\") then\n            occupied[entry.cardinal] = true\n        end\n    end\n\n    -- Meteor players already starting north or south stay fixed.\n    -- West rotates clockwise to north; east rotates clockwise to south.\n    -- If that destination is already occupied by a meteor, use the other\n    -- fixed cardinal instead.\n    for _, slotName in ipairs(state.slotOrder) do\n        local entry = state.slots[slotName]\n        if state.marked[entry.id] == true\n            and (entry.cardinal == \"W\" or entry.cardinal == \"E\") then\n            local target = entry.cardinal == \"W\" and \"N\" or \"S\"\n            if occupied[target] == true then\n                target = target == \"N\" and \"S\" or \"N\"\n            end\n            state.finalCardinal[entry.id] = target\n            state.rotatedFrom[target] = entry.cardinal\n            occupied[target] = true\n        end\n    end\n\n    -- The non-meteor support/DPS player who originally owned the fixed\n    -- cardinal flexes into the quadrant vacated by the rotating meteor.\n    for target, originalCardinal in pairs(state.rotatedFrom) do\n        for _, slotName in ipairs(state.slotOrder) do\n            local entry = state.slots[slotName]\n            if entry.kind == meteorKind\n                and state.marked[entry.id] ~= true\n                and entry.cardinal == target then\n                state.finalCardinal[entry.id] = originalCardinal\n                break\n            end\n        end\n    end\n\n    state.meteorKind = meteorKind\n    state.assignmentsReady = true\nend\n\nend -- roster and flex assignment are captured once per mechanic\n\nlocal fixedSpot = {\n    N = {x = 100.0, z = 89.5},\n    E = {x = 110.5, z = 100.0},\n    S = {x = 100.0, z = 110.5},\n    W = {x = 89.5, z = 100.0}\n}\n\nlocal drawer = TensorCore.getCachedFlatDrawer(\n    nil, nil, 0xFF0000FF, nil, 1.0, 0, 0\n)\n\nif TensorReactions_CurrentTimer < 415.2 then\n    local initialCardinal = state.finalCardinal[player.id]\n    if initialCardinal ~= nil then\n        local destination = fixedSpot[initialCardinal]\n        if destination ~= nil then\n            drawer:addLine(\n                player.pos.x, player.pos.y, player.pos.z,\n                destination.x, destination.y or 0.05, destination.z,\n                8.0, 2.0\n            )\n        end\n    end\nend\n\nif state.towersResolved ~= true then\n    if state.towerCount ~= 8 then return end\n    local outer = {N = {}, E = {}, S = {}, W = {}}\n    local inner = {}\n    local cardinals = {\"N\", \"E\", \"S\", \"W\"}\n    local axis = {N = {0,-1}, E = {1,0}, S = {0,1}, W = {-1,0}}\n    local function inside(t)\n        local x,z = t.x-100,t.z-100\n        return x*x+z*z < 64\n    end\n    local function lateral(t,c)\n        local a = axis[c]\n        return -(t.x-100)*a[2]+(t.z-100)*a[1]\n    end\n    local function distance(a,b)\n        return (a.x-b.x)^2+(a.z-b.z)^2\n    end\n    for _,t in pairs(state.towers) do\n        if inside(t) then\n            inner[#inner+1] = t\n        else\n            local x,z = t.x-100,t.z-100\n            local c\n            if math.abs(z)>=math.abs(x) then c=z<0 and \"N\" or \"S\"\n            else c=x>0 and \"E\" or \"W\" end\n            outer[c][#outer[c]+1]=t\n        end\n    end\n    -- Stable ordering makes equal geometric choices deterministic.\n    local function order(a,b)\n        if a.x ~= b.x then return a.x < b.x end\n        return a.z < b.z\n    end\n    table.sort(inner,order)\n    for _,c in ipairs(cardinals) do table.sort(outer[c],order) end\n    local assigned,used = {},{}\n    local first,second = state.meteorPlayers[1],state.meteorPlayers[2]\n    local c1,c2 = state.finalCardinal[first.id],state.finalCardinal[second.id]\n    if not ((c1==\"N\" and c2==\"S\") or (c1==\"S\" and c2==\"N\")) then return end\n    local bestA,bestB,bestCenters,bestDistance,bestPreference = nil,nil,-1,-1,-math.huge\n    for _,a in ipairs(outer[c1]) do\n        for _,b in ipairs(outer[c2]) do\n            -- Center means the OUTER cardinal tower, never an inner tower.\n            local centers = (math.abs(lateral(a,c1))<0.5 and 1 or 0)\n                +(math.abs(lateral(b,c2))<0.5 and 1 or 0)\n            local d=math.sqrt(distance(a,b))\n            -- Symmetric towers differ slightly in logged coordinates.\n            -- Within 0.1 yalm, leave the CCW tower for the non-meteor role.\n            local preference=lateral(a,c1)+lateral(b,c2)\n            if centers>bestCenters or (centers==bestCenters and\n                (d>bestDistance+0.1 or\n                    (math.abs(d-bestDistance)<=0.1 and preference>bestPreference))) then\n                bestA,bestB,bestCenters,bestDistance,bestPreference=a,b,centers,d,preference\n            end\n        end\n    end\n    if bestA==nil or bestB==nil then return end\n    assigned[first.id],assigned[second.id]=bestA,bestB\n    used[bestA],used[bestB]=true,true\n    local innerPlayers={}\n    for _,c in ipairs(cardinals) do\n        local other,meteorRole\n        for _,name in ipairs(state.slotOrder) do\n            local entry=state.slots[name]\n            if state.finalCardinal[entry.id]==c then\n                if entry.kind==state.meteorKind then meteorRole=entry else other=entry end\n            end\n        end\n        if other==nil or meteorRole==nil or #outer[c]<1 then return end\n        if #outer[c]==1 then\n            -- Every meteor-role player owns the outer tower in this case.\n            local t=outer[c][1]\n            if assigned[meteorRole.id]~=nil and assigned[meteorRole.id]~=t then return end\n            assigned[meteorRole.id]=t\n            used[t]=true\n            innerPlayers[#innerPlayers+1]={id=other.id,cardinal=c}\n        else\n            -- Reserve the middle OUTER tower for the meteor role, including\n            -- unmarked players who flexed east/west. Marked N/S choices above\n            -- remain authoritative. Without a middle, leave CCW to the other role.\n            if assigned[meteorRole.id]==nil then\n                for _,t in ipairs(outer[c]) do\n                    if not used[t] and math.abs(lateral(t,c))<0.5 then\n                        assigned[meteorRole.id]=t\n                        used[t]=true\n                        break\n                    end\n                end\n            end\n            -- Opposite-role player takes CCW among the unreserved outer towers.\n            local best\n            for _,t in ipairs(outer[c]) do\n                if not used[t] and (best==nil or lateral(t,c)<lateral(best,c)) then best=t end\n            end\n            if best==nil then return end\n            assigned[other.id]=best\n            used[best]=true\n            if assigned[meteorRole.id]==nil then\n                local remaining\n                for _,t in ipairs(outer[c]) do\n                    if not used[t] then remaining=t break end\n                end\n                if remaining==nil then return end\n                assigned[meteorRole.id]=remaining\n                used[remaining]=true\n            end\n        end\n    end\n    if #innerPlayers~=#inner then return end\n    -- Match all inner players together. Maximize fulfilled immediate-CW\n    -- claims before choosing the shortest remaining clockwise rotations.\n    local picks,bestPicks={},nil\n    local bestClaims,bestTravel=-1,math.huge\n    local function search(i,claims,travel)\n        if i>#innerPlayers then\n            if claims>bestClaims or (claims==bestClaims and travel<bestTravel) then\n                bestClaims,bestTravel=claims,travel\n                bestPicks={}\n                for k,t in ipairs(picks) do bestPicks[k]=t end\n            end\n            return\n        end\n        local a=axis[innerPlayers[i].cardinal]\n        for _,t in ipairs(inner) do\n            if not used[t] then\n                local x,z=t.x-100,t.z-100\n                local forward=x*a[1]+z*a[2]\n                local side=-x*a[2]+z*a[1]\n                local angle=math.atan2(side,forward)\n                if angle<0 then angle=angle+2*math.pi end\n                local claim=(forward>0.5 and side>0.5) and 1 or 0\n                picks[i]=t\n                used[t]=true\n                search(i+1,claims+claim,travel+angle)\n                used[t]=nil\n                picks[i]=nil\n            end\n        end\n    end\n    search(1,0,0)\n    if bestPicks==nil then return end\n    for i,entry in ipairs(innerPlayers) do assigned[entry.id]=bestPicks[i] end\n    -- Publish only a complete, unique assignment satisfying role rules.\n    local check={}\n    for _,name in ipairs(state.slotOrder) do\n        local entry=state.slots[name]\n        local t=assigned[entry.id]\n        if t==nil or check[t] then return end\n        check[t]=true\n        if entry.kind==state.meteorKind and inside(t) then return end\n        if entry.kind~=state.meteorKind and #outer[state.finalCardinal[entry.id]]==1\n            and not inside(t) then return end\n    end\n    state.quadrants=outer\n    state.towerByID=assigned\n    state.towersResolved=true\nend\nself.used=true\n",
 							name = "Draw Hiemal Meteor Prey and Tower Tethers",
 							uuid = "39ad4dc3-6862-3c3a-bd6c-d63a1c7af231",
 							version = 2.1,
@@ -1744,7 +1744,7 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "data.frog_eyes_v1=data.frog_eyes_v1 or {}\nlocal s=data.frog_eyes_v1\ns.waves=s.waves or {}\ns.wave=s.wave or 0\nlocal t=TensorReactions_CurrentTimer\nlocal id=eventArgs.targetID\nlocal entity=TensorCore.mGetEntity(eventArgs.entityID)\nlocal target=TensorCore.mGetEntity(id)\nlocal pos=entity and entity.pos or (target and target.pos)\nif not pos then return end\nlocal w=s.waves[s.wave]\nif not w or t-w.time>2 then\n    if s.wave>=4 then self.used=true return end\n    s.wave=s.wave+1\n    w={time=t}\n    s.waves[s.wave]=w\nend\nfor _,hit in ipairs(w) do if hit.id==id then self.used=true return end end\nif #w<2 then w[#w+1]={id=id,x=pos.x,z=pos.z} end\nself.used=true",
+							actionLua = "data.frog_eyes_v1=data.frog_eyes_v1 or {}\nlocal s=data.frog_eyes_v1\ns.waves=s.waves or {}\ns.wave=s.wave or 0\nlocal t=TensorReactions_CurrentTimer\nlocal id=eventArgs.targetID\nlocal target=TensorCore.mGetEntity(id)\nlocal pos=target and target.pos\nif not pos then return end\nlocal w=s.waves[s.wave]\nif not w or t-w.time>2 then\n    if s.wave>=4 then self.used=true return end\n    s.wave=s.wave+1\n    w={time=t}\n    s.waves[s.wave]=w\nend\nfor _,hit in ipairs(w) do if hit.id==id then self.used=true return end end\nif #w<2 then w[#w+1]={id=id,x=pos.x,z=pos.z} end\nself.used=true",
 							conditions = 
 							{
 								
@@ -1850,7 +1850,7 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "local t = TensorReactions_CurrentTimer\nlocal s = data.frog_eyes_v1\nif s == nil or (s.lastTime and t < s.lastTime - 1) then\n    s = {}\n    data.frog_eyes_v1 = s\nend\ns.lastTime = t\nif not s.initialized then\n    s.initialized = true\n    s.yellow = s.yellow or {}\n    s.blue = s.blue or {}\n    s.waves = s.waves or {}\n    s.wave = s.wave or 0\n    s.solvedWave = 0\n    s.slots = {}\n    s.roleByID = {}\n    s.station = {}\n    s.pairs = {}\n    s.roleOrder = {\"MT\",\"OT\",\"H1\",\"H2\",\"M1\",\"M2\",\"R1\",\"R2\"}\n    s.rosterNames = {MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"}\n    s.partner = {MT=\"H1\",OT=\"H2\",M1=\"R1\",M2=\"R2\",H1=\"MT\",H2=\"OT\",R1=\"M1\",R2=\"M2\"}\n    s.leftQuery = {contentid=11317}\n    s.rightQuery = {contentid=11318}\n    function s.resolveRoster()\n        local members = AnyoneCore.Roster.members()\n        local party = AnyoneCore.API.getAgnosticPartyList()\n        if type(members) ~= \"table\" or type(party) ~= \"table\" then return false end\n        local byName,byJob,counts,rcounts = {},{},{},{}\n        for _,a in pairs(party) do\n            if a.id and a.name and a.job then\n                byName[a.name..\"\\31\"..a.job]=a\n                byJob[a.job]=a\n                counts[a.job]=(counts[a.job] or 0)+1\n            end\n        end\n        for _,m in pairs(members) do\n            if m.job then rcounts[m.job]=(rcounts[m.job] or 0)+1 end\n        end\n        local seen={}\n        for _,role in ipairs(s.roleOrder) do\n            local m=members[s.rosterNames[role]]\n            if not m or not m.name or not m.job then return false end\n            local a=byName[m.name..\"\\31\"..m.job]\n            if not a and counts[m.job]==1 and rcounts[m.job]==1 then a=byJob[m.job] end\n            if not a or seen[a.id] then return false end\n            seen[a.id]=true\n            s.slots[role]=a.id\n            s.roleByID[a.id]=role\n        end\n        return true\n    end\n    function s.point(x,z,label)\n        s.targetID=nil\n        s.x,s.z,s.label=x,z,label\n    end\n    function s.person(id,label)\n        s.x,s.z=nil,nil\n        s.targetID,s.label=id,label\n    end\n    function s.rank(a,b,cx,cz)\n        local aa=( -math.pi/4 - math.atan2(a.x-cx,-(a.z-cz)))%(2*math.pi)\n        local bb=( -math.pi/4 - math.atan2(b.x-cx,-(b.z-cz)))%(2*math.pi)\n        if aa<bb or (aa==bb and a.id<b.id) then return a,b end\n        return b,a\n    end\nend\ns.x,s.z,s.targetID,s.label=nil,nil,nil,nil\ns.callout=nil\nif not s.rosterReady then\n    if s.rosterRetry and t<s.rosterRetry then self.used=true return end\n    s.rosterRetry=t+1\n    s.rosterReady=s.resolveRoster()\n    if not s.rosterReady then s.reason=\"Roster unresolved\"; self.used=true return end\nend\nlocal player=TensorCore.mGetPlayer()\nif not player or not player.pos then self.used=true return end\nlocal role=s.roleByID[player.id]\nif not role then s.reason=\"Self absent from roster\"; self.used=true return end\ns.myRole=role\nlocal left=s.leftID and TensorCore.mGetEntity(s.leftID) or TensorCore.getEntityByGroup(\"ContentID\",s.leftQuery)\nlocal right=s.rightID and TensorCore.mGetEntity(s.rightID) or TensorCore.getEntityByGroup(\"ContentID\",s.rightQuery)\nif not left or not right or not left.pos or not right.pos then\n    s.reason=\"Waiting for eyes\"; self.used=true return\nend\ns.leftID,s.rightID=left.id,right.id\nlocal tank=role==\"MT\" or role==\"OT\"\nlocal melee=role==\"M1\" or role==\"M2\"\nlocal yellowRole=tank or melee\nlocal support=tank or role==\"H1\" or role==\"H2\"\nlocal eye=support and left or right\nlocal north=role==\"H1\" or role==\"R1\"\nlocal sign=north and -1 or 1\nlocal buddy=s.slots[s.partner[role]]\nlocal red=TensorCore.hasBuff(player,2775)\nlocal blue=TensorCore.hasBuff(player,2776)\nlocal clock=t-(s.soulTime or 756.9)\ns.reason=nil\n\n-- Resolve each complete hit pair once; actual hit positions decide priority.\nwhile s.solvedWave < s.wave do\n    local n=s.solvedWave+1\n    local w=s.waves[n]\n    if not w or #w<2 then break end\n    local ccw,cw=s.rank(w[1],w[2],right.pos.x,right.pos.z)\n    if n==1 then s.firstPair={ccw.id,cw.id} end\n    s.pairs={}\n    if n<4 then\n        local takers\n        if n==1 then takers={s.slots.MT,s.slots.OT}\n        elseif n==2 then takers={s.slots.M1,s.slots.M2}\n        else takers=s.firstPair end\n        if takers and takers[1] and takers[2] then\n            s.pairs[1]={giver=ccw.id,taker=takers[1],x=ccw.x,z=ccw.z}\n            s.pairs[2]={giver=cw.id,taker=takers[2],x=cw.x,z=cw.z}\n        end\n    end\n    s.solvedWave=n\nend\n\nif s.wave>0 then\n    if s.solvedWave>=4 then s.label=\"Eyes complete\"; self.used=true return end\n    for _,pair in ipairs(s.pairs) do\n        if not pair.done then\n            if TensorCore.hasBuff(pair.taker,2775) and TensorCore.hasBuff(pair.giver,2776) then\n                pair.done=true\n                s.station[pair.taker]={x=pair.x,z=pair.z}\n                s.station[pair.giver]=nil\n            end\n        end\n        if not pair.done and (player.id==pair.giver or player.id==pair.taker) then\n            s.person(player.id==pair.giver and pair.taker or pair.giver,\"Mirage handoff\")\n            self.used=true return\n        end\n    end\n    -- Red holders spread freely; only blue holders return to the centre.\n    if blue and not red then\n        if (player.pos.x-right.pos.x)^2+(player.pos.z-right.pos.z)^2>1 then\n            s.point(right.pos.x,right.pos.z,\"Wait under right eye\")\n        end\n    end\n    self.used=true return\nend\n\n-- Latch orb resolution from the damage debuff as well as cast hitTargets.\n-- Both orb types apply 2902; the assigned role identifies which orb was soaked.\nif yellowRole then\n    if not s.yellow[player.id] and TensorCore.hasBuff(player,2902) then s.yellow[player.id]=true end\n    if not s.blue[buddy] and TensorCore.hasBuff(buddy,2902) then s.blue[buddy]=true end\nelse\n    if not s.yellow[buddy] and TensorCore.hasBuff(buddy,2902) then s.yellow[buddy]=true end\n    if not s.blue[player.id] and TensorCore.hasBuff(player,2902) then s.blue[player.id]=true end\nend\n-- Initial colour sorting is a one-way stage, never re-entered after a handoff.\nif (yellowRole and red) or (not yellowRole and blue)\n    or s.yellow[player.id] or s.yellow[buddy] or s.blue[player.id] or s.blue[buddy] then\n    s.initialSettled=true\nend\n\nlocal myYellow = yellowRole and s.yellow[player.id] or s.yellow[buddy]\nlocal myBlue = yellowRole and s.blue[buddy] or s.blue[player.id]\n-- Outgoing yellow-orb players finish their handoff on their own Fangbound.\n-- Do not wait for the receiver's status update or blue-orb soak.\nif yellowRole and (myYellow or myBlue) then\n    if blue then s.orbHandoffComplete=true end\n    if not s.orbHandoffComplete then\n        s.person(buddy,\"Pass Clawbound\")\n    elseif not tank or left.hp.percent<=45 then\n        if (player.pos.x-right.pos.x)^2+(player.pos.z-right.pos.z)^2>1 then\n            s.point(right.pos.x,right.pos.z,\"Wait under right eye\")\n        end\n    end\n    self.used=true return\nend\nif myBlue then\n    if tank and left.hp.percent>45 then\n        s.point(left.pos.x,left.pos.z,\"Left eye until 45%\")\n    elseif yellowRole then\n        if (player.pos.x-right.pos.x)^2+(player.pos.z-right.pos.z)^2>1 then\n            s.point(right.pos.x,right.pos.z,\"Wait under right eye\")\n        end\n    end\n    -- Outer Mirage waiting positions are intentionally not tethered.\nelseif myYellow then\n    local giver=yellowRole and player.id or buddy\n    local receiver=yellowRole and buddy or player.id\n    local exchanged=TensorCore.hasBuff(giver,2776) and TensorCore.hasBuff(receiver,2775)\n    if not exchanged then\n        s.person(buddy,\"Pass Clawbound\")\n    elseif not yellowRole and clock>=28 then\n        s.point(eye.pos.x,eye.pos.z+sign*7,\"Blue orb\")\n        s.callout=\"POP NOW\"\n    elseif yellowRole then\n        s.point(eye.pos.x,eye.pos.z,\"Wait for blue orb\")\n    else\n        s.point(eye.pos.x,eye.pos.z+sign*eye.hitradius,\"Wait for blue orb\")\n    end\nelse\n    if not s.initialSettled and (s.hatebound or red or blue) and ((yellowRole and blue) or (not yellowRole and red)) then\n        s.point(100,100,\"Initial color swap\")\n    elseif yellowRole and clock>=22 and red then\n        s.point(eye.pos.x+(support and 7 or -7),eye.pos.z,\"Yellow orb\")\n        s.callout=\"SOAK NOW\"\n    elseif yellowRole then\n        s.point(eye.pos.x,eye.pos.z,\"Initial waiting spot\")\n    else\n        s.point(eye.pos.x,eye.pos.z+sign*eye.hitradius,\"Initial waiting spot\")\n    end\nend\nself.used=true\n",
+							actionLua = "local t = TensorReactions_CurrentTimer\nlocal s = data.frog_eyes_v1\nif s == nil or (s.lastTime and t < s.lastTime - 1) then\n    s = {}\n    data.frog_eyes_v1 = s\nend\ns.lastTime = t\nif not s.initialized then\n    s.initialized = true\n    s.yellow = s.yellow or {}\n    s.blue = s.blue or {}\n    s.waves = s.waves or {}\n    s.wave = s.wave or 0\n    s.solvedWave = 0\n    s.slots = {}\n    s.roleByID = {}\n    s.station = {}\n    s.pairs = {}\n    s.roleOrder = {\"MT\",\"OT\",\"H1\",\"H2\",\"M1\",\"M2\",\"R1\",\"R2\"}\n    s.rosterNames = {MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"}\n    s.partner = {MT=\"H1\",OT=\"H2\",M1=\"R1\",M2=\"R2\",H1=\"MT\",H2=\"OT\",R1=\"M1\",R2=\"M2\"}\n    s.leftQuery = {contentid=11317}\n    s.rightQuery = {contentid=11318}\n    function s.resolveRoster()\n        local members = AnyoneCore.Roster.members()\n        local party = AnyoneCore.API.getAgnosticPartyList()\n        if type(members) ~= \"table\" or type(party) ~= \"table\" then return false end\n        local byName,byJob,counts,rcounts = {},{},{},{}\n        for _,a in pairs(party) do\n            if a.id and a.name and a.job then\n                byName[a.name..\"\\31\"..a.job]=a\n                byJob[a.job]=a\n                counts[a.job]=(counts[a.job] or 0)+1\n            end\n        end\n        for _,m in pairs(members) do\n            if m.job then rcounts[m.job]=(rcounts[m.job] or 0)+1 end\n        end\n        local seen={}\n        for _,role in ipairs(s.roleOrder) do\n            local m=members[s.rosterNames[role]]\n            if not m or not m.name or not m.job then return false end\n            local a=byName[m.name..\"\\31\"..m.job]\n            if not a and counts[m.job]==1 and rcounts[m.job]==1 then a=byJob[m.job] end\n            if not a or seen[a.id] then return false end\n            seen[a.id]=true\n            s.slots[role]=a.id\n            s.roleByID[a.id]=role\n        end\n        return true\n    end\n    function s.point(x,z,label)\n        s.targetID=nil\n        s.x,s.z,s.label=x,z,label\n    end\n    function s.person(id,label)\n        s.x,s.z=nil,nil\n        s.targetID,s.label=id,label\n    end\n    -- Begin at the north boundary of the NW quadrant, not its diagonal.\n    -- CCW order: NW, SW, SE, NE. Reverse order serves group 2.\n    function s.rank(a,b,cx,cz)\n        local aa=( -math.atan2(a.x-cx,-(a.z-cz)))%(2*math.pi)\n        local bb=( -math.atan2(b.x-cx,-(b.z-cz)))%(2*math.pi)\n        if aa<bb or (aa==bb and a.id<b.id) then return a,b end\n        return b,a\n    end\nend\ns.x,s.z,s.targetID,s.label=nil,nil,nil,nil\ns.callout=nil\nif not s.rosterReady then\n    if s.rosterRetry and t<s.rosterRetry then self.used=true return end\n    s.rosterRetry=t+1\n    s.rosterReady=s.resolveRoster()\n    if not s.rosterReady then s.reason=\"Roster unresolved\"; self.used=true return end\nend\nlocal player=TensorCore.mGetPlayer()\nif not player or not player.pos then self.used=true return end\nlocal role=s.roleByID[player.id]\nif not role then s.reason=\"Self absent from roster\"; self.used=true return end\ns.myRole=role\nlocal left=s.leftID and TensorCore.mGetEntity(s.leftID) or TensorCore.getEntityByGroup(\"ContentID\",s.leftQuery)\nlocal right=s.rightID and TensorCore.mGetEntity(s.rightID) or TensorCore.getEntityByGroup(\"ContentID\",s.rightQuery)\nif not left or not right or not left.pos or not right.pos then\n    s.reason=\"Waiting for eyes\"; self.used=true return\nend\ns.leftID,s.rightID=left.id,right.id\nlocal tank=role==\"MT\" or role==\"OT\"\nlocal melee=role==\"M1\" or role==\"M2\"\nlocal yellowRole=tank or melee\nlocal support=tank or role==\"H1\" or role==\"H2\"\nlocal eye=support and left or right\nlocal north=role==\"H1\" or role==\"R1\"\nlocal sign=north and -1 or 1\nlocal buddy=s.slots[s.partner[role]]\nlocal red=TensorCore.hasBuff(player,2775)\nlocal blue=TensorCore.hasBuff(player,2776)\nlocal clock=t-(s.soulTime or 756.9)\ns.reason=nil\n\n-- Resolve each complete hit pair once; actual hit positions decide priority.\nwhile s.solvedWave < s.wave do\n    local n=s.solvedWave+1\n    local w=s.waves[n]\n    if not w or #w<2 then break end\n    local ccw,cw=s.rank(w[1],w[2],right.pos.x,right.pos.z)\n    if n==1 then s.firstPair={ccw.id,cw.id} end\n    s.pairs={}\n    if n<4 then\n        local takers\n        if n==1 then takers={s.slots.MT,s.slots.OT}\n        elseif n==2 then takers={s.slots.M1,s.slots.M2}\n        else takers=s.firstPair end\n        if takers and takers[1] and takers[2] then\n            s.pairs[1]={giver=ccw.id,taker=takers[1],x=ccw.x,z=ccw.z}\n            s.pairs[2]={giver=cw.id,taker=takers[2],x=cw.x,z=cw.z}\n        end\n    end\n    s.solvedWave=n\nend\n\nif s.wave>0 then\n    if s.solvedWave>=4 then s.label=\"Eyes complete\"; self.used=true return end\n    for _,pair in ipairs(s.pairs) do\n        if not pair.done then\n            if TensorCore.hasBuff(pair.taker,2775) and TensorCore.hasBuff(pair.giver,2776) then\n                pair.done=true\n                s.station[pair.taker]={x=pair.x,z=pair.z}\n                s.station[pair.giver]=nil\n            end\n        end\n        if not pair.done and (player.id==pair.giver or player.id==pair.taker) then\n            s.person(player.id==pair.giver and pair.taker or pair.giver,\"Mirage handoff\")\n            self.used=true return\n        end\n    end\n    -- Red holders spread freely; only blue holders return to the centre.\n    if blue and not red then\n        if (player.pos.x-right.pos.x)^2+(player.pos.z-right.pos.z)^2>1 then\n            s.point(right.pos.x,right.pos.z,\"Wait under right eye\")\n        end\n    end\n    self.used=true return\nend\n\n-- Latch orb resolution from the damage debuff as well as cast hitTargets.\n-- Both orb types apply 2902; the assigned role identifies which orb was soaked.\nif yellowRole then\n    if not s.yellow[player.id] and TensorCore.hasBuff(player,2902) then s.yellow[player.id]=true end\n    if not s.blue[buddy] and TensorCore.hasBuff(buddy,2902) then s.blue[buddy]=true end\nelse\n    if not s.yellow[buddy] and TensorCore.hasBuff(buddy,2902) then s.yellow[buddy]=true end\n    if not s.blue[player.id] and TensorCore.hasBuff(player,2902) then s.blue[player.id]=true end\nend\n-- Initial colour sorting is a one-way stage, never re-entered after a handoff.\nif (yellowRole and red) or (not yellowRole and blue)\n    or s.yellow[player.id] or s.yellow[buddy] or s.blue[player.id] or s.blue[buddy] then\n    s.initialSettled=true\nend\n\nlocal myYellow = yellowRole and s.yellow[player.id] or s.yellow[buddy]\nlocal myBlue = yellowRole and s.blue[buddy] or s.blue[player.id]\n-- Outgoing yellow-orb players finish their handoff on their own Fangbound.\n-- Do not wait for the receiver's status update or blue-orb soak.\nif yellowRole and (myYellow or myBlue) then\n    if blue then s.orbHandoffComplete=true end\n    if not s.orbHandoffComplete then\n        s.person(buddy,\"Pass Clawbound\")\n    elseif not tank or left.hp.percent<=45 then\n        if (player.pos.x-right.pos.x)^2+(player.pos.z-right.pos.z)^2>1 then\n            s.point(right.pos.x,right.pos.z,\"Wait under right eye\")\n        end\n    end\n    self.used=true return\nend\nif myBlue then\n    if tank and left.hp.percent>45 then\n        s.point(left.pos.x,left.pos.z,\"Left eye until 45%\")\n    elseif yellowRole then\n        if (player.pos.x-right.pos.x)^2+(player.pos.z-right.pos.z)^2>1 then\n            s.point(right.pos.x,right.pos.z,\"Wait under right eye\")\n        end\n    end\n    -- Outer Mirage waiting positions are intentionally not tethered.\nelseif myYellow then\n    local giver=yellowRole and player.id or buddy\n    local receiver=yellowRole and buddy or player.id\n    local exchanged=TensorCore.hasBuff(giver,2776) and TensorCore.hasBuff(receiver,2775)\n    if not exchanged then\n        s.person(buddy,\"Pass Clawbound\")\n    elseif not yellowRole and clock>=28 then\n        s.point(eye.pos.x,eye.pos.z+sign*7,\"Blue orb\")\n        s.callout=\"POP NOW\"\n    elseif yellowRole then\n        s.point(eye.pos.x,eye.pos.z,\"Wait for blue orb\")\n    else\n        s.point(eye.pos.x,eye.pos.z+sign*eye.hitradius,\"Wait for blue orb\")\n    end\nelse\n    if not s.initialSettled and (s.hatebound or red or blue) and ((yellowRole and blue) or (not yellowRole and red)) then\n        s.point(100,100,\"Initial color swap\")\n    elseif yellowRole and clock>=22 and red then\n        s.point(eye.pos.x+(support and 7 or -7),eye.pos.z,\"Yellow orb\")\n        s.callout=\"SOAK NOW\"\n    elseif yellowRole then\n        s.point(eye.pos.x,eye.pos.z,\"Initial waiting spot\")\n    else\n        s.point(eye.pos.x,eye.pos.z+sign*eye.hitradius,\"Initial waiting spot\")\n    end\nend\nself.used=true\n",
 							name = "Resolve Eyes Guidance",
 							uuid = "67e73330-b675-dafe-acdd-ddbc00d369ea",
 							version = 2.1,
@@ -2004,6 +2004,1080 @@ local tbl =
 				timerEndOffset = 67,
 				timerStartOffset = -2,
 				uuid = "9abfbf0a-40e4-d7cc-8394-4e474d9dd3bd",
+				version = 2,
+			},
+		},
+	},
+	[154] = 
+	{
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local old=data.frog_wrath_v1\nif old and old.arrow then Argus.deleteTimedShape(old.arrow) end\ndata.frog_wrath_v1={phase=1}\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"ef103cfa-386d-d9ee-8b76-44fa754af142",
+									true,
+								},
+							},
+							name = "Reset Wrath State",
+							uuid = "a469ffe4-8b24-c86f-8c29-401c10de3f06",
+							version = 2.1,
+						},
+					},
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "data.frog_wrath_v1=data.frog_wrath_v1 or {}\nlocal s=data.frog_wrath_v1\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\nlocal dx,dz=e.pos.x-100,e.pos.z-100\nlocal r=math.sqrt(dx*dx+dz*dz)\nif r<15 then return end\ns.nx,s.nz=dx/r,dz/r\ns.phase=1\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"b9ad1751-34a9-bdf6-81cf-00a28790a877",
+									true,
+								},
+							},
+							name = "Capture Dragon North",
+							uuid = "f67617ff-4737-743a-b251-711aaf51001d",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgType = 2,
+							eventSpellID = 27529,
+							name = "Cast 27529",
+							uuid = "ef103cfa-386d-d9ee-8b76-44fa754af142",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgType = 2,
+							eventSpellID = 27531,
+							name = "Cast 27531",
+							uuid = "b9ad1751-34a9-bdf6-81cf-00a28790a877",
+							version = 3,
+						},
+					},
+				},
+				eventType = 3,
+				loop = true,
+				mechanicTime = 1024.8,
+				name = "[Draw] Wrath Start and North Capture",
+				timeRange = true,
+				timelineIndex = 154,
+				timerEndOffset = 12.2,
+				timerStartOffset = -6.8,
+				uuid = "80fa0d38-43f7-e787-afdd-18f32d399303",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "data.frog_wrath_v1=data.frog_wrath_v1 or {}\nlocal s=data.frog_wrath_v1\nlocal e=TensorCore.mGetEntity(eventArgs.sourceEntityID)\nif not e or not e.pos then return end\ns.vellID=eventArgs.newTargetID\ns.vellX,s.vellZ=e.pos.x,e.pos.z\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"a27ee1a7-3178-5b7b-9476-43f83d4e0b6b",
+									true,
+								},
+								
+								{
+									"31f11011-c643-3825-ba26-9f533053e1f2",
+									true,
+								},
+							},
+							name = "Capture Vellguine Assignment",
+							uuid = "51766212-336b-9fa1-aaba-86658edfd065",
+							version = 2.1,
+						},
+					},
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "data.frog_wrath_v1=data.frog_wrath_v1 or {}\nlocal s=data.frog_wrath_v1\nlocal e=TensorCore.mGetEntity(eventArgs.sourceEntityID)\nif not e or not e.pos then return end\ns.ignID=eventArgs.newTargetID\ns.ignX,s.ignZ=e.pos.x,e.pos.z\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"a27ee1a7-3178-5b7b-9476-43f83d4e0b6b",
+									true,
+								},
+								
+								{
+									"b756bc8f-e96f-ef19-8353-fd1a0debc238",
+									true,
+								},
+							},
+							name = "Capture Ignasse Assignment",
+							uuid = "fd942bad-10ad-66f5-9392-8b9822551cf0",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Event",
+							comparator = 3,
+							dequeueIfLuaFalse = true,
+							eventArgType = 5,
+							eventIntValue = 5,
+							name = "Knight Tether",
+							uuid = "a27ee1a7-3178-5b7b-9476-43f83d4e0b6b",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgOptionType = 2,
+							eventEntityContentID = 3636,
+							name = "Vellguine",
+							uuid = "31f11011-c643-3825-ba26-9f533053e1f2",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgOptionType = 2,
+							eventEntityContentID = 3638,
+							name = "Ignasse",
+							uuid = "b756bc8f-e96f-ef19-8353-fd1a0debc238",
+							version = 3,
+						},
+					},
+				},
+				eventType = 15,
+				loop = true,
+				mechanicTime = 1024.8,
+				name = "[Draw] Wrath Knight Tether Capture",
+				timeRange = true,
+				timelineIndex = 154,
+				timerEndOffset = 12.2,
+				timerStartOffset = 3.2,
+				uuid = "5d8c8c59-cd1b-b6a2-b009-a2fb763a15e2",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "data.frog_wrath_v1=data.frog_wrath_v1 or {}\nlocal s=data.frog_wrath_v1\nif eventArgs.markerID==14 then s.defamID=eventArgs.entityID else s.diveID=eventArgs.entityID end\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"fb330b8c-69b9-f40c-a81b-abbda8e35d4d",
+									true,
+								},
+							},
+							name = "Capture Personal Marker",
+							uuid = "91fd3919-bfc1-3161-80b5-4bcdbb7a991d",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgType = 3,
+							markerIDList = 
+							{
+								14,
+								20,
+							},
+							name = "Defamation or Dive",
+							uuid = "fb330b8c-69b9-f40c-a81b-abbda8e35d4d",
+							version = 3,
+						},
+					},
+				},
+				eventType = 4,
+				loop = true,
+				mechanicTime = 1024.8,
+				name = "[Draw] Wrath Marker Capture",
+				timeRange = true,
+				timelineIndex = 154,
+				timerEndOffset = 15.2,
+				timerStartOffset = 3.2,
+				uuid = "810b02a1-ba7c-261d-b62f-b6578ecabd62",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "data.frog_wrath_v1=data.frog_wrath_v1 or {}\nlocal s=data.frog_wrath_v1\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\ns.gx,s.gz=e.pos.x,e.pos.z\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"9cbe3e84-594e-9bb2-b709-40d049cac022",
+									true,
+								},
+								
+								{
+									"114dc3b9-c1c9-170e-866e-d2c7f02c28c2",
+									true,
+								},
+							},
+							name = "Capture Relative South",
+							uuid = "096bc472-8f24-16f5-afbd-3786aaa81c99",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgOptionType = 2,
+							eventEntityContentID = 3639,
+							name = "Grinnaux",
+							uuid = "9cbe3e84-594e-9bb2-b709-40d049cac022",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgType = 3,
+							name = "Visible",
+							uuid = "114dc3b9-c1c9-170e-866e-d2c7f02c28c2",
+							version = 3,
+						},
+					},
+				},
+				eventType = 22,
+				loop = true,
+				mechanicTime = 1024.8,
+				name = "[Draw] Wrath Grinnaux South Capture",
+				timeRange = true,
+				timelineIndex = 154,
+				timerEndOffset = 17.2,
+				timerStartOffset = 7.2,
+				uuid = "0ae604d5-3338-10a1-ac44-198371411e3a",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "data.frog_wrath_v1=data.frog_wrath_v1 or {}\nlocal s=data.frog_wrath_v1\ns.phase=2\nif s.arrow then Argus.deleteTimedShape(s.arrow) s.arrow=nil end\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"bc2c80e8-9423-6e9e-8793-63137706def4",
+									true,
+								},
+							},
+							name = "End Initial Guidance",
+							uuid = "074b8c2a-7340-113a-ac64-85a3f3ee691f",
+							version = 2.1,
+						},
+					},
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "data.frog_wrath_v1=data.frog_wrath_v1 or {}\nlocal s=data.frog_wrath_v1\ns.phase=3\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"a29828d8-d5cf-d447-973f-a856fab1f880",
+									true,
+								},
+							},
+							name = "End Dive Bait Guidance",
+							uuid = "799663a8-11f0-85b0-8250-85361fd05e97",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgType = 2,
+							eventSpellID = 27531,
+							name = "Cast 27531",
+							uuid = "bc2c80e8-9423-6e9e-8793-63137706def4",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgOptionType = 3,
+							eventArgType = 2,
+							name = "Cauterize",
+							spellIDList = 
+							{
+								27533,
+								27534,
+							},
+							uuid = "a29828d8-d5cf-d447-973f-a856fab1f880",
+							version = 3,
+						},
+					},
+				},
+				eventType = 2,
+				loop = true,
+				mechanicTime = 1024.8,
+				name = "[Draw] Wrath Dive Progress",
+				timeRange = true,
+				timelineIndex = 154,
+				timerEndOffset = 26.2,
+				timerStartOffset = 5.2,
+				uuid = "84ab5ace-904a-70fd-a489-d34e881f64a1",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_wrath_v1\nlocal ex,ez=-s.nz,s.nx\nlocal drawer=TensorCore.getStaticDrawer(0xC000FF00,1,0,0)\ns.arrow=drawer:addTimedArrow(8000,100+ex*5,0.08,100+ez*5,math.atan2(ex,ez),8,1.5,3,4,0,false,0)\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"0f820f54-8583-b2a8-a063-86f19e79fadf",
+									true,
+								},
+							},
+							name = "Draw Relative East Arrow",
+							uuid = "f92484f0-85f8-6a5e-b0dd-0f8898161086",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_wrath_v1\nif not s or s.phase~=1 or not s.nx or not s.vellID or not s.ignID or not s.defamID then return false end\nlocal p=TensorCore.mGetPlayer()\nreturn p and p.id~=s.vellID and p.id~=s.ignID and p.id~=s.defamID",
+							name = "Unmarked Assignment Ready",
+							uuid = "0f820f54-8583-b2a8-a063-86f19e79fadf",
+							version = 3,
+						},
+					},
+				},
+				mechanicTime = 1024.8,
+				name = "[Draw] Wrath Unmarked East Arrow",
+				timeRange = true,
+				timelineIndex = 154,
+				timerEndOffset = 12.2,
+				timerStartOffset = 3.2,
+				uuid = "9185e6e4-b485-f7e9-bea3-ac62b8cbb914",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_wrath_v1\nif not s then return end\nlocal p=TensorCore.mGetPlayer()\nif not p or not p.pos or p.hp.current<=0 then return end\nlocal x,z\nlocal radius=19.5\nif s.phase==1 and s.nx then\n    local kx,kz\n    if p.id==s.vellID then kx,kz=s.vellX,s.vellZ\n    elseif p.id==s.ignID then kx,kz=s.ignX,s.ignZ end\n    if kx then\n        local dx,dz=kx-100,kz-100\n        local length=math.sqrt(dx*dx+dz*dz)\n        if length>0 then x,z=100-radius*dx/length,100-radius*dz/length end\n    elseif p.id==s.defamID then\n        -- WNW: 60 degrees west of dragon-relative north, away from the NW dive lane.\n        local ex,ez=-s.nz,s.nx\n        x,z=100+radius*(0.5*s.nx-0.8660254038*ex),100+radius*(0.5*s.nz-0.8660254038*ez)\n    end\nelseif s.phase==2 and p.id==s.diveID and s.gx then\n    local dx,dz=s.gx-100,s.gz-100\n    local length=math.sqrt(dx*dx+dz*dz)\n    if length>0 then x,z=100-radius*dx/length,100-radius*dz/length end\nend\nif x then\n    -- Moving player endpoint requires a per-frame line.\n    local drawer=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0)\n    drawer:addLine(p.pos.x,p.pos.y,p.pos.z,x,0.08,z,8,2)\nend\nself.used=true",
+							name = "Draw Assigned Position",
+							uuid = "cdd0c157-b2d0-6c08-bbae-1c5eedbf2a79",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+				},
+				eventType = 12,
+				loop = true,
+				mechanicTime = 1024.8,
+				name = "[Draw] Wrath Personal Guidance",
+				timeRange = true,
+				timelineIndex = 154,
+				timerEndOffset = 26.2,
+				timerStartOffset = 3.2,
+				uuid = "036d633e-8e25-a056-ab4d-802083c0d1ae",
+				version = 2,
+			},
+		},
+	},
+	[180] = 
+	{
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s = {\n phase=1, doom={}, markers={}, markerPos={}, dives={}, puddles={}, puddleByID={},\n slots={}, roleByID={}, dirty=true,\n order={\"R1\",\"H1\",\"M1\",\"MT\",\"OT\",\"H2\",\"M2\",\"R2\"},\n rosterSlots={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"},\n doomOrder={},clearOrder={}\n}\ndata.frog_doth_v1=s\nfunction s.resolveRoster()\n local members=AnyoneCore.Roster.members()\n local party=AnyoneCore.API.getAgnosticPartyList()\n if type(members)~=\"table\" or type(party)~=\"table\" then return false end\n local byName,byJob,counts,rcounts={},{},{},{}\n for _,a in pairs(party) do\n  if a.id and a.name and a.job then\n   byName[a.name..\"\\31\"..a.job]=a\n   byJob[a.job]=a\n   counts[a.job]=(counts[a.job] or 0)+1\n  end\n end\n for _,m in pairs(members) do\n  if m.job then rcounts[m.job]=(rcounts[m.job] or 0)+1 end\n end\n local seen={}\n for _,role in ipairs(s.order) do\n  local m=members[s.rosterSlots[role]]\n  if not m or not m.name or not m.job then return false end\n  local a=byName[m.name..\"\\31\"..m.job]\n  if not a and counts[m.job]==1 and rcounts[m.job]==1 then a=byJob[m.job] end\n  if not a or seen[a.id] then return false end\n  seen[a.id]=true\n  s.slots[role]=a.id\n  s.roleByID[a.id]=role\n end\n return true\nend\nfunction s.point(e,n,label)\n s.x=100+s.ex*e+s.nx*n\n s.z=100+s.ez*e+s.nz*n\n s.label=label\nend\nfunction s.puddlePoint(index,opposite,label)\n local p=s.puddles[index]\n if not p then s.reason=\"Waiting for cleanse puddles\"; return end\n if opposite then s.x,s.z=200-p.x,200-p.z else s.x,s.z=p.x,p.z end\n s.label=label\nend\nfunction s.sortPuddles(a,b)\n local ae=(a.x-100)*s.ex+(a.z-100)*s.ez\n local be=(b.x-100)*s.ex+(b.z-100)*s.ez\n return ae<be or (ae==be and a.id<b.id)\nend\nfunction s.pairSide(id,marker,axis)\n local mine=s.markerPos[id]\n if not mine then return nil end\n local my=(mine.x-100)*(axis==\"east\" and s.ex or s.nx)+(mine.z-100)*(axis==\"east\" and s.ez or s.nz)\n for other,m in pairs(s.markers) do\n  if other~=id and m==marker then\n   local p=s.markerPos[other]\n   if not p then return nil end\n   local v=(p.x-100)*(axis==\"east\" and s.ex or s.nx)+(p.z-100)*(axis==\"east\" and s.ez or s.nz)\n   return my<v or (my==v and id<other)\n  end\n end\n return nil\nend\ns.rosterReady=s.resolveRoster()\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"8fb0bdd0-5d07-9283-a074-93e94ae77290",
+									true,
+								},
+							},
+							name = "Reset DOTH and resolve roster",
+							uuid = "ca88ec54-36b5-20b6-acf8-9a37304c6ec1",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgOptionType = 3,
+							eventArgType = 2,
+							name = "Death of the Heavens",
+							spellIDList = 
+							{
+								27538,
+							},
+							uuid = "8fb0bdd0-5d07-9283-a074-93e94ae77290",
+							version = 3,
+						},
+					},
+				},
+				eventType = 2,
+				loop = true,
+				mechanicTime = 1085.1,
+				name = "[Draw] DOTH Start and Roster",
+				timeRange = true,
+				timelineIndex = 180,
+				timerEndOffset = 4.9,
+				timerStartOffset = -5.1,
+				uuid = "29278938-1a69-45b8-9946-2738079eca0e",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_doth_v1\nif not s or s.nx then self.used=true return end\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\nlocal dx,dz=e.pos.x-100,e.pos.z-100\nlocal r=math.sqrt(dx*dx+dz*dz)\n-- The introductory knight ring is radius 12; the actual impact position is radius 9.\nif r<8 or r>10 then self.used=true return end\ns.nx,s.nz=dx/r,dz/r\ns.ex,s.ez=-s.nz,s.nx\ns.dirty=true\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"6deb6aaa-916a-086e-88e7-0e003b1d929a",
+									true,
+								},
+								
+								{
+									"1777e45a-d613-1661-be8f-71119959470f",
+									true,
+								},
+							},
+							name = "Freeze relative north",
+							uuid = "1b05117a-f307-7e29-a4aa-5859ccb060c8",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgOptionType = 2,
+							eventEntityContentID = 3641,
+							name = "Guerrique",
+							uuid = "6deb6aaa-916a-086e-88e7-0e003b1d929a",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Event",
+							comparator = 3,
+							dequeueIfLuaFalse = true,
+							eventArgType = 4,
+							eventIntValue = 7747,
+							name = "Warp arrival",
+							uuid = "1777e45a-d613-1661-be8f-71119959470f",
+							version = 3,
+						},
+					},
+				},
+				eventType = 23,
+				loop = true,
+				mechanicTime = 1085.1,
+				name = "[Draw] DOTH Guerrique North Capture",
+				timeRange = true,
+				timelineIndex = 180,
+				timerEndOffset = 10.9,
+				timerStartOffset = 2.9,
+				uuid = "2660c2c1-0627-0145-95bf-93a7d21a2195",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_doth_v1\nif not s or s.nx then self.used=true return end\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\nlocal dx,dz=e.pos.x-100,e.pos.z-100\nlocal r=math.sqrt(dx*dx+dz*dz)\n-- The introductory knight ring is radius 12; the actual impact position is radius 9.\nif r<8 or r>10 then self.used=true return end\ns.nx,s.nz=dx/r,dz/r\ns.ex,s.ez=-s.nz,s.nx\ns.dirty=true\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"7f375b4a-8e30-9595-a6e8-1ae63e3ecb24",
+									true,
+								},
+							},
+							name = "Capture north if arrival missed",
+							uuid = "4a773e6b-35b2-30f7-b7d5-02f2152b9235",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgOptionType = 3,
+							eventArgType = 2,
+							name = "Heavy Impact",
+							spellIDList = 
+							{
+								25557,
+							},
+							uuid = "7f375b4a-8e30-9595-a6e8-1ae63e3ecb24",
+							version = 3,
+						},
+					},
+				},
+				eventType = 3,
+				loop = true,
+				mechanicTime = 1085.1,
+				name = "[Draw] DOTH Heavy Impact North Capture",
+				timeRange = true,
+				timelineIndex = 180,
+				timerEndOffset = 12.9,
+				timerStartOffset = 4.9,
+				uuid = "4093725f-137e-f9a6-8a12-0837c3f21aff",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_doth_v1\nif s then s.doom[eventArgs.entityID]=true; s.dirty=true end\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"437bd08b-7a29-0985-9480-592f9bfd0d3f",
+									true,
+								},
+							},
+							name = "Remember doom assignment",
+							uuid = "fc054db9-9a5f-6f0c-910e-8620a49de34b",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgType = 2,
+							eventBuffID = 2976,
+							name = "Doom 2976",
+							uuid = "437bd08b-7a29-0985-9480-592f9bfd0d3f",
+							version = 3,
+						},
+					},
+				},
+				eventType = 8,
+				loop = true,
+				mechanicTime = 1085.1,
+				name = "[Draw] DOTH Doom Capture",
+				timeRange = true,
+				timelineIndex = 180,
+				timerEndOffset = 12.9,
+				timerStartOffset = 4.9,
+				uuid = "75da7914-04d2-9301-8774-d547de1f34d9",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_doth_v1\nif s and s.phase==1 then\n s.dives[eventArgs.spellID]=true\n if s.dives[27531] and s.dives[27533] and s.dives[27539] then\n  s.phase=2; s.baitAt=TensorReactions_CurrentTimer+3; s.dirty=true\n end\nend\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"b8f58a37-e7ee-2a68-847b-6678ae2d42e2",
+									true,
+								},
+							},
+							name = "End spread after all three dives",
+							uuid = "f2b57be5-e2d6-80dc-a08b-2d12069741f0",
+							version = 2.1,
+						},
+					},
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_doth_v1\nif s then s.phase=4; s.x,s.z=nil,nil; s.dirty=true end\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"33f43f20-dd44-dc0a-9528-2a0bd5033ba5",
+									true,
+								},
+							},
+							name = "Finish personal guidance",
+							uuid = "0f37983b-478e-1bfa-8f07-36e6b13157a0",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgOptionType = 3,
+							eventArgType = 2,
+							name = "Three dives",
+							spellIDList = 
+							{
+								27531,
+								27533,
+								27539,
+							},
+							uuid = "b8f58a37-e7ee-2a68-847b-6678ae2d42e2",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgOptionType = 3,
+							eventArgType = 2,
+							name = "Heavensflame resolved",
+							spellIDList = 
+							{
+								25310,
+							},
+							uuid = "33f43f20-dd44-dc0a-9528-2a0bd5033ba5",
+							version = 3,
+						},
+					},
+				},
+				eventType = 2,
+				loop = true,
+				mechanicTime = 1085.1,
+				name = "[Draw] DOTH Dive and Heavensflame Progress",
+				timeRange = true,
+				timelineIndex = 180,
+				timerEndOffset = 33.9,
+				timerStartOffset = 11.9,
+				uuid = "a9ac8128-fdcd-83c6-9398-ae198710bddc",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_doth_v1\nif s and not s.puddleByID[eventArgs.entityID] and #s.puddles<4 then\n local p={id=eventArgs.entityID,x=eventArgs.x,z=eventArgs.z}\n s.puddleByID[p.id]=p\n s.puddles[#s.puddles+1]=p\n s.puddlesSorted=false\n s.dirty=true\nend\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"8f44dce0-3a2a-42c7-90c9-4d23a42b16d1",
+									true,
+								},
+							},
+							name = "Capture actual cleanse coordinates",
+							uuid = "0aaea08e-10f6-29b8-aa66-69976231c19b",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "return eventArgs.aoeID==27542",
+							dequeueIfLuaFalse = true,
+							name = "Wings of Salvation AOE",
+							uuid = "8f44dce0-3a2a-42c7-90c9-4d23a42b16d1",
+							version = 3,
+						},
+					},
+				},
+				eventType = 18,
+				loop = true,
+				mechanicTime = 1085.1,
+				name = "[Draw] DOTH Cleanse Puddle Capture",
+				timeRange = true,
+				timelineIndex = 180,
+				timerEndOffset = 28.9,
+				timerStartOffset = 14.9,
+				uuid = "0b560dba-9528-9efa-8996-11b22293ee59",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_doth_v1\nif not s then self.used=true return end\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\ns.markers[e.id]=eventArgs.markerID\ns.markerPos[e.id]={x=e.pos.x,z=e.pos.z}\ns.phase=3\ns.dirty=true\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"21369feb-36b1-ea35-9660-9d709d2981f7",
+									true,
+								},
+							},
+							name = "Capture marker and pair position",
+							uuid = "afac292f-2598-805e-aa7c-a28661899aa5",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgType = 3,
+							markerIDList = 
+							{
+								281,
+								282,
+								283,
+								284,
+							},
+							name = "PlayStation markers",
+							uuid = "21369feb-36b1-ea35-9660-9d709d2981f7",
+							version = 3,
+						},
+					},
+				},
+				eventType = 4,
+				loop = true,
+				mechanicTime = 1085.1,
+				name = "[Draw] DOTH PlayStation Capture",
+				timeRange = true,
+				timelineIndex = 180,
+				timerEndOffset = 28.9,
+				timerStartOffset = 19.9,
+				uuid = "06b597fa-fa3b-d527-a29b-189db4d5446a",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_doth_v1\nif not s then self.used=true return end\nlocal t=TensorReactions_CurrentTimer\nif s.lastTick and t<s.lastTick-1 then data.frog_doth_v1=nil; self.used=true return end\ns.lastTick=t\nif not s.rosterReady then\n if not s.retryAt or t>=s.retryAt then s.retryAt=t+1; s.rosterReady=s.resolveRoster(); s.dirty=true end\nend\nif not s.dirty then self.used=true return end\ns.x,s.z,s.label,s.reason=nil,nil,nil,nil\nif not s.rosterReady then s.reason=\"Waiting for Anyone roster\"; self.used=true return end\nif not s.nx then s.reason=\"Waiting for Guerrique arrival\"; self.used=true return end\nlocal player=TensorCore.mGetPlayer()\nif not player then self.used=true return end\ns.myRole=s.roleByID[player.id]\nif not s.myRole then s.reason=\"Self absent from roster\"; self.used=true return end\nif not s.assigned then\n local d=0\n for _,role in ipairs(s.order) do if s.doom[s.slots[role]] then d=d+1 end end\n if d~=4 then s.reason=\"Waiting for all four dooms\"; self.used=true return end\n local di,ci=0,0\n for _,role in ipairs(s.order) do\n  local id=s.slots[role]\n  if s.doom[id] then di=di+1; s.doomOrder[di]=id else ci=ci+1; s.clearOrder[ci]=id end\n end\n s.assigned=true\n s.myDoom=s.doom[player.id]==true\n local order=s.myDoom and s.doomOrder or s.clearOrder\n for rank,id in ipairs(order) do if id==player.id then s.myRank=rank end end\n s.baiter=s.myDoom and (s.myRank==1 or s.myRank==4)\nend\nif #s.puddles==4 and not s.puddlesSorted then table.sort(s.puddles,s.sortPuddles); s.puddlesSorted=true end\nlocal rank=s.myRank\nif s.phase==1 then\n if rank==1 then s.point(s.myDoom and -10.5 or -20,0,\"West spread\")\n elseif rank==4 then s.point(s.myDoom and 10.5 or 20,0,\"East spread\")\n else s.point(rank==2 and -12 or 12,s.myDoom and 16 or -16,\"Offset diagonal spread\") end\nelseif s.phase==2 then\n if s.baiter then s.point(rank==1 and -10.5 or 10.5,0,\"Bait circle\")\n else s.point(0,s.myDoom and -2 or 2,s.myDoom and \"Doom south\" or \"Non-doom north\") end\nelseif s.phase==3 then\n local marker=s.markers[player.id]\n if s.myDoom then\n  if not s.puddlesSorted then s.reason=\"Waiting for all four cleanse puddles\"; self.used=true return end\n  if marker==281 then\n   local west=s.pairSide(player.id,281,\"east\")\n   if west~=nil then s.puddlePoint(west and 1 or 4,false,\"Circle cleanse\") end\n  elseif marker==283 then s.puddlePoint(2,false,\"Square southwest cleanse\")\n  elseif marker==282 then s.puddlePoint(3,false,\"Triangle southeast cleanse\") end\n else\n  if marker==282 then\n   if s.puddlesSorted then s.puddlePoint(3,true,\"Triangle opposite southeast cleanse\")\n   else s.point(-12,16,\"Triangle northwest\") end\n  elseif marker==283 then\n   if s.puddlesSorted then s.puddlePoint(2,true,\"Square opposite southwest cleanse\")\n   else s.point(12,16,\"Square northeast\") end\n  elseif marker==284 then\n   local south=s.pairSide(player.id,284,\"north\")\n   if south~=nil then s.point(0,south and -20 or 20,south and \"Cross south\" or \"Cross north\") end\n  end\n end\nend\ns.dirty=false\nself.used=true",
+							name = "Resolve personal DOTH destination",
+							uuid = "a9fc0045-9529-6e7a-8bc3-abc526091159",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+				},
+				loop = true,
+				mechanicTime = 1085.1,
+				name = "[Draw] DOTH Assignment Solver",
+				throttleTime = 100,
+				timeRange = true,
+				timelineIndex = 180,
+				timerEndOffset = 33.9,
+				timerStartOffset = -1.1,
+				uuid = "e40fcf03-16ef-42f9-be63-d0de9dbff003",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Alert",
+							alertDuration = 2000,
+							alertTTS = true,
+							alertText = "Bait circle",
+							conditions = 
+							{
+								
+								{
+									"bb9d10f3-58b0-6e4d-b7d8-9b2b1430af65",
+									true,
+								},
+							},
+							uuid = "35e7434b-eb80-9e7c-938e-56d9a302144d",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_doth_v1\nreturn s~=nil and s.phase==2 and s.baiter==true and s.baitAt~=nil and TensorReactions_CurrentTimer>=s.baitAt",
+							name = "Outer doom ready",
+							uuid = "bb9d10f3-58b0-6e4d-b7d8-9b2b1430af65",
+							version = 3,
+						},
+					},
+				},
+				mechanicTime = 1085.1,
+				name = "[Draw] DOTH Bait Circle Callout",
+				timeRange = true,
+				timelineIndex = 180,
+				timerEndOffset = 25.9,
+				timerStartOffset = 16.9,
+				uuid = "12c81a3c-f40a-6f9e-8063-8fb8905101bf",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_doth_v1\nlocal p=TensorCore.mGetPlayer()\nif s and s.x and s.z and s.phase<4 and p and p.pos and p.hp.current>0 then\n local drawer=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0)\n drawer:addLine(p.pos.x,p.pos.y,p.pos.z,s.x,0.08,s.z,8,2)\nend\nself.used=true",
+							name = "Draw only my current destination",
+							uuid = "4c8eec4b-205e-92a4-83ec-f376b894fa26",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+				},
+				eventType = 12,
+				loop = true,
+				mechanicTime = 1085.1,
+				name = "[Draw] DOTH Personal Tether",
+				timeRange = true,
+				timelineIndex = 180,
+				timerEndOffset = 33.9,
+				timerStartOffset = 4.9,
+				uuid = "82ac4b13-5f67-d31e-b22c-56c087e10c14",
 				version = 2,
 			},
 		},
