@@ -1504,8 +1504,8 @@ local tbl =
 						data = 
 						{
 							category = "Lua",
-							conditionLua = "local c=data.frog_dfg_control\nreturn c and c.active and Now()>=c.expires+250",
-							name = "Snapshot +0.25s",
+							conditionLua = "local c=data.frog_dfg_control\nreturn c and c.active and Now()>=c.expires+100",
+							name = "Snapshot +0.1s",
 							uuid = "e8384e73-48b3-1fc0-9939-71b1e6a3e4b6",
 							version = 3,
 						},
