@@ -13,7 +13,7 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "if data.frog_draw_settings == nil or data.frog_draw_settings.version~=10 then\n local p={\n  version=10,\n  path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]],\n  default=\"R1 H1 M1 MT OT M2 H2 R2\",\n  styleItems={\"Tether\",\"Arrow\",\"Disabled\"},\n  styleRows={\n   {\"p1_playstation\",\"P1 PlayStation\"},{\"p2_strength\",\"P2 Strength\"},\n   {\"p2_sanctity\",\"P2 Sanctity\"},{\"p3_dfg\",\"P3 Dive from Grace\"},\n   {\"p4_eyes\",\"P4 Eyes\"},{\"p5_wrath\",\"P5 Wrath\"},{\"p5_doth\",\"P5 DOTH\"},{\"p6_vow\",\"P6 Mortal Vow\"},{\"p6_wb2\",\"P6 Wyrmsbreath 2\"}\n  },\n  styles={},\n  vowDefault=\"T T M R\",\n  vowEdit=\"T T M R\",\n  vowGroups={T={\"MT\",\"OT\"},M={\"M1\",\"M2\"},R={\"R1\",\"R2\"}},\n  strategyItems={\"Westhogg\",\"Easthogg\"},\n  strategy=\"NAUR\",\n  holdItems={\"On\",\"Off\"},\n  customHold=false,\n  roles={MT=true,OT=true,H1=true,H2=true,M1=true,M2=true,R1=true,R2=true}\n }\n function p.parse(text)\n  if type(text)~=\"string\" then return nil,\"Enter all eight roles.\" end\n  local order,seen={},{}\n  for role in string.upper(text):gmatch(\"[^%s,]+\") do\n   if not p.roles[role] then return nil,\"Unknown role: \"..role end\n   if seen[role] then return nil,\"Duplicate role: \"..role end\n   seen[role]=true; order[#order+1]=role\n  end\n  if #order~=8 then return nil,\"Enter each of MT OT H1 H2 M1 M2 R1 R2 once.\" end\n  return order,table.concat(order,\" \")\n end\n function p.parseVow(text)\n  local order={}\n  for token in string.upper(text or \"\"):gmatch(\"[^%s,]+\") do\n   if not p.vowGroups[token] then return nil,\"Vow order uses T, M or R. Healers cannot receive.\" end\n   order[#order+1]=token\n  end\n  if #order~=4 then return nil,\"Enter four Vow passes.\" end\n  for _,initial in ipairs({\"M1\",\"M2\",\"R1\",\"R2\"}) do\n   local used={[initial]=true}\n   for _,token in ipairs(order) do\n    local chosen\n    for _,role in ipairs(p.vowGroups[token]) do\n     if not used[role] then chosen=role; break end\n    end\n    if not chosen then return nil,\"Vow order runs out of eligible receivers.\" end\n    used[chosen]=true\n   end\n  end\n  return order,table.concat(order,\" \")\n end\n function p.save(text)\n  local order,normalized=p.parse(text)\n  if not order then p.message=normalized; return false end\n  local vowOrder,vowText=p.parseVow(p.vowEdit)\n  if not vowOrder then p.message=vowText; return false end\n  local nextSettings={}\n  for k,v in pairs(p.settings) do nextSettings[k]=v end\n  nextSettings.doth_conga=normalized\n  nextSettings.vow_pass_order=vowText\n  nextSettings.p3_custom_hold=p.customHold\n  nextSettings.p3_strategy=p.strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\n  nextSettings.draw_styles={}\n  for _,row in ipairs(p.styleRows) do\n   local choice=p.styles[row[1]]\n   nextSettings.draw_styles[row[1]]=choice==\"Disabled\" and \"Disabled\" or choice==\"Arrow\" and \"Arrow\" or \"Tether\"\n  end\n  local ok,err=pcall(FileSave,p.path,nextSettings)\n  local readOK,saved=pcall(FileLoad,p.path)\n  local stylesOK=readOK and type(saved)==\"table\" and type(saved.draw_styles)==\"table\"\n  if stylesOK then\n   for _,row in ipairs(p.styleRows) do\n    if saved.draw_styles[row[1]]~=nextSettings.draw_styles[row[1]] then stylesOK=false break end\n   end\n  end\n  if not ok or not readOK or type(saved)~=\"table\" or saved.doth_conga~=normalized or not stylesOK or saved.p3_strategy~=nextSettings.p3_strategy or saved.p3_custom_hold~=nextSettings.p3_custom_hold or saved.vow_pass_order~=vowText then\n   p.message=\"Save failed: \"..tostring(err or saved); return false\n  end\n  p.settings=nextSettings\n  p.vowEdit=vowText\n  p.order,p.saved,p.edit=order,normalized,normalized\n  p.message=\"Saved.\"\n  return true\n end\n p.order,p.saved=p.parse(p.default)\n p.edit=p.saved\n p.settings={}\n if FileExists(p.path) then\n  local ok,settings=pcall(FileLoad,p.path)\n  local order,normalized\n  if ok and type(settings)==\"table\" then\n   p.settings=settings\n   order,normalized=p.parse(settings.doth_conga)\n  end\n  if order then p.order,p.saved,p.edit=order,normalized,normalized\n  else p.message=\"Invalid settings file; using defaults. Apply to repair.\" end\n else\n  local previous=data.frog_draw_settings\n  p.save(previous and previous.saved or p.default)\n end\n for _,row in ipairs(p.styleRows) do\n  local styles=p.settings.draw_styles\n  local choice=type(styles)==\"table\" and styles[row[1]]\n  p.styles[row[1]]=choice==\"Disabled\" and \"Disabled\" or choice==\"Arrow\" and \"Arrow\" or \"Tether\"\n end\n local vowOrder,vowText=p.parseVow(p.settings.vow_pass_order or p.vowDefault)\n p.vowEdit=vowOrder and vowText or p.vowDefault\n if not vowOrder then p.message=\"Invalid Vow order; Save to use T T M R.\" end\n p.strategy=p.settings.p3_strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\n p.customHold=p.settings.p3_custom_hold==true\n data.frog_draw_settings=p\nend\n\nlocal p=data.frog_draw_settings\n-- Refresh display labels without resetting unsaved selections.\nif p.strategyItems[1]~=\"Westhogg\" then\n p.strategyItems[1]=\"Westhogg\"; p.strategyItems[2]=\"Easthogg\"\nend\nif p.open==false then self.used=true return end\nlocal visible,open=GUI:Begin(\"Frog Draws\",true,GUI.WindowFlags_AlwaysAutoResize)\np.open=open\nif visible then\n GUI:PushItemWidth(88)\n for _,row in ipairs(p.styleRows) do\n  local value=p.styles[row[1]]\n  local index=value==\"Disabled\" and 3 or value==\"Arrow\" and 2 or 1\n  local selected=GUI:Combo(\"##\"..row[1],index,p.styleItems)\n  local choice=p.styleItems[selected]\n  if choice~=value then p.styles[row[1]]=choice; p.message=\"Unsaved changes\" end\n  GUI:SameLine()\n  GUI:TextUnformatted(row[2])\n  if row[1]==\"p3_dfg\" then\n   local strategyIndex=p.strategy==\"LPDU\" and 2 or 1\n   local strategySelected=GUI:Combo(\"##p3_strategy\",strategyIndex,p.strategyItems)\n   local strategy=strategySelected==2 and \"LPDU\" or \"NAUR\"\n   if strategy~=p.strategy then p.strategy=strategy; p.message=\"Unsaved changes\" end\n   GUI:SameLine()\n   GUI:TextUnformatted(\"P3 Strategy\")\n   local holdIndex=p.customHold and 1 or 2\n   local holdSelected=GUI:Combo(\"##p3_custom_hold\",holdIndex,p.holdItems)\n   local customHold=holdSelected==1\n   if customHold~=p.customHold then p.customHold=customHold; p.message=\"Unsaved changes\" end\n   GUI:SameLine()\n   GUI:TextUnformatted(\"P3 Lockface + Stop Actions\")\n  end\n end\n GUI:PopItemWidth()\n if GUI:CollapsingHeader(\"DOTH conga\") then\n  GUI:TextUnformatted(\"West to east\")\n  GUI:PushItemWidth(245)\n  p.edit=GUI:InputText(\"##conga\",p.edit)\n  GUI:PopItemWidth()\n  if GUI:Button(\"Default order\") then p.edit=p.default; p.message=\"Unsaved changes\" end\n end\n if GUI:CollapsingHeader(\"Vow pass order\") then\n  GUI:TextUnformatted(\"After random: T / M / R (no healers)\")\n  GUI:PushItemWidth(245)\n  p.vowEdit=GUI:InputText(\"##vow_order\",p.vowEdit)\n  GUI:PopItemWidth()\n  if GUI:Button(\"Default Vow order\") then p.vowEdit=p.vowDefault; p.message=\"Unsaved changes\" end\n end\n if GUI:Button(\"Save\") then p.save(p.edit) end\n if p.message then GUI:SameLine(); GUI:TextUnformatted(p.message) end\nend\nGUI:End()\nself.used=true\n",
+							actionLua = "if data.frog_draw_settings == nil or data.frog_draw_settings.version~=11 then\n local p={\n  version=11,\n  path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]],\n  default=\"R1 H1 M1 MT OT M2 H2 R2\",\n  styleItems={\"Tether\",\"Arrow\",\"Disabled\"},\n  styleRows={\n   {\"p1_playstation\",\"P1 PlayStation\"},{\"p2_strength\",\"P2 Strength\"},\n   {\"p2_sanctity\",\"P2 Sanctity\"},{\"p3_dfg\",\"P3 Dive from Grace\"},\n   {\"p4_eyes\",\"P4 Eyes\"},{\"p5_wrath\",\"P5 Wrath\"},{\"p5_doth\",\"P5 DOTH\"},{\"p6_vow\",\"P6 Mortal Vow\"},{\"p6_wb2\",\"P6 Wyrmsbreath 2\"}\n  },\n  styles={},\n  dothMode=\"Configured conga\",\n  dothModeItems={\"Configured conga\",\"Live positions\"},\n  vowDefault=\"T T M R\",\n  vowEdit=\"T T M R\",\n  vowGroups={T={\"MT\",\"OT\"},M={\"M1\",\"M2\"},R={\"R1\",\"R2\"}},\n  strategyItems={\"Westhogg\",\"Easthogg\"},\n  strategy=\"NAUR\",\n  holdItems={\"On\",\"Off\"},\n  customHold=false,\n  roles={MT=true,OT=true,H1=true,H2=true,M1=true,M2=true,R1=true,R2=true}\n }\n function p.parse(text)\n  if type(text)~=\"string\" then return nil,\"Enter all eight roles.\" end\n  local order,seen={},{}\n  for role in string.upper(text):gmatch(\"[^%s,]+\") do\n   if not p.roles[role] then return nil,\"Unknown role: \"..role end\n   if seen[role] then return nil,\"Duplicate role: \"..role end\n   seen[role]=true; order[#order+1]=role\n  end\n  if #order~=8 then return nil,\"Enter each of MT OT H1 H2 M1 M2 R1 R2 once.\" end\n  return order,table.concat(order,\" \")\n end\n function p.parseVow(text)\n  local order={}\n  for token in string.upper(text or \"\"):gmatch(\"[^%s,]+\") do\n   if not p.vowGroups[token] then return nil,\"Vow order uses T, M or R. Healers cannot receive.\" end\n   order[#order+1]=token\n  end\n  if #order~=4 then return nil,\"Enter four Vow passes.\" end\n  for _,initial in ipairs({\"M1\",\"M2\",\"R1\",\"R2\"}) do\n   local used={[initial]=true}\n   for _,token in ipairs(order) do\n    local chosen\n    for _,role in ipairs(p.vowGroups[token]) do\n     if not used[role] then chosen=role; break end\n    end\n    if not chosen then return nil,\"Vow order runs out of eligible receivers.\" end\n    used[chosen]=true\n   end\n  end\n  return order,table.concat(order,\" \")\n end\n function p.save(text)\n  local order,normalized=p.parse(text)\n  if not order then p.message=normalized; return false end\n  local vowOrder,vowText=p.parseVow(p.vowEdit)\n  if not vowOrder then p.message=vowText; return false end\n  local nextSettings={}\n  for k,v in pairs(p.settings) do nextSettings[k]=v end\n  nextSettings.doth_conga=normalized\n  nextSettings.doth_order_mode=p.dothMode==\"Live positions\" and \"Live positions\" or \"Configured conga\"\n  nextSettings.vow_pass_order=vowText\n  nextSettings.p3_custom_hold=p.customHold\n  nextSettings.p3_strategy=p.strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\n  nextSettings.draw_styles={}\n  for _,row in ipairs(p.styleRows) do\n   local choice=p.styles[row[1]]\n   nextSettings.draw_styles[row[1]]=choice==\"Disabled\" and \"Disabled\" or choice==\"Arrow\" and \"Arrow\" or \"Tether\"\n  end\n  local ok,err=pcall(FileSave,p.path,nextSettings)\n  local readOK,saved=pcall(FileLoad,p.path)\n  local stylesOK=readOK and type(saved)==\"table\" and type(saved.draw_styles)==\"table\"\n  if stylesOK then\n   for _,row in ipairs(p.styleRows) do\n    if saved.draw_styles[row[1]]~=nextSettings.draw_styles[row[1]] then stylesOK=false break end\n   end\n  end\n  if not ok or not readOK or type(saved)~=\"table\" or saved.doth_conga~=normalized or saved.doth_order_mode~=nextSettings.doth_order_mode or not stylesOK or saved.p3_strategy~=nextSettings.p3_strategy or saved.p3_custom_hold~=nextSettings.p3_custom_hold or saved.vow_pass_order~=vowText then\n   p.message=\"Save failed: \"..tostring(err or saved); return false\n  end\n  p.settings=nextSettings\n  p.vowEdit=vowText\n  p.order,p.saved,p.edit=order,normalized,normalized\n  p.message=\"Saved.\"\n  return true\n end\n p.order,p.saved=p.parse(p.default)\n p.edit=p.saved\n p.settings={}\n if FileExists(p.path) then\n  local ok,settings=pcall(FileLoad,p.path)\n  local order,normalized\n  if ok and type(settings)==\"table\" then\n   p.settings=settings\n   order,normalized=p.parse(settings.doth_conga)\n  end\n  if order then p.order,p.saved,p.edit=order,normalized,normalized\n  else p.message=\"Invalid settings file; using defaults. Apply to repair.\" end\n else\n  local previous=data.frog_draw_settings\n  p.save(previous and previous.saved or p.default)\n end\n for _,row in ipairs(p.styleRows) do\n  local styles=p.settings.draw_styles\n  local choice=type(styles)==\"table\" and styles[row[1]]\n  p.styles[row[1]]=choice==\"Disabled\" and \"Disabled\" or choice==\"Arrow\" and \"Arrow\" or \"Tether\"\n end\n local vowOrder,vowText=p.parseVow(p.settings.vow_pass_order or p.vowDefault)\n p.vowEdit=vowOrder and vowText or p.vowDefault\n if not vowOrder then p.message=\"Invalid Vow order; Save to use T T M R.\" end\n p.strategy=p.settings.p3_strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\n p.customHold=p.settings.p3_custom_hold==true\n p.dothMode=p.settings.doth_order_mode==\"Live positions\" and \"Live positions\" or \"Configured conga\"\n data.frog_draw_settings=p\nend\n\nlocal p=data.frog_draw_settings\n-- Refresh display labels without resetting unsaved selections.\nif p.strategyItems[1]~=\"Westhogg\" then\n p.strategyItems[1]=\"Westhogg\"; p.strategyItems[2]=\"Easthogg\"\nend\nif p.open==false then self.used=true return end\nlocal visible,open=GUI:Begin(\"Frog Draws\",true,GUI.WindowFlags_AlwaysAutoResize)\np.open=open\nif visible then\n GUI:PushItemWidth(88)\n for _,row in ipairs(p.styleRows) do\n  local value=p.styles[row[1]]\n  local index=value==\"Disabled\" and 3 or value==\"Arrow\" and 2 or 1\n  local selected=GUI:Combo(\"##\"..row[1],index,p.styleItems)\n  local choice=p.styleItems[selected]\n  if choice~=value then p.styles[row[1]]=choice; p.message=\"Unsaved changes\" end\n  GUI:SameLine()\n  GUI:TextUnformatted(row[2])\n  if row[1]==\"p5_doth\" then\n   GUI:PushItemWidth(145)\n   local modeIndex=p.dothMode==\"Live positions\" and 2 or 1\n   local modeSelected=GUI:Combo(\"##doth_order_mode\",modeIndex,p.dothModeItems)\n   local mode=p.dothModeItems[modeSelected]\n   if mode and mode~=p.dothMode then p.dothMode=mode; p.message=\"Unsaved changes\" end\n   GUI:PopItemWidth()\n   GUI:SameLine()\n   GUI:TextUnformatted(\"DOTH order\")\n  end\n  if row[1]==\"p3_dfg\" then\n   local strategyIndex=p.strategy==\"LPDU\" and 2 or 1\n   local strategySelected=GUI:Combo(\"##p3_strategy\",strategyIndex,p.strategyItems)\n   local strategy=strategySelected==2 and \"LPDU\" or \"NAUR\"\n   if strategy~=p.strategy then p.strategy=strategy; p.message=\"Unsaved changes\" end\n   GUI:SameLine()\n   GUI:TextUnformatted(\"P3 Strategy\")\n   local holdIndex=p.customHold and 1 or 2\n   local holdSelected=GUI:Combo(\"##p3_custom_hold\",holdIndex,p.holdItems)\n   local customHold=holdSelected==1\n   if customHold~=p.customHold then p.customHold=customHold; p.message=\"Unsaved changes\" end\n   GUI:SameLine()\n   GUI:TextUnformatted(\"P3 Lockface + Stop Actions\")\n  end\n end\n GUI:PopItemWidth()\n if GUI:CollapsingHeader(\"DOTH conga\") then\n  GUI:TextUnformatted(\"West to east\")\n  GUI:PushItemWidth(245)\n  p.edit=GUI:InputText(\"##conga\",p.edit)\n  GUI:PopItemWidth()\n  if GUI:Button(\"Default order\") then p.edit=p.default; p.message=\"Unsaved changes\" end\n end\n if GUI:CollapsingHeader(\"Vow pass order\") then\n  GUI:TextUnformatted(\"After random: T / M / R (no healers)\")\n  GUI:PushItemWidth(245)\n  p.vowEdit=GUI:InputText(\"##vow_order\",p.vowEdit)\n  GUI:PopItemWidth()\n  if GUI:Button(\"Default Vow order\") then p.vowEdit=p.vowDefault; p.message=\"Unsaved changes\" end\n end\n if GUI:Button(\"Save\") then p.save(p.edit) end\n if p.message then GUI:SameLine(); GUI:TextUnformatted(p.message) end\nend\nGUI:End()\nself.used=true\n",
 							name = "Persistent Draw Priorities Menu",
 							uuid = "037d4e2f-1842-5c02-8610-55c301569a25",
 							version = 2.1,
@@ -1458,6 +1458,11 @@ local tbl =
 									"7f000f46-8cb1-a1b7-bd89-347e0c53852e",
 									true,
 								},
+								
+								{
+									"8b9c249b-beeb-2252-aa39-07446f00b9e6",
+									true,
+								},
 							},
 							endIfUsed = true,
 							name = "Release our facing lock",
@@ -1529,6 +1534,17 @@ local tbl =
 							conditionLua = "local s=data.frog_dfg_v2\nreturn s~=nil and s.customHold==true",
 							name = "Custom P3 hold enabled",
 							uuid = "a38ad0d7-85a4-dbb1-b038-0acf8ad32097",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "local c=data.frog_dfg_control\nreturn c and c.active and Now()>=c.expires+2000",
+							name = "Facing release +2s",
+							uuid = "8b9c249b-beeb-2252-aa39-07446f00b9e6",
 							version = 3,
 						},
 					},
@@ -2607,7 +2623,7 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "if data.frog_draw_settings == nil or data.frog_draw_settings.version~=3 then\n local p={\n  version=3,\n  path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]],\n  default=\"R1 H1 M1 MT OT M2 H2 R2\",\n  roles={MT=true,OT=true,H1=true,H2=true,M1=true,M2=true,R1=true,R2=true}\n }\n function p.parse(text)\n  if type(text)~=\"string\" then return nil,\"Enter all eight roles.\" end\n  local order,seen={},{}\n  for role in string.upper(text):gmatch(\"[^%s,]+\") do\n   if not p.roles[role] then return nil,\"Unknown role: \"..role end\n   if seen[role] then return nil,\"Duplicate role: \"..role end\n   seen[role]=true; order[#order+1]=role\n  end\n  if #order~=8 then return nil,\"Enter each of MT OT H1 H2 M1 M2 R1 R2 once.\" end\n  return order,table.concat(order,\" \")\n end\n function p.save(text)\n  local order,normalized=p.parse(text)\n  if not order then p.message=normalized; return false end\n  local nextSettings={}\n  for k,v in pairs(p.settings) do nextSettings[k]=v end\n  nextSettings.doth_conga=normalized\n  local ok,err=pcall(FileSave,p.path,nextSettings)\n  local readOK,saved=pcall(FileLoad,p.path)\n  if not ok or not readOK or type(saved)~=\"table\" or saved.doth_conga~=normalized then\n   p.message=\"Save failed: \"..tostring(err or saved); return false\n  end\n  p.settings=nextSettings\n  p.order,p.saved,p.edit=order,normalized,normalized\n  p.message=\"Saved. Used when DOTH begins.\"\n  return true\n end\n p.order,p.saved=p.parse(p.default)\n p.edit=p.saved\n p.settings={}\n if FileExists(p.path) then\n  local ok,settings=pcall(FileLoad,p.path)\n  local order,normalized\n  if ok and type(settings)==\"table\" then\n   p.settings=settings\n   order,normalized=p.parse(settings.doth_conga)\n  end\n  if order then p.order,p.saved,p.edit=order,normalized,normalized\n  else p.message=\"Invalid settings file; using defaults. Apply to repair.\" end\n else\n  local previous=data.frog_draw_settings\n  p.save(previous and previous.saved or p.default)\n end\n data.frog_draw_settings=p\nend\nlocal s = {\n phase=1, doom={}, markers={}, markerPos={}, dives={}, puddles={}, puddleByID={},\n slots={}, roleByID={}, dirty=true,\n order={},\n rosterSlots={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"},\n doomOrder={},clearOrder={}\n}\nfor i,role in ipairs(data.frog_draw_settings.order) do s.order[i]=role end\ndata.frog_doth_v1=s\nfunction s.resolveRoster()\n local members=AnyoneCore.Roster.members()\n local party=AnyoneCore.API.getAgnosticPartyList()\n if type(members)~=\"table\" or type(party)~=\"table\" then return false end\n local byName,byJob,counts,rcounts={},{},{},{}\n for _,a in pairs(party) do\n  if a.id and a.name and a.job then\n   byName[a.name..\"\\31\"..a.job]=a\n   byJob[a.job]=a\n   counts[a.job]=(counts[a.job] or 0)+1\n  end\n end\n for _,m in pairs(members) do\n  if m.job then rcounts[m.job]=(rcounts[m.job] or 0)+1 end\n end\n local seen={}\n for _,role in ipairs(s.order) do\n  local m=members[s.rosterSlots[role]]\n  if not m or not m.name or not m.job then return false end\n  local a=byName[m.name..\"\\31\"..m.job]\n  if not a and counts[m.job]==1 and rcounts[m.job]==1 then a=byJob[m.job] end\n  if not a or seen[a.id] then return false end\n  seen[a.id]=true\n  s.slots[role]=a.id\n  s.roleByID[a.id]=role\n end\n return true\nend\nfunction s.point(e,n,label)\n s.x=100+s.ex*e+s.nx*n\n s.z=100+s.ez*e+s.nz*n\n s.label=label\nend\n-- Preserve the four cleanse slots even when one or more puddles are missing.\ns.cleanseSlots={}\ns.cleanseAnchors={{e=-20,n=0},{e=-12,n=-16},{e=12,n=-16},{e=20,n=0}}\nfunction s.mapPuddles()\n for i=1,4 do s.cleanseSlots[i]=nil end\n for _,p in ipairs(s.puddles) do\n  local e=(p.x-100)*s.ex+(p.z-100)*s.ez\n  local n=(p.x-100)*s.nx+(p.z-100)*s.nz\n  local best,bestD,tied\n  for i,a in ipairs(s.cleanseAnchors) do\n   local d=(e-a.e)^2+(n-a.n)^2\n   if not bestD or d<bestD-0.0001 then best,bestD,tied=i,d,false\n   elseif math.abs(d-bestD)<=0.0001 then tied=true end\n  end\n  -- Do not infer a cleanse from an ambiguous location or a north-side drop.\n  if best and not tied and n<=1 and bestD<80 then\n   if s.cleanseSlots[best]==nil then s.cleanseSlots[best]=p\n   else s.cleanseSlots[best]=false end\n  end\n end\nend\nfunction s.puddlePoint(index,opposite,label)\n local p=s.cleanseSlots[index]\n if not p then\n  s.reason=p==false and \"Ambiguous cleanse in assigned slot\" or \"Waiting for assigned cleanse puddle\"\n  return\n end\n if opposite then s.x,s.z=200-p.x,200-p.z else s.x,s.z=p.x,p.z end\n s.label=label\nend\nfunction s.pairSide(id,marker,axis)\n local mine=s.markerPos[id]\n if not mine then return nil end\n local my=(mine.x-100)*(axis==\"east\" and s.ex or s.nx)+(mine.z-100)*(axis==\"east\" and s.ez or s.nz)\n for other,m in pairs(s.markers) do\n  if other~=id and m==marker then\n   local p=s.markerPos[other]\n   if not p then return nil end\n   local v=(p.x-100)*(axis==\"east\" and s.ex or s.nx)+(p.z-100)*(axis==\"east\" and s.ez or s.nz)\n   return my<v or (my==v and id<other)\n  end\n end\n return nil\nend\ns.rosterReady=s.resolveRoster()\nself.used=true",
+							actionLua = "if data.frog_draw_settings == nil then\n local p={\n  version=3,\n  path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]],\n  default=\"R1 H1 M1 MT OT M2 H2 R2\",\n  roles={MT=true,OT=true,H1=true,H2=true,M1=true,M2=true,R1=true,R2=true}\n }\n function p.parse(text)\n  if type(text)~=\"string\" then return nil,\"Enter all eight roles.\" end\n  local order,seen={},{}\n  for role in string.upper(text):gmatch(\"[^%s,]+\") do\n   if not p.roles[role] then return nil,\"Unknown role: \"..role end\n   if seen[role] then return nil,\"Duplicate role: \"..role end\n   seen[role]=true; order[#order+1]=role\n  end\n  if #order~=8 then return nil,\"Enter each of MT OT H1 H2 M1 M2 R1 R2 once.\" end\n  return order,table.concat(order,\" \")\n end\n function p.save(text)\n  local order,normalized=p.parse(text)\n  if not order then p.message=normalized; return false end\n  local nextSettings={}\n  for k,v in pairs(p.settings) do nextSettings[k]=v end\n  nextSettings.doth_conga=normalized\n  local ok,err=pcall(FileSave,p.path,nextSettings)\n  local readOK,saved=pcall(FileLoad,p.path)\n  if not ok or not readOK or type(saved)~=\"table\" or saved.doth_conga~=normalized then\n   p.message=\"Save failed: \"..tostring(err or saved); return false\n  end\n  p.settings=nextSettings\n  p.order,p.saved,p.edit=order,normalized,normalized\n  p.message=\"Saved. Used when DOTH begins.\"\n  return true\n end\n p.order,p.saved=p.parse(p.default)\n p.edit=p.saved\n p.settings={}\n if FileExists(p.path) then\n  local ok,settings=pcall(FileLoad,p.path)\n  local order,normalized\n  if ok and type(settings)==\"table\" then\n   p.settings=settings\n   order,normalized=p.parse(settings.doth_conga)\n  end\n  if order then p.order,p.saved,p.edit=order,normalized,normalized\n  else p.message=\"Invalid settings file; using defaults. Apply to repair.\" end\n else\n  local previous=data.frog_draw_settings\n  p.save(previous and previous.saved or p.default)\n end\n data.frog_draw_settings=p\nend\nlocal s = {\n orderMode=data.frog_draw_settings.settings.doth_order_mode==\"Live positions\" and \"Live positions\" or \"Configured conga\",\n phase=1, doom={}, markers={}, markerPos={}, dives={}, puddles={}, puddleByID={},\n slots={}, roleByID={}, dirty=true,\n order={},\n rosterSlots={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"},\n doomOrder={},clearOrder={}\n}\nfor i,role in ipairs(data.frog_draw_settings.order) do s.order[i]=role end\ndata.frog_doth_v1=s\nfunction s.resolveRoster()\n local members=AnyoneCore.Roster.members()\n local party=AnyoneCore.API.getAgnosticPartyList()\n if type(members)~=\"table\" or type(party)~=\"table\" then return false end\n local byName,byJob,counts,rcounts={},{},{},{}\n for _,a in pairs(party) do\n  if a.id and a.name and a.job then\n   byName[a.name..\"\\31\"..a.job]=a\n   byJob[a.job]=a\n   counts[a.job]=(counts[a.job] or 0)+1\n  end\n end\n for _,m in pairs(members) do\n  if m.job then rcounts[m.job]=(rcounts[m.job] or 0)+1 end\n end\n local seen={}\n for _,role in ipairs(s.order) do\n  local m=members[s.rosterSlots[role]]\n  if not m or not m.name or not m.job then return false end\n  local a=byName[m.name..\"\\31\"..m.job]\n  if not a and counts[m.job]==1 and rcounts[m.job]==1 then a=byJob[m.job] end\n  if not a or seen[a.id] then return false end\n  seen[a.id]=true\n  s.slots[role]=a.id\n  s.roleByID[a.id]=role\n end\n return true\nend\nfunction s.point(e,n,label)\n s.x=100+s.ex*e+s.nx*n\n s.z=100+s.ez*e+s.nz*n\n s.label=label\nend\n-- Preserve the four cleanse slots even when one or more puddles are missing.\ns.cleanseSlots={}\ns.cleanseAnchors={{e=-20,n=0},{e=-12,n=-16},{e=12,n=-16},{e=20,n=0}}\nfunction s.mapPuddles()\n for i=1,4 do s.cleanseSlots[i]=nil end\n for _,p in ipairs(s.puddles) do\n  local e=(p.x-100)*s.ex+(p.z-100)*s.ez\n  local n=(p.x-100)*s.nx+(p.z-100)*s.nz\n  local best,bestD,tied\n  for i,a in ipairs(s.cleanseAnchors) do\n   local d=(e-a.e)^2+(n-a.n)^2\n   if not bestD or d<bestD-0.0001 then best,bestD,tied=i,d,false\n   elseif math.abs(d-bestD)<=0.0001 then tied=true end\n  end\n  -- Do not infer a cleanse from an ambiguous location or a north-side drop.\n  if best and not tied and n<=1 and bestD<80 then\n   if s.cleanseSlots[best]==nil then s.cleanseSlots[best]=p\n   else s.cleanseSlots[best]=false end\n  end\n end\nend\nfunction s.puddlePoint(index,opposite,label)\n local p=s.cleanseSlots[index]\n if not p then\n  s.reason=p==false and \"Ambiguous cleanse in assigned slot\" or \"Waiting for assigned cleanse puddle\"\n  return\n end\n if opposite then s.x,s.z=200-p.x,200-p.z else s.x,s.z=p.x,p.z end\n s.label=label\nend\nfunction s.pairSide(id,marker,axis)\n local mine=s.markerPos[id]\n if not mine then return nil end\n local my=(mine.x-100)*(axis==\"east\" and s.ex or s.nx)+(mine.z-100)*(axis==\"east\" and s.ez or s.nz)\n for other,m in pairs(s.markers) do\n  if other~=id and m==marker then\n   local p=s.markerPos[other]\n   if not p then return nil end\n   local v=(p.x-100)*(axis==\"east\" and s.ex or s.nx)+(p.z-100)*(axis==\"east\" and s.ez or s.nz)\n   return my<v or (my==v and id<other)\n  end\n end\n return nil\nend\ns.rosterReady=s.resolveRoster()\nself.used=true",
 							conditions = 
 							{
 								
@@ -2796,7 +2812,7 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "local s=data.frog_doth_v1\nif s then s.doom[eventArgs.entityID]=true; s.dirty=true end\nself.used=true",
+							actionLua = "local s=data.frog_doth_v1\nif s then\n if s.orderMode==\"Live positions\" and not s.positionSnapshot then\n  -- Snapshot once, on the first Doom event. Never re-read moving players.\n  s.positionSnapshot={}\n  local party=AnyoneCore.API.getAgnosticPartyList()\n  if type(party)==\"table\" then\n   for _,a in pairs(party) do\n    if a.id then\n     local e=TensorCore.mGetEntity(a.id)\n     if e and e.pos then s.positionSnapshot[a.id]={x=e.pos.x,z=e.pos.z} end\n    end\n   end\n  end\n end\n s.doom[eventArgs.entityID]=true\n s.dirty=true\nend\nself.used=true",
 							conditions = 
 							{
 								
@@ -3059,7 +3075,7 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "local s=data.frog_doth_v1\nif not s then self.used=true return end\nlocal t=TensorReactions_CurrentTimer\nif s.lastTick and t<s.lastTick-1 then data.frog_doth_v1=nil; self.used=true return end\ns.lastTick=t\nif not s.rosterReady then\n if not s.retryAt or t>=s.retryAt then s.retryAt=t+1; s.rosterReady=s.resolveRoster(); s.dirty=true end\nend\nif not s.dirty then self.used=true return end\ns.x,s.z,s.label,s.reason=nil,nil,nil,nil\nif not s.rosterReady then s.reason=\"Waiting for Anyone roster\"; self.used=true return end\nif not s.nx then s.reason=\"Waiting for Guerrique arrival\"; self.used=true return end\nlocal player=TensorCore.mGetPlayer()\nif not player then self.used=true return end\ns.myRole=s.roleByID[player.id]\nif not s.myRole then s.reason=\"Self absent from roster\"; self.used=true return end\nif not s.assigned then\n local d=0\n for _,role in ipairs(s.order) do if s.doom[s.slots[role]] then d=d+1 end end\n if d~=4 then s.reason=\"Waiting for all four dooms\"; self.used=true return end\n local di,ci=0,0\n for _,role in ipairs(s.order) do\n  local id=s.slots[role]\n  if s.doom[id] then di=di+1; s.doomOrder[di]=id else ci=ci+1; s.clearOrder[ci]=id end\n end\n s.assigned=true\n s.myDoom=s.doom[player.id]==true\n local order=s.myDoom and s.doomOrder or s.clearOrder\n for rank,id in ipairs(order) do if id==player.id then s.myRank=rank end end\n s.baiter=s.myDoom and (s.myRank==1 or s.myRank==4)\nend\ns.mapPuddles()\nlocal rank=s.myRank\nif s.phase==1 then\n if rank==1 then s.point(s.myDoom and -10.5 or -20,0,\"West spread\")\n elseif rank==4 then s.point(s.myDoom and 10.5 or 20,0,\"East spread\")\n else s.point(rank==2 and -12 or 12,s.myDoom and 16 or -16,\"Offset diagonal spread\") end\nelseif s.phase==2 then\n if s.baiter then s.point(rank==1 and -10.5 or 10.5,0,\"Bait circle\")\n else s.point(0,s.myDoom and -2 or 2,s.myDoom and \"Doom south\" or \"Non-doom north\") end\nelseif s.phase==3 then\n local marker=s.markers[player.id]\n if s.myDoom then\n  if marker==281 then\n   local west=s.pairSide(player.id,281,\"east\")\n   if west==nil and (rank==1 or rank==4) then west=rank==1 end\n   if west~=nil then s.puddlePoint(west and 1 or 4,false,\"Circle cleanse\") end\n  elseif marker==282 or marker==283 then\n   if rank==2 or rank==3 then\n    s.puddlePoint(rank,false,rank==2 and \"Inner doom southwest cleanse\" or \"Inner doom southeast cleanse\")\n   else s.reason=\"Non-circle doom is not an inner conga rank\" end\n  end\n else\n  if marker==282 or marker==283 then\n   local partnerRank\n   for i=2,3 do\n    if s.markers[s.doomOrder[i]]==marker then\n     if partnerRank then\n      s.reason=\"Ambiguous doom symbol partner\"; self.used=true return\n     end\n     partnerRank=i\n    end\n   end\n   if not partnerRank then s.reason=\"Waiting for matching inner doom marker\"; self.used=true return end\n   if s.cleanseSlots[partnerRank] then\n    s.puddlePoint(partnerRank,true,\"Opposite matching doom cleanse\")\n   else\n    s.point(partnerRank==2 and 12 or -12,16,\"Opposite matching inner doom\")\n   end\n  elseif marker==284 then\n   local south=s.pairSide(player.id,284,\"north\")\n   if south~=nil then s.point(0,south and -20 or 20,south and \"Cross south\" or \"Cross north\") end\n  end\n end\nend\ns.dirty=false\nself.used=true",
+							actionLua = "local s=data.frog_doth_v1\nif not s then self.used=true return end\nlocal t=TensorReactions_CurrentTimer\nif s.lastTick and t<s.lastTick-1 then data.frog_doth_v1=nil; self.used=true return end\ns.lastTick=t\nif not s.rosterReady then\n if not s.retryAt or t>=s.retryAt then s.retryAt=t+1; s.rosterReady=s.resolveRoster(); s.dirty=true end\nend\nif not s.dirty then self.used=true return end\ns.x,s.z,s.label,s.reason=nil,nil,nil,nil\nif not s.rosterReady then s.reason=\"Waiting for Anyone roster\"; self.used=true return end\nif not s.nx then s.reason=\"Waiting for Guerrique arrival\"; self.used=true return end\nlocal player=TensorCore.mGetPlayer()\nif not player then self.used=true return end\ns.myRole=s.roleByID[player.id]\nif not s.myRole then s.reason=\"Self absent from roster\"; self.used=true return end\nif not s.assigned then\n if s.orderMode==\"Live positions\" and not s.liveOrderLocked then\n  if not s.positionSnapshot then s.reason=\"Waiting for Doom position snapshot\"; self.used=true return end\n  local sorted={}\n  for i,role in ipairs(s.order) do\n   local p=s.positionSnapshot[s.slots[role]]\n   if not p then s.reason=\"Missing player in Doom position snapshot\"; self.used=true return end\n   sorted[#sorted+1]={role=role,e=(p.x-100)*s.ex+(p.z-100)*s.ez,tie=i}\n  end\n  table.sort(sorted,function(a,b) if a.e==b.e then return a.tie<b.tie end return a.e<b.e end)\n  for i,p in ipairs(sorted) do s.order[i]=p.role end\n  s.liveOrderLocked=true\n end\n local d=0\n for _,role in ipairs(s.order) do if s.doom[s.slots[role]] then d=d+1 end end\n if d~=4 then s.reason=\"Waiting for all four dooms\"; self.used=true return end\n local di,ci=0,0\n for _,role in ipairs(s.order) do\n  local id=s.slots[role]\n  if s.doom[id] then di=di+1; s.doomOrder[di]=id else ci=ci+1; s.clearOrder[ci]=id end\n end\n s.assigned=true\n s.myDoom=s.doom[player.id]==true\n local order=s.myDoom and s.doomOrder or s.clearOrder\n for rank,id in ipairs(order) do if id==player.id then s.myRank=rank end end\n s.baiter=s.myDoom and (s.myRank==1 or s.myRank==4)\nend\ns.mapPuddles()\nlocal rank=s.myRank\nif s.phase==1 then\n if rank==1 then s.point(s.myDoom and -10.5 or -20,0,\"West spread\")\n elseif rank==4 then s.point(s.myDoom and 10.5 or 20,0,\"East spread\")\n else s.point(rank==2 and -12 or 12,s.myDoom and 16 or -16,\"Offset diagonal spread\") end\nelseif s.phase==2 then\n if s.baiter then s.point(rank==1 and -10.5 or 10.5,0,\"Bait circle\")\n else s.point(0,s.myDoom and -2 or 2,s.myDoom and \"Doom south\" or \"Non-doom north\") end\nelseif s.phase==3 then\n local marker=s.markers[player.id]\n if s.myDoom then\n  if marker==281 then\n   local west=s.pairSide(player.id,281,\"east\")\n   if west==nil and (rank==1 or rank==4) then west=rank==1 end\n   if west~=nil then s.puddlePoint(west and 1 or 4,false,\"Circle cleanse\") end\n  elseif marker==282 or marker==283 then\n   if rank==2 or rank==3 then\n    s.puddlePoint(rank,false,rank==2 and \"Inner doom southwest cleanse\" or \"Inner doom southeast cleanse\")\n   else s.reason=\"Non-circle doom is not an inner conga rank\" end\n  end\n else\n  if marker==282 or marker==283 then\n   local partnerRank\n   for i=2,3 do\n    if s.markers[s.doomOrder[i]]==marker then\n     if partnerRank then\n      s.reason=\"Ambiguous doom symbol partner\"; self.used=true return\n     end\n     partnerRank=i\n    end\n   end\n   if not partnerRank then s.reason=\"Waiting for matching inner doom marker\"; self.used=true return end\n   if s.cleanseSlots[partnerRank] then\n    s.puddlePoint(partnerRank,true,\"Opposite matching doom cleanse\")\n   else\n    s.point(partnerRank==2 and 12 or -12,16,\"Opposite matching inner doom\")\n   end\n  elseif marker==284 then\n   local south=s.pairSide(player.id,284,\"north\")\n   if south~=nil then s.point(0,south and -20 or 20,south and \"Cross south\" or \"Cross north\") end\n  end\n end\nend\ns.dirty=false\nself.used=true",
 							name = "Resolve personal DOTH destination",
 							uuid = "a9fc0045-9529-6e7a-8bc3-abc526091159",
 							version = 2.1,
@@ -3306,6 +3322,269 @@ local tbl =
 				timerEndOffset = 158.6,
 				timerStartOffset = -5,
 				uuid = "27e0136f-a29f-afa4-91b8-0f9689614736",
+				version = 2,
+			},
+		},
+	},
+	[213] = 
+	{
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "data.frog_wroth_start_v1={orbs={},seen={},count=0,stage=\"collecting\"}\nlocal s=data.frog_wroth_start_v1\nfunction s.tryDraw()\n    if s.stage~=\"collecting\" or s.count<6 or (s.diveWest==nil and not s.dive) or not s.akhEnd then return end\n    local remaining=s.akhEnd-Now()\n    if remaining<=0 then s.stage=\"expired\" return end\n    -- The third triplet is opposite the second. Wait for its full triplet and the dive lane.\n    local tx,tz=0,0\n    for i=4,6 do tx=tx+s.orbs[i].x tz=tz+s.orbs[i].z end\n    tx,tz=200-tx/3,200-tz/3\n    -- Verified corner-triplet centres are 87/113 on each axis.\n    if math.abs(math.abs(tx-100)-13)>1 or math.abs(math.abs(tz-100)-13)>1 then\n        s.stage=\"unrecognised pattern\" return\n    end\n    local west=s.diveWest\n    -- The cast capture remains a fallback if arrival was missed.\n    if west==nil then west=s.dive.x<100 end\n    local x=west and 121 or 79\n    local z=tz>100 and 113 or 87\n    local dx,dz\n    -- The starting point must also clear every arm of the first three crosses.\n    for i=1,3 do\n        local orb=s.orbs[i]\n        if math.abs(x-orb.x)<=4 or math.abs(z-orb.z)<=4 then\n            s.stage=\"no verified first-wave-safe start\" return\n        end\n    end\n    dx,dz=x-100,z-100\n    local length=math.sqrt(dx*dx+dz*dz)\n    local flags=Argus2.RenderFlags.FLAG_RENDER_OVERLAY+Argus2.RenderFlags.FLAG_WARP_TERRAIN\n    local drawer=TensorCore.getStaticDrawer(0xFF33FF33,1,0,flags)\n    s.arrow=drawer:addTimedArrow(remaining,100,0.08,100,math.atan2(dx,dz),length-3,1.5,3,4,0,false,flags)\n    s.startX,s.startZ=x,z\n    s.stage=\"guiding\"\nend\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"45d8514e-1e80-26f4-b4a9-7af21505f39e",
+									true,
+								},
+							},
+							name = "Initialize Wroth starting-point solver",
+							uuid = "b1231be6-4197-ca46-8243-fa162aa5734d",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgType = 2,
+							eventSpellID = 27973,
+							name = "Wroth Flames 27973",
+							uuid = "45d8514e-1e80-26f4-b4a9-7af21505f39e",
+							version = 3,
+						},
+					},
+				},
+				eventType = 3,
+				mechanicTime = 1282.7,
+				name = "[Draw] Wroth Start Setup",
+				timeRange = true,
+				timelineIndex = 213,
+				timerEndOffset = 1,
+				timerStartOffset = -5,
+				uuid = "20858df7-dd6b-d8fb-9d50-cd29fabab34e",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_wroth_start_v1\nif not s then self.used=true return end\nif s.seen[eventArgs.entityID] or s.count>=9 then self.used=true return end\nlocal entity=TensorCore.mGetEntity(eventArgs.entityID)\nif not entity or not entity.pos then return end\ns.count=s.count+1\ns.seen[eventArgs.entityID]=true\ns.orbs[s.count]={x=entity.pos.x,z=entity.pos.z}\ns.tryDraw()\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"b5b0d057-a675-5a4c-a2c3-88187fd409eb",
+									true,
+								},
+							},
+							name = "Capture orb spawn order",
+							uuid = "ca2fc4ce-303c-98e8-9355-4cb14a6db0d8",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgOptionType = 2,
+							eventEntityContentID = 3459,
+							name = "Scarlet Price 3459",
+							uuid = "b5b0d057-a675-5a4c-a2c3-88187fd409eb",
+							version = 3,
+						},
+					},
+				},
+				eventType = 5,
+				loop = true,
+				mechanicTime = 1282.7,
+				name = "[Draw] Wroth Orb Order and Start Arrow",
+				timeRange = true,
+				timelineIndex = 213,
+				timerEndOffset = 10.699999809265,
+				uuid = "a174b377-08ab-7323-995a-a1d31955d057",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_wroth_start_v1\nif not s then self.used=true return end\ns.dive={x=eventArgs.x,z=eventArgs.z,sin=math.sin(eventArgs.heading),cos=math.cos(eventArgs.heading),width=eventArgs.aoeWidth,length=eventArgs.aoeLength}\ns.tryDraw()\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"a09a4459-4950-d7ae-bbf0-1b14adcea33d",
+									true,
+								},
+							},
+							name = "Capture Cauterize rectangle",
+							uuid = "9b346afa-27e5-591c-99ff-62a0d69a5b0f",
+							version = 2.1,
+						},
+					},
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_wroth_start_v1\nif not s or s.akhEnd then self.used=true return end\nlocal timer=eventArgs.duration*1000\ns.akhEnd=Now()+timer\nlocal player=TensorCore.mGetPlayer()\nif AnyoneCore and player then\n    AnyoneCore.addWorldTextCountdownOnEnt(timer,player.id,AnyoneCore.white,true,1.5,2)\nend\ns.tryDraw()\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"a40633aa-ccc8-cc02-87ab-cf826530106e",
+									true,
+								},
+							},
+							name = "First Akh Morn world countdown",
+							uuid = "81159089-fa23-9996-ad6f-77c86abc4c28",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "return eventArgs.aoeID==27967 and (eventArgs.contentID==4954 or eventArgs.contentID==3458)",
+							dequeueIfLuaFalse = true,
+							name = "Dragon Cauterize 27967",
+							uuid = "a09a4459-4950-d7ae-bbf0-1b14adcea33d",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "return eventArgs.aoeID==27974 and (eventArgs.contentID==3458 or eventArgs.contentID==4954)",
+							dequeueIfLuaFalse = true,
+							name = "First Akh Morn 27974",
+							uuid = "a40633aa-ccc8-cc02-87ab-cf826530106e",
+							version = 3,
+						},
+					},
+				},
+				eventType = 18,
+				loop = true,
+				mechanicTime = 1282.7,
+				name = "[Draw] Wroth Cauterize and Akh Morn Countdown",
+				timeRange = true,
+				timelineIndex = 213,
+				timerEndOffset = 10.699999809265,
+				uuid = "9162dbb8-ebbd-ce21-a38c-b8bf30031945",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_wroth_start_v1\nif not s or s.stage~=\"collecting\" then self.used=true return end\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\n-- Reject the normal combat position; only accept the off-arena dive staging lane.\nif math.abs(e.pos.z-100)<30 or math.abs(math.abs(e.pos.x-100)-11)>2 then self.used=true return end\ns.diveWest=e.pos.x<100\ns.tryDraw()\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"cfbd98aa-c590-0d46-94c9-0b0e6462fdaf",
+									true,
+								},
+								
+								{
+									"791d4b83-2c48-dc10-ab2f-2553672fee69",
+									true,
+								},
+							},
+							name = "Capture dive side on arrival",
+							uuid = "245a125f-ee49-e3dd-ba2d-2af1cb7d3dab",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "return eventArgs.entityContentID==4954 or eventArgs.entityContentID==3458",
+							dequeueIfLuaFalse = true,
+							eventArgOptionType = 2,
+							eventEntityContentID = 4954,
+							name = "Either dragon",
+							uuid = "cfbd98aa-c590-0d46-94c9-0b0e6462fdaf",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgType = 3,
+							name = "Reappeared",
+							uuid = "791d4b83-2c48-dc10-ab2f-2553672fee69",
+							version = 3,
+						},
+					},
+				},
+				eventType = 22,
+				loop = true,
+				mechanicTime = 1282.7,
+				name = "[Draw] Wroth Dragon Arrival",
+				timeRange = true,
+				timelineIndex = 213,
+				timerEndOffset = 10.7,
+				uuid = "f5e84434-d959-37d6-9c9f-d2ca171bc691",
 				version = 2,
 			},
 		},
