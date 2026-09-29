@@ -34,6 +34,37 @@ local tbl =
 				version = 2,
 			},
 		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "for i=1,8 do\n    TensorCore.sendParsedChatMessage(\"/mk clear <\"..i..\">\")\nend\nself.used=true",
+							name = "Clear marks on party slots 1–8",
+							uuid = "6ed63eb5-3e32-bb19-a820-654b57bceb0c",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+				},
+				eventType = 9,
+				name = "[Utility] Clear Party Markers on Wipe",
+				timeRange = true,
+				timelineIndex = 1,
+				timerEndOffset = 2000,
+				timerStartOffset = -30,
+				uuid = "25d4e420-2f4e-3384-ab70-6b380f888099",
+				version = 2,
+			},
+		},
 	}, 
 	[10] = 
 	{
@@ -1229,6 +1260,35 @@ local tbl =
 							version = 2.1,
 						},
 					},
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local c=data.frog_dfg_control\nif c and c.active and c.arrow and not c.resolvedAt then c.resolvedAt=Now() end\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"8d2b34e1-01b2-de19-925e-bd50b09ef266",
+									true,
+								},
+								
+								{
+									"1be7f415-ec1b-bd86-9378-a631df0112ce",
+									true,
+								},
+								
+								{
+									"a67772f7-b8fe-a879-827d-b762a662ff6b",
+									true,
+								},
+							},
+							name = "Confirm own placement snapshot",
+							uuid = "f95c636d-6d2e-0fbc-9df8-249851e1b7e4",
+							version = 2.1,
+						},
+					},
 				},
 				conditions = 
 				{
@@ -1261,6 +1321,18 @@ local tbl =
 							eventEntityContentID = 3458,
 							name = "Nidhogg",
 							uuid = "1be7f415-ec1b-bd86-9378-a631df0112ce",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "local p=TensorCore.mGetPlayer()\nreturn p~=nil and eventArgs.targetID==p.id",
+							dequeueIfLuaFalse = true,
+							name = "Own jump target",
+							uuid = "a67772f7-b8fe-a879-827d-b762a662ff6b",
 							version = 3,
 						},
 					},
@@ -1388,7 +1460,7 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "local p=TensorCore.mGetPlayer()\nlocal buff=TensorCore.getBuff(p,2755) or TensorCore.getBuff(p,2756) or TensorCore.getBuff(p,2757)\nif not buff then return end\nlocal arrow=TensorCore.hasAnyBuff(p,2756,2757)\nlocal solver=data.frog_dfg_v2\nlocal heading=solver and solver.strategy==\"LPDU\" and math.pi/2 or -math.pi/2\ndata.frog_dfg_control={expires=Now()+buff.duration*1000,arrow=arrow,active=true,heading=heading}\nif arrow then\n    TensorCore.API.TensorACR.setLockFaceHeading(heading)\n    TensorCore.API.TensorACR.toggleLockFace(true)\nend\nself.used=true",
+							actionLua = "local p=TensorCore.mGetPlayer()\nlocal buff=TensorCore.getBuff(p,2756) or TensorCore.getBuff(p,2757)\nif not buff then return end\nlocal arrow=TensorCore.hasAnyBuff(p,2756,2757)\nlocal solver=data.frog_dfg_v2\nlocal heading=solver and solver.strategy==\"LPDU\" and math.pi/2 or -math.pi/2\ndata.frog_dfg_control={expires=Now()+buff.duration*1000,arrow=arrow,active=true,heading=heading}\nif arrow then\n    TensorCore.API.TensorACR.setLockFaceHeading(heading)\n    TensorCore.API.TensorACR.setHardLockFace(true)\n    TensorCore.API.TensorACR.toggleLockFace(true)\nend\nself.used=true",
 							conditions = 
 							{
 								
@@ -1450,7 +1522,7 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "local c=data.frog_dfg_control\nif c then\n    if c.arrow then TensorCore.API.TensorACR.toggleLockFace(false) end\n    c.active=false\nend\nself.used=true",
+							actionLua = "local c=data.frog_dfg_control\nif c then\n    if c.arrow then\n        TensorCore.API.TensorACR.toggleLockFace(false)\n        TensorCore.API.TensorACR.setHardLockFace(false)\n    end\n    c.active=false\nend\nself.used=true",
 							conditions = 
 							{
 								
@@ -1481,14 +1553,13 @@ local tbl =
 							buffDuration = 5,
 							buffIDList = 
 							{
-								2755,
 								2756,
 								2757,
 							},
 							category = "Self",
 							comparator = 2,
 							matchAnyBuff = true,
-							name = "Jump expires <=5s",
+							name = "Arrow jump expires <=5s",
 							uuid = "e0cd7562-14e4-5b79-b3a4-e6c4a92937ca",
 							version = 3,
 						},
@@ -1498,7 +1569,7 @@ local tbl =
 						data = 
 						{
 							category = "Lua",
-							conditionLua = "local c=data.frog_dfg_control\nif not c or not c.active then return false end\nlocal now=Now()\nif now<c.expires-250 or now>=c.expires then return false end\nif not c.arrow then return true end\nlocal p=TensorCore.mGetPlayer()\nlocal heading=c.heading or -math.pi/2\nreturn p and p.pos and math.abs(math.sin(p.pos.h-heading))<0.05 and math.cos(p.pos.h-heading)>0",
+							conditionLua = "local c=data.frog_dfg_control\nif not c or not c.active or not c.arrow or c.resolvedAt then return false end\nlocal now=Now()\nreturn now>=c.expires-250 and now<c.expires+2000",
 							name = "Snapshot -0.25s",
 							uuid = "4323bed3-2a75-8a4f-9f85-e18c9b46cb4b",
 							version = 3,
@@ -1509,8 +1580,8 @@ local tbl =
 						data = 
 						{
 							category = "Lua",
-							conditionLua = "local c=data.frog_dfg_control\nreturn c and c.active and Now()>=c.expires+100",
-							name = "Snapshot +0.1s",
+							conditionLua = "local c=data.frog_dfg_control\nif not c or not c.active then return false end\nlocal now=Now()\nreturn (c.resolvedAt~=nil and now>=c.resolvedAt+100) or now>=c.expires+2000",
+							name = "Own jump +0.1s / timeout +2s",
 							uuid = "e8384e73-48b3-1fc0-9939-71b1e6a3e4b6",
 							version = 3,
 						},
@@ -1542,7 +1613,7 @@ local tbl =
 						data = 
 						{
 							category = "Lua",
-							conditionLua = "local c=data.frog_dfg_control\nreturn c and c.active and Now()>=c.expires+2000",
+							conditionLua = "local c=data.frog_dfg_control\nreturn c~=nil and c.active==true and Now()>=c.expires+2000",
 							name = "Facing release +2s",
 							uuid = "8b9c249b-beeb-2252-aa39-07446f00b9e6",
 							version = 3,
@@ -1569,7 +1640,7 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "local old=eventArgs.oldData\nlocal c=old and old.frog_dfg_control\nif c and c.active then\n    if c.arrow then TensorCore.API.TensorACR.toggleLockFace(false) end\n    c.active=false\nend\nself.used=true",
+							actionLua = "local old=eventArgs.oldData\nlocal c=old and old.frog_dfg_control\nif c and c.active then\n    if c.arrow then\n        TensorCore.API.TensorACR.toggleLockFace(false)\n        TensorCore.API.TensorACR.setHardLockFace(false)\n    end\n    c.active=false\nend\nself.used=true",
 							name = "Release only our facing lock",
 							uuid = "78ee9bfe-8d20-0d29-a89d-aea7c8482de1",
 							version = 2.1,
@@ -1602,7 +1673,7 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "local old=data\nlocal c=old and old.frog_dfg_control\nif c and c.active then\n    if c.arrow then TensorCore.API.TensorACR.toggleLockFace(false) end\n    c.active=false\nend\nself.used=true",
+							actionLua = "local old=data\nlocal c=old and old.frog_dfg_control\nif c and c.active then\n    if c.arrow then\n        TensorCore.API.TensorACR.toggleLockFace(false)\n        TensorCore.API.TensorACR.setHardLockFace(false)\n    end\n    c.active=false\nend\nself.used=true",
 							name = "Release only our facing lock",
 							uuid = "f0edca16-29a5-48b1-aabb-ca32e528b217",
 							version = 2.1,
@@ -3339,7 +3410,7 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "data.frog_wroth_start_v1={orbs={},seen={},count=0,stage=\"collecting\"}\nlocal s=data.frog_wroth_start_v1\nfunction s.tryDraw()\n    if s.stage~=\"collecting\" or s.count<6 or (s.diveX==nil and not s.dive) or not s.akhEnd then return end\n    local remaining=s.akhEnd-Now()\n    if remaining<=0 then s.stage=\"expired\" return end\n    -- The third triplet is opposite the second. Wait for its full triplet and the dive lane.\n    local tx,tz=0,0\n    for i=4,6 do tx=tx+s.orbs[i].x tz=tz+s.orbs[i].z end\n    tx,tz=200-tx/3,200-tz/3\n    -- Verified corner-triplet centres are 87/113 on each axis.\n    if math.abs(math.abs(tx-100)-13)>1 or math.abs(math.abs(tz-100)-13)>1 then\n        s.stage=\"unrecognised pattern\" return\n    end\n    local diveX=s.diveX or s.dive.x\n    -- Classify with tolerance: cast coordinates are slightly rounded.\n    if math.abs(diveX-100)<=2 then diveX=100\n    elseif math.abs(diveX-89)<=2 then diveX=89\n    elseif math.abs(diveX-111)<=2 then diveX=111\n    else return end\n    -- Prefer the third triplet's wall. Flip only if the 22y dive blocks it.\n    local x=tx>100 and 121 or 79\n    if math.abs(x-diveX)<=12 then x=200-x end\n    if math.abs(x-diveX)<=12 then return end\n    local z=tz>100 and 113 or 87\n    local dx,dz\n    -- The starting point must also clear every arm of the first three crosses.\n    for i=1,3 do\n        local orb=s.orbs[i]\n        if math.abs(x-orb.x)<=4 or math.abs(z-orb.z)<=4 then\n            s.stage=\"no verified first-wave-safe start\" return\n        end\n    end\n    dx,dz=x-100,z-100\n    local length=math.sqrt(dx*dx+dz*dz)\n    local flags=Argus2.RenderFlags.FLAG_RENDER_OVERLAY+Argus2.RenderFlags.FLAG_WARP_TERRAIN\n    local drawer=TensorCore.getStaticDrawer(0xFF33FF33,1,0,flags)\n    s.arrow=drawer:addTimedArrow(remaining,100,0.08,100,math.atan2(dx,dz),length-3,1.5,3,4,0,false,flags)\n    s.startX,s.startZ=x,z\n    s.stage=\"guiding\"\nend\nself.used=true",
+							actionLua = "data.frog_wroth_start_v1={orbs={},seen={},count=0,stage=\"collecting\"}\nlocal s=data.frog_wroth_start_v1\nfunction s.tryDraw()\n    if s.stage~=\"collecting\" or s.count<6 or (s.diveX==nil and not s.dive) or not s.akhEnd then return end\n    local remaining=s.akhEnd-Now()\n    if remaining<=0 then s.stage=\"expired\" return end\n    -- The third triplet is opposite the second. Wait for its full triplet and the dive lane.\n    local tx,tz=0,0\n    for i=4,6 do tx=tx+s.orbs[i].x tz=tz+s.orbs[i].z end\n    tx,tz=200-tx/3,200-tz/3\n    -- Verified corner-triplet centres are 87/113 on each axis.\n    if math.abs(math.abs(tx-100)-13)>1 or math.abs(math.abs(tz-100)-13)>1 then\n        s.stage=\"unrecognised pattern\" return\n    end\n    local diveX=s.diveX or s.dive.x\n    -- Classify with tolerance: cast coordinates are slightly rounded.\n    if math.abs(diveX-100)<=2 then diveX=100\n    elseif math.abs(diveX-89)<=2 then diveX=89\n    elseif math.abs(diveX-111)<=2 then diveX=111\n    else return end\n    -- Prefer the third triplet's wall. Flip only if the 22y dive blocks it.\n    local x=tx>100 and 121 or 79\n    if math.abs(x-diveX)<=12 then x=200-x end\n    if math.abs(x-diveX)<=12 then return end\n    local z=tz>100 and 113 or 87\n    local dx,dz\n    -- The starting point must also clear every arm of the first three crosses.\n    for i=1,3 do\n        local orb=s.orbs[i]\n        if math.abs(x-orb.x)<=4 or math.abs(z-orb.z)<=4 then\n            s.stage=\"no verified first-wave-safe start\" return\n        end\n    end\n    dx,dz=x-100,z-100\n    local length=math.sqrt(dx*dx+dz*dz)\n    local flags=Argus2.RenderFlags.FLAG_RENDER_OVERLAY+Argus2.RenderFlags.FLAG_WARP_TERRAIN\n    local drawer=TensorCore.getStaticDrawer(0xFF33FF33,1,0,flags)\n    drawer:setGradient(0,1,0)\n    s.arrow=drawer:addTimedArrow(remaining,100,0.08,100,math.atan2(dx,dz),length-3,1.5,3,4,0,false,flags)\n    drawer:setGradient() -- Restore cached drawer defaults for other callers.\n    s.startX,s.startZ=x,z\n    s.stage=\"guiding\"\nend\nself.used=true",
 							conditions = 
 							{
 								
