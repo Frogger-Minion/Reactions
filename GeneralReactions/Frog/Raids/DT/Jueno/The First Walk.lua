@@ -76,7 +76,7 @@ local tbl =
 						},
 						endIfUsed = true,
 						gVar = "ACR_RikuSCH3_CD",
-						name = "Fallback targeting MR",
+						name = "Fallback targeting GK",
 						setTarget = true,
 						targetContentID = 13641,
 						targetType = "ContentID",
@@ -133,7 +133,7 @@ local tbl =
 						},
 						endIfUsed = true,
 						gVar = "ACR_RikuSCH3_CD",
-						name = "Fallback targeting GK",
+						name = "Fallback targeting MR",
 						setTarget = true,
 						targetContentID = 13643,
 						targetType = "ContentID",
@@ -164,7 +164,6 @@ local tbl =
 								false,
 							},
 						},
-						endIfUsed = true,
 						gVar = "ACR_RikuSCH3_AOE",
 						name = "Enable AOE",
 						uuid = "d8f3a7a9-7c40-e199-87d3-47f616c54301",
@@ -258,7 +257,7 @@ local tbl =
 						uuid = "dff56020-a643-f0a5-aa89-9a52068d3e89",
 						version = 3,
 					},
-					inheritedIndex = 1,
+					inheritedIndex = 4,
 				},
 				
 				{
@@ -270,7 +269,7 @@ local tbl =
 						uuid = "fb81ab92-fe74-e555-a89b-9f58708f49c7",
 						version = 3,
 					},
-					inheritedIndex = 1,
+					inheritedIndex = 5,
 				},
 				
 				{
@@ -308,6 +307,7 @@ local tbl =
 						filterTargetType = "Enemy",
 						matchAnyBuff = true,
 						name = "F - Or Gate",
+						partyTargetNumber = 0,
 						uuid = "5ebee4ab-f12c-3cc2-8c4e-9965930a9b54",
 						version = 3,
 					},
@@ -319,7 +319,7 @@ local tbl =
 					{
 						category = "Filter",
 						filterTargetType = "ContentID",
-						name = "F - MR",
+						name = "F - GK",
 						partyTargetContentID = 13641,
 						uuid = "07ba113f-6106-6c31-b329-dee253b02997",
 						version = 3,
@@ -343,7 +343,7 @@ local tbl =
 					{
 						category = "Filter",
 						filterTargetType = "ContentID",
-						name = "F - GK",
+						name = "F - MR",
 						partyTargetContentID = 13643,
 						uuid = "25e5739f-f438-dd61-944b-20250643afcf",
 						version = 3,
@@ -369,7 +369,7 @@ local tbl =
 						category = "Filter",
 						filterTargetType = "ContentID",
 						name = "F - HM",
-						partyTargetContentID = 13642,
+						partyTargetContentID = 13645,
 						uuid = "85a6f8bf-bed1-0529-9e9f-1d50e327aa75",
 						version = 3,
 					},
@@ -395,12 +395,17 @@ local tbl =
 						{
 							
 							{
-								"c6509ae2-ca27-74a3-aa59-6aac8b54c3ab",
+								"6ef97ea4-39dd-09ec-a122-de5248fb57d3",
 								true,
 							},
 							
 							{
-								"6ef97ea4-39dd-09ec-a122-de5248fb57d3",
+								"1e1ce140-1eb5-0388-9b2d-8cb9cd27d7ef",
+								true,
+							},
+							
+							{
+								"c6509ae2-ca27-74a3-aa59-6aac8b54c3ab",
 								true,
 							},
 						},
@@ -423,12 +428,17 @@ local tbl =
 						{
 							
 							{
-								"943d6e8a-af5c-22a3-8a22-b8e772272518",
+								"6ef97ea4-39dd-09ec-a122-de5248fb57d3",
 								true,
 							},
 							
 							{
-								"6ef97ea4-39dd-09ec-a122-de5248fb57d3",
+								"1e1ce140-1eb5-0388-9b2d-8cb9cd27d7ef",
+								true,
+							},
+							
+							{
+								"943d6e8a-af5c-22a3-8a22-b8e772272518",
 								true,
 							},
 						},
@@ -451,12 +461,17 @@ local tbl =
 						{
 							
 							{
-								"23908f75-224e-3f73-9e6b-408cf746d03a",
+								"6ef97ea4-39dd-09ec-a122-de5248fb57d3",
 								true,
 							},
 							
 							{
-								"6ef97ea4-39dd-09ec-a122-de5248fb57d3",
+								"1e1ce140-1eb5-0388-9b2d-8cb9cd27d7ef",
+								true,
+							},
+							
+							{
+								"23908f75-224e-3f73-9e6b-408cf746d03a",
 								true,
 							},
 						},
@@ -502,7 +517,7 @@ local tbl =
 						uuid = "23908f75-224e-3f73-9e6b-408cf746d03a",
 						version = 3,
 					},
-					inheritedIndex = 1,
+					inheritedIndex = 2,
 				},
 				
 				{
@@ -520,7 +535,7 @@ local tbl =
 						uuid = "c6509ae2-ca27-74a3-aa59-6aac8b54c3ab",
 						version = 3,
 					},
-					inheritedIndex = 1,
+					inheritedIndex = 3,
 				},
 				
 				{
@@ -538,7 +553,19 @@ local tbl =
 						uuid = "943d6e8a-af5c-22a3-8a22-b8e772272518",
 						version = 3,
 					},
-					inheritedIndex = 3,
+					inheritedIndex = 4,
+				},
+				
+				{
+					data = 
+					{
+						category = "Lua",
+						conditionLua = "local player = TensorCore.mGetPlayer()\nreturn player ~= nil and eventArgs.sourceEntityID == player.id",
+						dequeueIfLuaFalse = true,
+						name = "Tether belongs to me",
+						uuid = "1e1ce140-1eb5-0388-9b2d-8cb9cd27d7ef",
+						version = 3,
+					},
 				},
 			},
 			eventType = 15,
@@ -702,6 +729,11 @@ local tbl =
 								"68cb8933-3385-d655-acbc-f1f21b7117cf",
 								true,
 							},
+							
+							{
+								"ec8b289d-425d-5878-bfa1-7c8686eedaaa",
+								true,
+							},
 						},
 						gVar = "ACR_RikuSCH3_CD",
 						name = "Target shield",
@@ -737,6 +769,18 @@ local tbl =
 						eventEntityContentID = 13719,
 						name = "E - Ark Shield",
 						uuid = "cd3760cc-8a17-9ba3-b1f4-50750e3a840d",
+						version = 3,
+					},
+				},
+				
+				{
+					data = 
+					{
+						category = "Event",
+						dequeueIfLuaFalse = true,
+						eventArgType = 3,
+						name = "Shield became targetable",
+						uuid = "ec8b289d-425d-5878-bfa1-7c8686eedaaa",
 						version = 3,
 					},
 				},
