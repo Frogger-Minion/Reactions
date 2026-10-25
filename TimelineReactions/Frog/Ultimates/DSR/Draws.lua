@@ -13,7 +13,7 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "if data.frog_draw_settings == nil or data.frog_draw_settings.version~=20 then\n local p={\n  version=20,\n  path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]],\n  default=\"R1 H1 M1 MT OT M2 H2 R2\",\n  styleItems={\"Tether\",\"Arrow\",\"Disabled\"},\n  styleRows={\n   {\"p1_playstation\",\"P1 PlayStation\"},{\"p2_strength\",\"P2 Strength\"},\n   {\"p2_sanctity\",\"P2 Sanctity\"},{\"p3_dfg\",\"P3 Dive from Grace\"},\n   {\"p4_eyes\",\"P4 Eyes\"},{\"p5_wrath\",\"P5 Wrath\"},{\"p5_doth\",\"P5 DOTH\"},{\"p6_vow\",\"P6 Mortal Vow\"},{\"p6_wb2\",\"P6 Wyrmsbreath 2\"},{\"p6_cauterize\",\"P6 Double Cauterize\"},\n   {\"p7_trinity\",\"P7 Trinity\"},{\"p7_akh\",\"P7 Akh Morn\"},{\"p7_giga\",\"P7 Gigaflare\"}\n  },\n  styles={},\n  cautMT=\"Nidhogg\",\n  cautItems={\"Nidhogg\",\"Hraesvelgr\",\"Fixed West\",\"Fixed East\"},\n  cautOpposite={\"Hraesvelgr\",\"Nidhogg\",\"Fixed East\",\"Fixed West\"},\n  autoOrderDefault=\"M R H\",\n  autoOrderEdit=\"M R H\",\n  elementDraws=true,\n  akhStrategy=\"6-1-1\",\n  akhStrategyItems={\"6-1-1\",\"3-3-2\"},\n  autoMode=\"Personal\",\n  autoModeItems={\"Personal\",\"Shotcaller\",\"Disabled\"},\n  dothMode=\"Configured conga\",\n  dothModeItems={\"Configured conga\",\"Live positions\"},\n  akhAfahHP=false,\n  vowTTSMode=\"Personal\",\n  vowDefault=\"T T M R\",\n  vowEdit=\"T T M R\",\n  vowGroups={T={\"MT\",\"OT\"},M={\"M1\",\"M2\"},R={\"R1\",\"R2\"}},\n  strategyItems={\"Westhogg\",\"Easthogg\"},\n  strategy=\"NAUR\",\n  holdItems={\"On\",\"Off\"},\n  customHold=false,\n  roles={MT=true,OT=true,H1=true,H2=true,M1=true,M2=true,R1=true,R2=true}\n }\n function p.parse(text)\n  if type(text)~=\"string\" then return nil,\"Enter all eight roles.\" end\n  local order,seen={},{}\n  for role in string.upper(text):gmatch(\"[^%s,]+\") do\n   if not p.roles[role] then return nil,\"Unknown role: \"..role end\n   if seen[role] then return nil,\"Duplicate role: \"..role end\n   seen[role]=true; order[#order+1]=role\n  end\n  if #order~=8 then return nil,\"Enter each of MT OT H1 H2 M1 M2 R1 R2 once.\" end\n  return order,table.concat(order,\" \")\n end\n function p.parseVow(text)\n  local order={}\n  for token in string.upper(text or \"\"):gmatch(\"[^%s,]+\") do\n   if not p.vowGroups[token] then return nil,\"Vow order uses T, M or R. Healers cannot receive.\" end\n   order[#order+1]=token\n  end\n  if #order~=4 then return nil,\"Enter four Vow passes.\" end\n  for _,initial in ipairs({\"M1\",\"M2\",\"R1\",\"R2\"}) do\n   local used={[initial]=true}\n   for _,token in ipairs(order) do\n    local chosen\n    for _,role in ipairs(p.vowGroups[token]) do\n     if not used[role] then chosen=role; break end\n    end\n    if not chosen then return nil,\"Vow order runs out of eligible receivers.\" end\n    used[chosen]=true\n   end\n  end\n  return order,table.concat(order,\" \")\n end\n function p.parseAuto(text)\n  if type(text)~=\"string\" then return nil,\"Auto order uses M, R and H once each.\" end\n  local compact=string.upper(text):gsub(\"[%s,]\",\"\")\n  if #compact~=3 then return nil,\"Enter M, R and H once each.\" end\n  local order,seen={},{}\n  for token in compact:gmatch(\".\") do\n   if token~=\"M\" and token~=\"R\" and token~=\"H\" then return nil,\"Auto order only accepts M, R and H.\" end\n   if seen[token] then return nil,\"Duplicate auto role: \"..token end\n   seen[token]=true; order[#order+1]=token\n  end\n  return order,table.concat(order,\" \")\n end\n function p.save(text)\n  local order,normalized=p.parse(text)\n  if not order then p.message=normalized; return false end\n  local vowOrder,vowText=p.parseVow(p.vowEdit)\n  if not vowOrder then p.message=vowText; return false end\n  local autoOrder,autoText=p.parseAuto(p.autoOrderEdit)\n  if not autoOrder then p.message=autoText; return false end\n  local nextSettings={}\n  for k,v in pairs(p.settings) do nextSettings[k]=v end\n  nextSettings.doth_conga=normalized\n  nextSettings.doth_order_mode=p.dothMode==\"Live positions\" and \"Live positions\" or \"Configured conga\"\n  nextSettings.vow_pass_order=vowText\n  nextSettings.p6_vow_tts_mode=p.vowTTSMode\n  nextSettings.p6_akh_afah_hp=p.akhAfahHP\n  nextSettings.p3_custom_hold=p.customHold\n  nextSettings.p3_strategy=p.strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\n  nextSettings.p7_element_draws=p.elementDraws\n  nextSettings.p7_akh_strategy=p.akhStrategy==\"3-3-2\" and \"3-3-2\" or \"6-1-1\"\n  nextSettings.p7_auto_order=autoText\n  nextSettings.p7_auto_mode=p.autoMode\n  nextSettings.p6_cauterize_mt=p.cautMT\n  nextSettings.draw_styles={}\n  for _,row in ipairs(p.styleRows) do\n   local choice=p.styles[row[1]]\n   nextSettings.draw_styles[row[1]]=choice==\"Disabled\" and \"Disabled\" or choice==\"Arrow\" and \"Arrow\" or \"Tether\"\n  end\n  local ok,err=pcall(FileSave,p.path,nextSettings)\n  local readOK,saved=pcall(FileLoad,p.path)\n  local stylesOK=readOK and type(saved)==\"table\" and type(saved.draw_styles)==\"table\"\n  if stylesOK then\n   for _,row in ipairs(p.styleRows) do\n    if saved.draw_styles[row[1]]~=nextSettings.draw_styles[row[1]] then stylesOK=false break end\n   end\n  end\n  if not ok or not readOK or type(saved)~=\"table\" or saved.doth_conga~=normalized or saved.doth_order_mode~=nextSettings.doth_order_mode or saved.p7_element_draws~=nextSettings.p7_element_draws or saved.p7_akh_strategy~=nextSettings.p7_akh_strategy or saved.p7_auto_order~=autoText or saved.p7_auto_mode~=nextSettings.p7_auto_mode or saved.p6_cauterize_mt~=nextSettings.p6_cauterize_mt or not stylesOK or saved.p3_strategy~=nextSettings.p3_strategy or saved.p3_custom_hold~=nextSettings.p3_custom_hold or saved.vow_pass_order~=vowText or saved.p6_vow_tts_mode~=nextSettings.p6_vow_tts_mode or saved.p6_akh_afah_hp~=nextSettings.p6_akh_afah_hp then\n   p.message=\"Save failed: \"..tostring(err or saved); return false\n  end\n  p.settings=nextSettings\n  if not p.elementDraws then\n   local element=data.frog_p7_element\n   if element and element.draw then Argus.deleteTimedShape(element.draw); element.draw=nil end\n  end\n  p.autoOrderEdit=autoText\n  p.vowEdit=vowText\n  p.order,p.saved,p.edit=order,normalized,normalized\n  p.message=\"Saved.\"\n  return true\n end\n p.order,p.saved=p.parse(p.default)\n p.edit=p.saved\n p.settings={}\n if FileExists(p.path) then\n  local ok,settings=pcall(FileLoad,p.path)\n  local order,normalized\n  if ok and type(settings)==\"table\" then\n   p.settings=settings\n   order,normalized=p.parse(settings.doth_conga)\n  end\n  if order then p.order,p.saved,p.edit=order,normalized,normalized\n  else p.message=\"Invalid settings file; using defaults. Apply to repair.\" end\n else\n  local previous=data.frog_draw_settings\n  p.save(previous and previous.saved or p.default)\n end\n for _,row in ipairs(p.styleRows) do\n  local styles=p.settings.draw_styles\n  local choice=type(styles)==\"table\" and styles[row[1]]\n  p.styles[row[1]]=choice==\"Disabled\" and \"Disabled\" or choice==\"Arrow\" and \"Arrow\" or \"Tether\"\n end\n local autoOrder,autoText=p.parseAuto(p.settings.p7_auto_order or p.autoOrderDefault)\n p.autoOrderEdit=autoOrder and autoText or p.autoOrderDefault\n if not autoOrder then p.message=\"Invalid auto order; Save to use M R H.\" end\n p.elementDraws=p.settings.p7_element_draws~=false\n p.akhStrategy=p.settings.p7_akh_strategy==\"3-3-2\" and \"3-3-2\" or \"6-1-1\"\n p.autoMode=p.settings.p7_auto_mode==\"Shotcaller\" and \"Shotcaller\" or p.settings.p7_auto_mode==\"Disabled\" and \"Disabled\" or \"Personal\"\n local vowOrder,vowText=p.parseVow(p.settings.vow_pass_order or p.vowDefault)\n p.vowEdit=vowOrder and vowText or p.vowDefault\n p.akhAfahHP=p.settings.p6_akh_afah_hp==true\n p.vowTTSMode=p.settings.p6_vow_tts_mode==\"Shotcaller\" and \"Shotcaller\" or p.settings.p6_vow_tts_mode==\"Disabled\" and \"Disabled\" or \"Personal\"\n if not vowOrder then p.message=\"Invalid Vow order; Save to use T T M R.\" end\n p.strategy=p.settings.p3_strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\n p.customHold=p.settings.p3_custom_hold==true\n p.dothMode=p.settings.doth_order_mode==\"Live positions\" and \"Live positions\" or \"Configured conga\"\n for _,value in ipairs(p.cautItems) do\n  if p.settings.p6_cauterize_mt==value then p.cautMT=value; break end\n end\n -- Preserve any unsaved edits when adding the new P6 settings.\n local previous=data.frog_draw_settings\n if previous then\n  for _,key in ipairs({\"edit\",\"vowEdit\",\"autoOrderEdit\",\"elementDraws\",\"akhStrategy\",\"autoMode\",\"strategy\",\"customHold\",\"dothMode\",\"cautMT\",\"vowTTSMode\",\"akhAfahHP\",\"message\"}) do\n   if previous[key]~=nil then p[key]=previous[key] end\n  end\n  for _,row in ipairs(p.styleRows) do\n   if previous.styles and previous.styles[row[1]] then p.styles[row[1]]=previous.styles[row[1]] end\n  end\n end\n data.frog_draw_settings=p\nend\n\nlocal p=data.frog_draw_settings\n-- Keep current edits intact when the menu layout changes.\nif p.strategyItems[1]~=\"Westhogg\" then\n p.strategyItems[1]=\"Westhogg\"; p.strategyItems[2]=\"Easthogg\"\nend\nlocal visible=GUI:Begin(\"Frog Draws\",nil,GUI.WindowFlags_AlwaysAutoResize)\nif visible then\n local function changed(field,value)\n  if value~=nil and value~=p[field] then p[field]=value; p.message=\"Unsaved changes\" end\n end\n local function choice(id,label,index,items)\n  local selected=GUI:Combo(\"##\"..id,index,items)\n  GUI:SameLine(); GUI:TextUnformatted(label)\n  return selected\n end\n local function style(key,label)\n  local value=p.styles[key]\n  local index=value==\"Disabled\" and 3 or value==\"Arrow\" and 2 or 1\n  local selected=choice(key,label,index,p.styleItems)\n  local valueNew=p.styleItems[selected]\n  if valueNew and valueNew~=value then p.styles[key]=valueNew; p.message=\"Unsaved changes\" end\n end\n local function order(field,id,label,width,default)\n  GUI:PushItemWidth(width)\n  changed(field,GUI:InputText(\"##\"..id,p[field]))\n  GUI:PopItemWidth()\n  GUI:SameLine(); GUI:TextUnformatted(label)\n  if GUI:Button(\"Reset##\"..id) then changed(field,default) end\n end\n GUI:PushItemWidth(145)\n if GUI:CollapsingHeader(\"P1 - Vault\") then\n  style(\"p1_playstation\",\"PlayStation\")\n end\n if GUI:CollapsingHeader(\"P2 - Thordan\") then\n  style(\"p2_strength\",\"Strength\")\n  style(\"p2_sanctity\",\"Sanctity\")\n end\n if GUI:CollapsingHeader(\"P3 - Nidhogg\") then\n  style(\"p3_dfg\",\"Dive from Grace\")\n  local selected=choice(\"p3_strategy\",\"Strategy\",p.strategy==\"LPDU\" and 2 or 1,p.strategyItems)\n  changed(\"strategy\",selected==2 and \"LPDU\" or \"NAUR\")\n  selected=choice(\"p3_custom_hold\",\"Lock face / stop actions\",p.customHold and 1 or 2,p.holdItems)\n  changed(\"customHold\",selected==1)\n end\n if GUI:CollapsingHeader(\"P4 - Eyes\") then\n  style(\"p4_eyes\",\"Orbs and Mirage Dive\")\n end\n if GUI:CollapsingHeader(\"P5 - Dark Thordan\") then\n  style(\"p5_wrath\",\"Wrath Of The Heavens\")\n  style(\"p5_doth\",\"Death Of The Heavens\")\n  local selected=choice(\"doth_order_mode\",\"DOTH order\",p.dothMode==\"Live positions\" and 2 or 1,p.dothModeItems)\n  changed(\"dothMode\",p.dothModeItems[selected])\n  if p.dothMode==\"Configured conga\" then\n   order(\"edit\",\"conga\",\"West to east\",245,p.default)\n  end\n end\n if GUI:CollapsingHeader(\"P6 - Double Dragons\") then\n  local afahHP=choice(\"p6_akh_afah_hp\",\"Akh Afah HP callout\",p.akhAfahHP and 1 or 2,p.holdItems)\n  changed(\"akhAfahHP\",afahHP==1)\n  style(\"p6_vow\",\"Mortal Vow\")\n  local vowMode=choice(\"p6_vow_tts_mode\",\"Vow callouts\",p.vowTTSMode==\"Personal\" and 1 or p.vowTTSMode==\"Disabled\" and 3 or 2,p.autoModeItems)\n  changed(\"vowTTSMode\",p.autoModeItems[vowMode])\n  if p.styles.p6_vow~=\"Disabled\" then\n   order(\"vowEdit\",\"vow_order\",\"Vow passes (T / M / R)\",145,p.vowDefault)\n  end\n  style(\"p6_wb2\",\"Wyrmsbreath 2\")\n  style(\"p6_cauterize\",\"Double Cauterize\")\n  if p.styles.p6_cauterize~=\"Disabled\" then\n   local index=1\n   for i,value in ipairs(p.cautItems) do if value==p.cautMT then index=i; break end end\n   local selected=choice(\"p6_cauterize_mt\",\"MT takes\",index,p.cautItems)\n   changed(\"cautMT\",p.cautItems[selected])\n   GUI:TextUnformatted(\"OT takes: \"..p.cautOpposite[selected])\n  end\n end\n if GUI:CollapsingHeader(\"P7 - Dragon-King\") then\n  style(\"p7_trinity\",\"Trinity\")\n  style(\"p7_akh\",\"Akh Morn\")\n  if p.styles.p7_akh~=\"Disabled\" then\n   local selected=choice(\"p7_akh_strategy\",\"Akh Morn groups\",p.akhStrategy==\"3-3-2\" and 2 or 1,p.akhStrategyItems)\n   changed(\"akhStrategy\",p.akhStrategyItems[selected])\n   if p.akhStrategy==\"3-3-2\" then GUI:TextUnformatted(\"G1 NW / G2 NE / tanks S\") end\n  end\n  style(\"p7_giga\",\"Gigaflare\")\n  local selected=choice(\"p7_element_draws\",\"Flames / ice\",p.elementDraws and 1 or 2,p.holdItems)\n  changed(\"elementDraws\",selected==1)\n  selected=choice(\"p7_auto_mode\",\"Auto callouts\",p.autoMode==\"Shotcaller\" and 2 or p.autoMode==\"Disabled\" and 3 or 1,p.autoModeItems)\n  changed(\"autoMode\",p.autoModeItems[selected])\n  if p.autoMode~=\"Disabled\" then\n   GUI:PushItemWidth(145)\n   changed(\"autoOrderEdit\",GUI:InputText(\"##p7_auto_order\",p.autoOrderEdit))\n   GUI:PopItemWidth()\n   GUI:SameLine(); GUI:TextUnformatted(\"Auto order (M / R / H; G1 first)\")\n   local valid,err=p.parseAuto(p.autoOrderEdit)\n   if not valid then GUI:TextUnformatted(err) end\n  end\n end\n GUI:PopItemWidth()\n GUI:Separator()\n if GUI:Button(\"Save\") then p.save(p.edit) end\n if p.message then GUI:SameLine(); GUI:TextUnformatted(p.message) end\nend\nGUI:End()\nself.used=true\n",
+							actionLua = "if data.frog_draw_settings == nil or data.frog_draw_settings.version~=21 then\n local p={\n  version=21,\n  path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]],\n  default=\"R1 H1 M1 MT OT M2 H2 R2\",\n  styleItems={\"Tether\",\"Arrow\",\"Disabled\"},\n  styleRows={\n   {\"p1_playstation\",\"P1 PlayStation\"},{\"p2_strength\",\"P2 Strength\"},\n   {\"p2_sanctity\",\"P2 Sanctity\"},{\"p3_dfg\",\"P3 Dive from Grace\"},\n   {\"p4_eyes\",\"P4 Eyes\"},{\"p5_wrath\",\"P5 Wrath\"},{\"p5_doth\",\"P5 DOTH\"},{\"p6_vow\",\"P6 Mortal Vow\"},{\"p6_wb1\",\"P6 Wyrmsbreath 1\"},{\"p6_wb2\",\"P6 Wyrmsbreath 2\"},{\"p6_cauterize\",\"P6 Double Cauterize\"},\n   {\"p7_trinity\",\"P7 Trinity\"},{\"p7_akh\",\"P7 Akh Morn\"},{\"p7_giga\",\"P7 Gigaflare\"}\n  },\n  styles={},\n  wb1Anchors={\"H1\",\"M1\",\"H2\"},wb1Flex={\"R1\",\"M2\",\"R2\"},\n  wb1Roles={\"H1\",\"H2\",\"M1\",\"M2\",\"R1\",\"R2\"},wb2R1North=false,\n  cautMT=\"Nidhogg\",\n  cautItems={\"Nidhogg\",\"Hraesvelgr\",\"Fixed West\",\"Fixed East\"},\n  cautOpposite={\"Hraesvelgr\",\"Nidhogg\",\"Fixed East\",\"Fixed West\"},\n  autoOrderDefault=\"M R H\",\n  autoOrderEdit=\"M R H\",\n  elementDraws=true,\n  akhStrategy=\"6-1-1\",\n  akhStrategyItems={\"6-1-1\",\"3-3-2\"},\n  autoMode=\"Personal\",\n  autoModeItems={\"Personal\",\"Shotcaller\",\"Disabled\"},\n  dothMode=\"Configured conga\",\n  dothModeItems={\"Configured conga\",\"Live positions\"},\n  akhAfahHP=false,\n  vowTTSMode=\"Personal\",\n  vowDefault=\"T T M R\",\n  vowEdit=\"T T M R\",\n  vowGroups={T={\"MT\",\"OT\"},M={\"M1\",\"M2\"},R={\"R1\",\"R2\"}},\n  strategyItems={\"Westhogg\",\"Easthogg\"},\n  strategy=\"NAUR\",\n  holdItems={\"On\",\"Off\"},\n  customHold=false,\n  roles={MT=true,OT=true,H1=true,H2=true,M1=true,M2=true,R1=true,R2=true}\n }\n function p.parse(text)\n  if type(text)~=\"string\" then return nil,\"Enter all eight roles.\" end\n  local order,seen={},{}\n  for role in string.upper(text):gmatch(\"[^%s,]+\") do\n   if not p.roles[role] then return nil,\"Unknown role: \"..role end\n   if seen[role] then return nil,\"Duplicate role: \"..role end\n   seen[role]=true; order[#order+1]=role\n  end\n  if #order~=8 then return nil,\"Enter each of MT OT H1 H2 M1 M2 R1 R2 once.\" end\n  return order,table.concat(order,\" \")\n end\n function p.parseVow(text)\n  local order={}\n  for token in string.upper(text or \"\"):gmatch(\"[^%s,]+\") do\n   if not p.vowGroups[token] then return nil,\"Vow order uses T, M or R. Healers cannot receive.\" end\n   order[#order+1]=token\n  end\n  if #order~=4 then return nil,\"Enter four Vow passes.\" end\n  for _,initial in ipairs({\"M1\",\"M2\",\"R1\",\"R2\"}) do\n   local used={[initial]=true}\n   for _,token in ipairs(order) do\n    local chosen\n    for _,role in ipairs(p.vowGroups[token]) do\n     if not used[role] then chosen=role; break end\n    end\n    if not chosen then return nil,\"Vow order runs out of eligible receivers.\" end\n    used[chosen]=true\n   end\n  end\n  return order,table.concat(order,\" \")\n end\n function p.parseAuto(text)\n  if type(text)~=\"string\" then return nil,\"Auto order uses M, R and H once each.\" end\n  local compact=string.upper(text):gsub(\"[%s,]\",\"\")\n  if #compact~=3 then return nil,\"Enter M, R and H once each.\" end\n  local order,seen={},{}\n  for token in compact:gmatch(\".\") do\n   if token~=\"M\" and token~=\"R\" and token~=\"H\" then return nil,\"Auto order only accepts M, R and H.\" end\n   if seen[token] then return nil,\"Duplicate auto role: \"..token end\n   seen[token]=true; order[#order+1]=token\n  end\n  return order,table.concat(order,\" \")\n end\n function p.validatePairs(text)\n  local roles,seen={},{}\n  for role in (text or \"\"):gmatch(\"%S+\") do\n   if not (role==\"H1\" or role==\"H2\" or role==\"M1\" or role==\"M2\" or role==\"R1\" or role==\"R2\") or seen[role] then return nil,\"Each WB1 role must appear once.\" end\n   seen[role]=true;roles[#roles+1]=role\n  end\n  if #roles~=6 then return nil,\"Assign three anchor/flex pairs.\" end\n  return roles\n end\n function p.save(text)\n  local order,normalized=p.parse(text)\n  if not order then p.message=normalized; return false end\n  local vowOrder,vowText=p.parseVow(p.vowEdit)\n  if not vowOrder then p.message=vowText; return false end\n  local autoOrder,autoText=p.parseAuto(p.autoOrderEdit)\n  if not autoOrder then p.message=autoText; return false end\n  local pairText=table.concat({p.wb1Anchors[1],p.wb1Flex[1],p.wb1Anchors[2],p.wb1Flex[2],p.wb1Anchors[3],p.wb1Flex[3]},\" \")\n  local pairsOK,pairError=p.validatePairs(pairText)\n  if not pairsOK then p.message=pairError;return false end\n  local nextSettings={}\n  for k,v in pairs(p.settings) do nextSettings[k]=v end\n  nextSettings.p6_wb1_pairs=pairText\n  nextSettings.p6_wb2_r1_north=p.wb2R1North\n  nextSettings.doth_conga=normalized\n  nextSettings.doth_order_mode=p.dothMode==\"Live positions\" and \"Live positions\" or \"Configured conga\"\n  nextSettings.vow_pass_order=vowText\n  nextSettings.p6_vow_tts_mode=p.vowTTSMode\n  nextSettings.p6_akh_afah_hp=p.akhAfahHP\n  nextSettings.p3_custom_hold=p.customHold\n  nextSettings.p3_strategy=p.strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\n  nextSettings.p7_element_draws=p.elementDraws\n  nextSettings.p7_akh_strategy=p.akhStrategy==\"3-3-2\" and \"3-3-2\" or \"6-1-1\"\n  nextSettings.p7_auto_order=autoText\n  nextSettings.p7_auto_mode=p.autoMode\n  nextSettings.p6_cauterize_mt=p.cautMT\n  nextSettings.draw_styles={}\n  for _,row in ipairs(p.styleRows) do\n   local choice=p.styles[row[1]]\n   nextSettings.draw_styles[row[1]]=choice==\"Disabled\" and \"Disabled\" or choice==\"Arrow\" and \"Arrow\" or \"Tether\"\n  end\n  local ok,err=pcall(FileSave,p.path,nextSettings)\n  local readOK,saved=pcall(FileLoad,p.path)\n  local stylesOK=readOK and type(saved)==\"table\" and type(saved.draw_styles)==\"table\"\n  if stylesOK then\n   for _,row in ipairs(p.styleRows) do\n    if saved.draw_styles[row[1]]~=nextSettings.draw_styles[row[1]] then stylesOK=false break end\n   end\n  end\n  if not ok or not readOK or (type(saved)==\"table\" and (saved.p6_wb1_pairs~=pairText or saved.p6_wb2_r1_north~=p.wb2R1North)) or type(saved)~=\"table\" or saved.doth_conga~=normalized or saved.doth_order_mode~=nextSettings.doth_order_mode or saved.p7_element_draws~=nextSettings.p7_element_draws or saved.p7_akh_strategy~=nextSettings.p7_akh_strategy or saved.p7_auto_order~=autoText or saved.p7_auto_mode~=nextSettings.p7_auto_mode or saved.p6_cauterize_mt~=nextSettings.p6_cauterize_mt or not stylesOK or saved.p3_strategy~=nextSettings.p3_strategy or saved.p3_custom_hold~=nextSettings.p3_custom_hold or saved.vow_pass_order~=vowText or saved.p6_vow_tts_mode~=nextSettings.p6_vow_tts_mode or saved.p6_akh_afah_hp~=nextSettings.p6_akh_afah_hp then\n   p.message=\"Save failed: \"..tostring(err or saved); return false\n  end\n  p.settings=nextSettings\n  if not p.elementDraws then\n   local element=data.frog_p7_element\n   if element and element.draw then Argus.deleteTimedShape(element.draw); element.draw=nil end\n  end\n  p.autoOrderEdit=autoText\n  p.vowEdit=vowText\n  p.order,p.saved,p.edit=order,normalized,normalized\n  p.message=\"Saved.\"\n  return true\n end\n p.order,p.saved=p.parse(p.default)\n p.edit=p.saved\n p.settings={}\n if FileExists(p.path) then\n  local ok,settings=pcall(FileLoad,p.path)\n  local order,normalized\n  if ok and type(settings)==\"table\" then\n   p.settings=settings\n   order,normalized=p.parse(settings.doth_conga)\n  end\n  if order then p.order,p.saved,p.edit=order,normalized,normalized\n  else p.message=\"Invalid settings file; using defaults. Apply to repair.\" end\n else\n  local previous=data.frog_draw_settings\n  p.save(previous and previous.saved or p.default)\n end\n for _,row in ipairs(p.styleRows) do\n  local styles=p.settings.draw_styles\n  local choice=type(styles)==\"table\" and styles[row[1]]\n  p.styles[row[1]]=choice==\"Disabled\" and \"Disabled\" or choice==\"Arrow\" and \"Arrow\" or \"Tether\"\n end\n local pairRoles=p.validatePairs(p.settings.p6_wb1_pairs or \"H1 R1 M1 M2 H2 R2\")\n if pairRoles then for lane=1,3 do p.wb1Anchors[lane]=pairRoles[lane*2-1];p.wb1Flex[lane]=pairRoles[lane*2] end end\n p.wb2R1North=p.settings.p6_wb2_r1_north==true\n local autoOrder,autoText=p.parseAuto(p.settings.p7_auto_order or p.autoOrderDefault)\n p.autoOrderEdit=autoOrder and autoText or p.autoOrderDefault\n if not autoOrder then p.message=\"Invalid auto order; Save to use M R H.\" end\n p.elementDraws=p.settings.p7_element_draws~=false\n p.akhStrategy=p.settings.p7_akh_strategy==\"3-3-2\" and \"3-3-2\" or \"6-1-1\"\n p.autoMode=p.settings.p7_auto_mode==\"Shotcaller\" and \"Shotcaller\" or p.settings.p7_auto_mode==\"Disabled\" and \"Disabled\" or \"Personal\"\n local vowOrder,vowText=p.parseVow(p.settings.vow_pass_order or p.vowDefault)\n p.vowEdit=vowOrder and vowText or p.vowDefault\n p.akhAfahHP=p.settings.p6_akh_afah_hp==true\n p.vowTTSMode=p.settings.p6_vow_tts_mode==\"Shotcaller\" and \"Shotcaller\" or p.settings.p6_vow_tts_mode==\"Disabled\" and \"Disabled\" or \"Personal\"\n if not vowOrder then p.message=\"Invalid Vow order; Save to use T T M R.\" end\n p.strategy=p.settings.p3_strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\n p.customHold=p.settings.p3_custom_hold==true\n p.dothMode=p.settings.doth_order_mode==\"Live positions\" and \"Live positions\" or \"Configured conga\"\n for _,value in ipairs(p.cautItems) do\n  if p.settings.p6_cauterize_mt==value then p.cautMT=value; break end\n end\n -- Preserve any unsaved edits when adding the new P6 settings.\n local previous=data.frog_draw_settings\n if previous then\n  for _,key in ipairs({\"edit\",\"vowEdit\",\"autoOrderEdit\",\"elementDraws\",\"akhStrategy\",\"autoMode\",\"strategy\",\"customHold\",\"dothMode\",\"cautMT\",\"vowTTSMode\",\"akhAfahHP\",\"wb1Anchors\",\"wb1Flex\",\"wb2R1North\",\"message\"}) do\n   if previous[key]~=nil then p[key]=previous[key] end\n  end\n  for _,row in ipairs(p.styleRows) do\n   if previous.styles and previous.styles[row[1]] then p.styles[row[1]]=previous.styles[row[1]] end\n  end\n end\n data.frog_draw_settings=p\nend\n\nlocal p=data.frog_draw_settings\n-- Keep current edits intact when the menu layout changes.\nif p.strategyItems[1]~=\"Westhogg\" then\n p.strategyItems[1]=\"Westhogg\"; p.strategyItems[2]=\"Easthogg\"\nend\nlocal visible=GUI:Begin(\"Frog Draws\",nil,GUI.WindowFlags_AlwaysAutoResize)\nif visible then\n local function changed(field,value)\n  if value~=nil and value~=p[field] then p[field]=value; p.message=\"Unsaved changes\" end\n end\n local function choice(id,label,index,items)\n  local selected=GUI:Combo(\"##\"..id,index,items)\n  GUI:SameLine(); GUI:TextUnformatted(label)\n  return selected\n end\n local function style(key,label)\n  local value=p.styles[key]\n  local index=value==\"Disabled\" and 3 or value==\"Arrow\" and 2 or 1\n  local selected=choice(key,label,index,p.styleItems)\n  local valueNew=p.styleItems[selected]\n  if valueNew and valueNew~=value then p.styles[key]=valueNew; p.message=\"Unsaved changes\" end\n end\n local function order(field,id,label,width,default)\n  GUI:PushItemWidth(width)\n  changed(field,GUI:InputText(\"##\"..id,p[field]))\n  GUI:PopItemWidth()\n  GUI:SameLine(); GUI:TextUnformatted(label)\n  if GUI:Button(\"Reset##\"..id) then changed(field,default) end\n end\n GUI:PushItemWidth(145)\n if GUI:CollapsingHeader(\"P1 - Vault\") then\n  style(\"p1_playstation\",\"PlayStation\")\n end\n if GUI:CollapsingHeader(\"P2 - Thordan\") then\n  style(\"p2_strength\",\"Strength\")\n  style(\"p2_sanctity\",\"Sanctity\")\n end\n if GUI:CollapsingHeader(\"P3 - Nidhogg\") then\n  style(\"p3_dfg\",\"Dive from Grace\")\n  local selected=choice(\"p3_strategy\",\"Strategy\",p.strategy==\"LPDU\" and 2 or 1,p.strategyItems)\n  changed(\"strategy\",selected==2 and \"LPDU\" or \"NAUR\")\n  selected=choice(\"p3_custom_hold\",\"Lock face / stop actions\",p.customHold and 1 or 2,p.holdItems)\n  changed(\"customHold\",selected==1)\n end\n if GUI:CollapsingHeader(\"P4 - Eyes\") then\n  style(\"p4_eyes\",\"Orbs and Mirage Dive\")\n end\n if GUI:CollapsingHeader(\"P5 - Dark Thordan\") then\n  style(\"p5_wrath\",\"Wrath Of The Heavens\")\n  style(\"p5_doth\",\"Death Of The Heavens\")\n  local selected=choice(\"doth_order_mode\",\"DOTH order\",p.dothMode==\"Live positions\" and 2 or 1,p.dothModeItems)\n  changed(\"dothMode\",p.dothModeItems[selected])\n  if p.dothMode==\"Configured conga\" then\n   order(\"edit\",\"conga\",\"West to east\",245,p.default)\n  end\n end\n if GUI:CollapsingHeader(\"P6 - Double Dragons\") then\n  local afahHP=choice(\"p6_akh_afah_hp\",\"Akh Afah HP callout\",p.akhAfahHP and 1 or 2,p.holdItems)\n  changed(\"akhAfahHP\",afahHP==1)\n  style(\"p6_vow\",\"Mortal Vow\")\n  local vowMode=choice(\"p6_vow_tts_mode\",\"Vow callouts\",p.vowTTSMode==\"Personal\" and 1 or p.vowTTSMode==\"Disabled\" and 3 or 2,p.autoModeItems)\n  changed(\"vowTTSMode\",p.autoModeItems[vowMode])\n  if p.styles.p6_vow~=\"Disabled\" then\n   order(\"vowEdit\",\"vow_order\",\"Vow passes (T / M / R)\",145,p.vowDefault)\n  end\n  style(\"p6_wb1\",\"Wyrmsbreath 1\")\n  GUI:TextUnformatted(\"WB1 starting pairs: Anchor / Flex\")\n  for lane,label in ipairs({\"Left (SW wall)\",\"Middle (1 marker)\",\"Right (SE wall)\"}) do\n   GUI:TextUnformatted(label)\n   local ai,fi=1,1\n   for i,role in ipairs(p.wb1Roles) do if role==p.wb1Anchors[lane] then ai=i end;if role==p.wb1Flex[lane] then fi=i end end\n   local a=choice(\"wb1_anchor_\"..lane,\"Anchor\",ai,p.wb1Roles)\n   GUI:SameLine()\n   local f=choice(\"wb1_flex_\"..lane,\"Flex\",fi,p.wb1Roles)\n   if p.wb1Roles[a] and p.wb1Roles[a]~=p.wb1Anchors[lane] then p.wb1Anchors[lane]=p.wb1Roles[a];p.message=\"Unsaved changes\" end\n   if p.wb1Roles[f] and p.wb1Roles[f]~=p.wb1Flex[lane] then p.wb1Flex[lane]=p.wb1Roles[f];p.message=\"Unsaved changes\" end\n  end\n  GUI:TextUnformatted(\"Anchors hold triangle. Flexers match opposite colours.\")\n  style(\"p6_wb2\",\"Wyrmsbreath 2\")\n  local r1North=choice(\"p6_wb2_ranged\",\"WB2 ranged spots\",p.wb2R1North and 2 or 1,{\"R1 south / R2 north\",\"R1 north / R2 south\"})\n  changed(\"wb2R1North\",r1North==2)\n  style(\"p6_cauterize\",\"Double Cauterize\")\n  if p.styles.p6_cauterize~=\"Disabled\" then\n   local index=1\n   for i,value in ipairs(p.cautItems) do if value==p.cautMT then index=i; break end end\n   local selected=choice(\"p6_cauterize_mt\",\"MT takes\",index,p.cautItems)\n   changed(\"cautMT\",p.cautItems[selected])\n   GUI:TextUnformatted(\"OT takes: \"..p.cautOpposite[selected])\n  end\n end\n if GUI:CollapsingHeader(\"P7 - Dragon-King\") then\n  style(\"p7_trinity\",\"Trinity\")\n  style(\"p7_akh\",\"Akh Morn\")\n  if p.styles.p7_akh~=\"Disabled\" then\n   local selected=choice(\"p7_akh_strategy\",\"Akh Morn groups\",p.akhStrategy==\"3-3-2\" and 2 or 1,p.akhStrategyItems)\n   changed(\"akhStrategy\",p.akhStrategyItems[selected])\n   if p.akhStrategy==\"3-3-2\" then GUI:TextUnformatted(\"G1 NW / G2 NE / tanks S\") end\n  end\n  style(\"p7_giga\",\"Gigaflare\")\n  local selected=choice(\"p7_element_draws\",\"Flames / ice\",p.elementDraws and 1 or 2,p.holdItems)\n  changed(\"elementDraws\",selected==1)\n  selected=choice(\"p7_auto_mode\",\"Auto callouts\",p.autoMode==\"Shotcaller\" and 2 or p.autoMode==\"Disabled\" and 3 or 1,p.autoModeItems)\n  changed(\"autoMode\",p.autoModeItems[selected])\n  if p.autoMode~=\"Disabled\" then\n   GUI:PushItemWidth(145)\n   changed(\"autoOrderEdit\",GUI:InputText(\"##p7_auto_order\",p.autoOrderEdit))\n   GUI:PopItemWidth()\n   GUI:SameLine(); GUI:TextUnformatted(\"Auto order (M / R / H; G1 first)\")\n   local valid,err=p.parseAuto(p.autoOrderEdit)\n   if not valid then GUI:TextUnformatted(err) end\n  end\n end\n GUI:PopItemWidth()\n GUI:Separator()\n if GUI:Button(\"Save\") then p.save(p.edit) end\n if p.message then GUI:SameLine(); GUI:TextUnformatted(p.message) end\nend\nGUI:End()\nself.used=true\n",
 							name = "Persistent Draw Priorities Menu",
 							uuid = "037d4e2f-1842-5c02-8610-55c301569a25",
 							version = 2.1,
@@ -25,7 +25,7 @@ local tbl =
 				},
 				eventType = 13,
 				loop = true,
-				name = "[Settings] Draw Priorities",
+				name = "[Settings] Draw Settings",
 				timeRange = true,
 				timelineIndex = 1,
 				timerEndOffset = 20,
@@ -56,7 +56,7 @@ local tbl =
 				{
 				},
 				eventType = 9,
-				name = "[Utility] Clear Party Markers on Wipe",
+				name = "[Utility] Clear Markers",
 				timeRange = true,
 				timelineIndex = 1,
 				timerEndOffset = 2000,
@@ -105,7 +105,7 @@ local tbl =
 						},
 					},
 				},
-				name = "Moogle Blacklists",
+				name = "[Misc] Moogle Blacklists",
 				timeRange = true,
 				timelineIndex = 1,
 				timerEndOffset = 20,
@@ -136,7 +136,7 @@ local tbl =
 				{
 				},
 				eventType = 9,
-				name = "[Draw] P7 Draw Cleanup",
+				name = "[Draw] Draw Cleanup",
 				timeRange = true,
 				timelineIndex = 1,
 				timerEndOffset = 1800,
@@ -145,9 +145,16 @@ local tbl =
 				version = 2,
 			},
 		},
-	}, 
-	[10] = 
-	{
+		
+		{
+			data = 
+			{
+				displayPath = "",
+				name = "Local fixes",
+				uuid = "0f0ef9e7-4c2d-6d8f-b8f1-cbc2487ccc81",
+			},
+			objectType = "folder",
+		},
 		
 		{
 			data = 
@@ -157,6 +164,438 @@ local tbl =
 					
 					{
 						data = 
+						{
+							aType = "Lua",
+							actionLua = "ACR_TensorMagnum3_Hotbar_Potion=false\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"8937d431-b31a-b954-ab58-1c4775287f14",
+									true,
+								},
+							},
+							name = "Clear potion on wipe",
+							uuid = "903ee1c2-db31-6775-ab4d-2fabfb408299",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Self",
+							conditionType = 13,
+							dequeueIfLuaFalse = true,
+							jobValue = "MACHINIST",
+							name = "Machinist",
+							uuid = "8937d431-b31a-b954-ab58-1c4775287f14",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes",
+				eventType = 9,
+				name = "[MCH] Wipe potion queue cleanup",
+				timeRange = true,
+				timelineIndex = 1,
+				timerEndOffset = 2000,
+				timerStartOffset = -30,
+				uuid = "83716412-ffb1-27dc-9b56-d9076813a8c3",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local release=eventArgs.timeQueued+eventArgs.time*1000+13000\nTensorCore.API.TensorACR.holdActionUntil(2878,release,3)\nTensorCore.API.TensorACR.holdActionUntil(17209,release,3)\ndata.frog_mch_p2_burst_delay=true\nself.used=true\n",
+							conditions = 
+							{
+								
+								{
+									"7eb03be4-5158-011b-ab41-25624d08d479",
+									true,
+								},
+
+								{
+									"157b43d5-835d-f480-b7db-1fdd05493aaf",
+									true,
+								},
+
+								{
+									"31612ab5-9670-aee6-87df-1f6c968ca890",
+									true,
+								},
+							},
+							endIfUsed = true,
+							name = "Hold opener burst until 13 seconds",
+							uuid = "17c0da87-125a-6bdb-a576-c36c78cced72",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "for _,e in pairs(TensorCore.entityList(\"contentid=3632\"))do if e.targetable then return true end end return false",
+							dequeueIfLuaFalse = true,
+							eventArgOptionType = 3,
+							eventArgType = 2,
+							name = "Thordan checkpoint countdown",
+							spellIDList =
+							{
+								16498,
+							},
+							uuid = "7eb03be4-5158-011b-ab41-25624d08d479",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 13,
+							dequeueIfLuaFalse = true,
+							jobValue = "MACHINIST",
+							name = "Machinist",
+							uuid = "157b43d5-835d-f480-b7db-1fdd05493aaf",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return eventArgs.time>0",
+							dequeueIfLuaFalse = true,
+							name = "Countdown available",
+							uuid = "31612ab5-9670-aee6-87df-1f6c968ca890",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes",
+				eventType = 16,
+				loop = true,
+				name = "[MCH] P2 opening Wildfire and Hypercharge delay",
+				timeRange = true,
+				timelineIndex = 1,
+				timerEndOffset = 305,
+				timerStartOffset = -30,
+				uuid = "2c30bf99-8a4e-7818-a5c8-b304c7973ed9",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				displayPath = "Local fixes",
+				name = "Monk downtime",
+				uuid = "a0223adb-cbb9-200d-937a-918ffef58631",
+			},
+			objectType = "folder",
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local p=TensorCore.mGetPlayer()\nif not p or eventArgs.entityID~=p.id then self.used=true return end\ndata.frog_mnk_downtime=data.frog_mnk_downtime or {known=false,solar=false,lunar=false,remaining=0,chakra=0}\nlocal s=data.frog_mnk_downtime\nlocal t=Now()\nlocal id=eventArgs.spellID\nif id==69 then\n s.remaining=3;s.pbUntil=t+20000;s.chakra=0;s.chakraUntil=0\nelseif id==25769 then\n s.known=true;s.solar=false;s.lunar=false;s.remaining=0;s.chakra=0\nelseif id==25768 or id==3545 then\n if id==25768 then s.solar=true else s.lunar=true end\n s.remaining=0;s.chakra=0\nelse\n if s.remaining>0 and t<=(s.pbUntil or 0) then\n  s.remaining=s.remaining-1;s.chakra=s.chakra+1;s.chakraUntil=t+20000\n else s.remaining=0 end\nend\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"dccac2be-8ebd-60e7-8f6f-1c57556bee41",
+									true,
+								},
+
+								{
+									"bdf60141-9aea-8f90-8fb4-88de1fc9ab59",
+									true,
+								},
+							},
+							name = "Track successful own Monk casts",
+							uuid = "9a1d5204-8f1c-ae0f-b9dd-0b51ce6b97a1",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 13,
+							jobValue = "MONK",
+							name = "Monk only",
+							uuid = "dccac2be-8ebd-60e7-8f6f-1c57556bee41",
+							version = 3,
+						},
+					},
+
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "return FFXIV_Common_BotRunning == true",
+							name = "Bot running",
+							uuid = "53a754c9-78e9-a84f-9d87-58aa2860a992",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return gACRSelectedProfiles[20] == \"RikuMNK3\"",
+							name = "RikuMNK3",
+							uuid = "b54e0f28-3f95-7c08-98a8-b30a5ff8e767",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Event",
+							eventArgOptionType = 3,
+							eventArgType = 2,
+							spellIDList =
+							{
+								69,
+								53,
+								54,
+								56,
+								61,
+								66,
+								70,
+								74,
+								16473,
+								25767,
+								3545,
+								25768,
+								25769,
+							},
+							uuid = "bdf60141-9aea-8f90-8fb4-88de1fc9ab59",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes/Monk downtime",
+				eventType = 2,
+				name = "[MNK] Observe PB and Nadi",
+				timeRange = true,
+				timelineIndex = 1,
+				timerEndOffset = 2000,
+				uuid = "460283a1-4bb5-f6a4-9af2-7d9be41c6608",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "data.frog_mnk_downtime=nil\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"665ddbeb-02b4-58c8-8a9d-227267a1b1a3",
+									true,
+								},
+							},
+							name = "Invalidate Nadi observation",
+							uuid = "4210dada-5be0-e670-bbf2-5d23fb5e675f",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 13,
+							jobValue = "MONK",
+							name = "Monk only",
+							uuid = "665ddbeb-02b4-58c8-8a9d-227267a1b1a3",
+							version = 3,
+						},
+					},
+
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "return FFXIV_Common_BotRunning == true",
+							name = "Bot running",
+							uuid = "2c89dc9f-bccc-9230-86f5-59687ae1f5b3",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return gACRSelectedProfiles[20] == \"RikuMNK3\"",
+							name = "RikuMNK3",
+							uuid = "54354083-9f70-66a8-ba01-efb9ac2ddbf2",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes/Monk downtime",
+				eventType = 10,
+				name = "[MNK] Reset PB observation on death",
+				timeRange = true,
+				timelineIndex = 1,
+				timerEndOffset = 2000,
+				uuid = "f3250246-daa3-a4df-a0f0-b9b4339ffa98",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local release=Now()+13000\nTensorCore.API.TensorACR.holdActionUntil(2878,release)\nTensorCore.API.TensorACR.holdActionUntil(17209,release)\ndata.frog_mch_p2_burst_delay=true\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"e470a783-97d4-9527-ab8b-65b0be85e7ae",
+									true,
+								},
+
+								{
+									"46e64b1e-ce78-4f9f-ba2e-8d3b9d77ab5a",
+									true,
+								},
+
+								{
+									"3ae370fa-8fb1-f89e-afba-2acca80eb27e",
+									true,
+								},
+							},
+							endIfUsed = true,
+							name = "Hold opener burst until 13 seconds",
+							uuid = "4190b12d-e668-b787-844f-6eccbf0a4165",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Self",
+							conditionType = 13,
+							dequeueIfLuaFalse = true,
+							jobValue = "MACHINIST",
+							name = "Machinist",
+							uuid = "46e64b1e-ce78-4f9f-ba2e-8d3b9d77ab5a",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return eventArgs.entityID==TensorCore.mGetPlayer().id and eventArgs.targetContentID==3632 and not data.frog_mch_p2_burst_delay",
+							dequeueIfLuaFalse = true,
+							name = "Own first Drill on Thordan",
+							uuid = "3ae370fa-8fb1-f89e-afba-2acca80eb27e",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgOptionType = 3,
+							eventArgType = 2,
+							name = "Opening Drill",
+							spellIDList =
+							{
+								16498,
+							},
+							uuid = "e470a783-97d4-9527-ab8b-65b0be85e7ae",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes",
+				eventType = 2,
+				name = "[MCH] P2 burst hold fallback after full P1",
+				timeRange = true,
+				timelineIndex = 1,
+				timerEndOffset = 305,
+				timerStartOffset = -1,
+				uuid = "8499b489-ed5a-9514-a57d-42d94cffe205",
+				version = 2,
+			},
+		},
+	},
+	[10] =
+	{
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
 						{
 							aType = "Lua",
 							actionLua = "\nlocal centerX = 100.0\nlocal centerY = 0.0\nlocal centerZ = 100.0\nlocal arenaSize = 44.0\nlocal bladeWidth = 8.0\nlocal brightRadius = 9.0\nlocal now = TensorReactions_CurrentTimer or 0.0\nlocal state = TensorReactions_AdelphelBladeDrawState\n\nif state == nil or now < (state.lastTimer or now) then\n    state = {lastTimer = now, completedDashes = 0}\n    TensorReactions_AdelphelBladeDrawState = state\nend\nstate.lastTimer = now\nlocal completedDashes = math.min(state.completedDashes or 0, 4)\n\nlocal channel = 1\nlocal drawHeight = 0.05\nlocal baseFlags =\n    Argus2.RenderFlags.FLAG_OCCLUSION_BASE |\n    Argus2.RenderFlags.FLAG_RENDER_OVERLAY\nlocal occludeFlags =\n    Argus2.RenderFlags.FLAG_OCCLUDE |\n    Argus2.RenderFlags.FLAG_RENDER_OVERLAY\n\nlocal base = TensorCore.getStaticFlatDrawer(0x5500FF00, 1.0, channel, baseFlags)\nbase:setHeightOffset(drawHeight)\nif now >= 52.9 then\n    base:addCenteredRect(centerX, centerY, centerZ, arenaSize, arenaSize, 0.0, false, baseFlags)\nend\n\nlocal cut = TensorCore.getStaticFlatDrawer(0xFFFFFFFF, 0.0, channel, occludeFlags)\ncut:setHeightOffset(drawHeight)\n\nlocal cardinals = {\n    [0] = {x = 0.0, z = 1.0},\n    [1] = {x = 1.0, z = 0.0},\n    [2] = {x = 0.0, z = -1.0},\n    [3] = {x = -1.0, z = 0.0}\n}\n\nif state.startIndex ~= nil and state.firstDashCaptured == true then\n    local function point(index)\n        return {\n            x = centerX + cardinals[index].x * 22.0,\n            y = centerY,\n            z = centerZ + cardinals[index].z * 22.0\n        }\n    end\n\n    local startIndex = state.startIndex\n    local firstIndex = state.firstIndex\n    local secondIndex = (firstIndex + 2) % 4\n    local thirdIndex = (startIndex + 2) % 4\n    local path = {\n        point(startIndex),\n        point(firstIndex),\n        point(secondIndex),\n        point(thirdIndex),\n        point(startIndex)\n    }\n\n    local function drawBlade(fromPoint, toPoint)\n        local dx = toPoint.x - fromPoint.x\n        local dz = toPoint.z - fromPoint.z\n        local length = math.sqrt(dx * dx + dz * dz)\n        local heading = TensorCore.getHeadingToTarget(fromPoint, toPoint)\n        local midX = (fromPoint.x + toPoint.x) * 0.5\n        local midZ = (fromPoint.z + toPoint.z) * 0.5\n        cut:addCenteredRect(midX, centerY, midZ, length, bladeWidth, heading, false, occludeFlags)\n    end\n\n    for i = completedDashes + 1, #path - 1 do\n        drawBlade(path[i], path[i + 1])\n    end\n\n    local predictedBrightspheres = {\n        {x = 0.0, z = 22.0},\n        {x = -11.0, z = 11.0},\n        {x = -22.0, z = 0.0},\n        {x = -7.48, z = 0.0},\n        {x = 7.48, z = 0.0},\n        {x = 22.0, z = 0.0},\n        {x = 11.0, z = -11.0},\n        {x = 0.0, z = -22.0},\n        {x = 0.0, z = -7.48},\n        {x = 0.0, z = 7.48},\n        {x = 0.0, z = 22.0}\n    }\n\n    for _, orb in ipairs(predictedBrightspheres) do\n        local worldX = centerX + orb.x * state.eastX + orb.z * state.northX\n        local worldZ = centerZ + orb.x * state.eastZ + orb.z * state.northZ\n        cut:addCircle(worldX, centerY, worldZ, brightRadius, false, occludeFlags)\n    end\nend\n\nlocal liveBrightspheres = TensorCore.getEntityByGroup(\"ContentID\", {\n    contentid = 4385,\n    subgroup = \"Number\",\n    noAliveCheck = true\n})\n\nif state.firstDashCaptured == true and liveBrightspheres then\n    if liveBrightspheres.id ~= nil then\n        cut:addCircle(liveBrightspheres.pos.x, liveBrightspheres.pos.y, liveBrightspheres.pos.z, brightRadius, false, occludeFlags)\n    else\n        for _, orb in pairs(liveBrightspheres) do\n            if orb and orb.pos then\n                cut:addCircle(orb.pos.x, orb.pos.y, orb.pos.z, brightRadius, false, occludeFlags)\n            end\n        end\n    end\nend\n\nself.used = true\n",
@@ -287,7 +726,7 @@ local tbl =
 			},
 		},
 	},
-	[14] = 
+	[14] =
 	{
 		
 		{
@@ -320,7 +759,7 @@ local tbl =
 			},
 		},
 	},
-	[15] = 
+	[15] =
 	{
 		
 		{
@@ -387,9 +826,9 @@ local tbl =
 						{
 							aType = "Lua",
 							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p1_playstation\")==\"Disabled\" then self.used=true return end\n\nlocal player = TensorCore.mGetPlayer()\nlocal state = data.playstation_symbol_tether\nif not player or not player.pos or not state or not state.symbols then\n    self.used = true\n    return\nend\n\nlocal marker = state.symbols[player.id]\nif marker ~= 281 and marker ~= 282 and marker ~= 283 and marker ~= 284 then\n    self.used = true\n    return\nend\n\n-- Resolve the local player directly from Anyone's logical roster and\n-- live agnostic party list. This avoids role-partner entOf() lookups.\nif state.rosterResolved ~= true then\n    local rosterMembers = AnyoneCore.Roster.members()\n    local agnosticParty = AnyoneCore.API.getAgnosticPartyList()\n    if type(rosterMembers) ~= \"table\" or type(agnosticParty) ~= \"table\" then\n        self.used = true\n        return\n    end\n\n    local actorByJob, actorJobCount, rosterJobCount = {}, {}, {}\n    for _, actor in pairs(agnosticParty) do\n        if actor ~= nil and actor.id ~= nil and actor.job ~= nil then\n            actorByJob[actor.job] = actor\n            actorJobCount[actor.job] = (actorJobCount[actor.job] or 0) + 1\n        end\n    end\n    for _, member in pairs(rosterMembers) do\n        if member ~= nil and member.job ~= nil then\n            rosterJobCount[member.job] = (rosterJobCount[member.job] or 0) + 1\n        end\n    end\n    local actorByNameJob = {}\n    for _, actor in pairs(agnosticParty) do\n        if actor ~= nil and actor.id ~= nil and actor.name ~= nil and actor.job ~= nil then\n            local key = tostring(actor.name) .. \"\\31\" .. tostring(actor.job)\n            actorByNameJob[key] = actor\n        end\n    end\n\n    local definitions = {\n        {name = \"MT\", rosterSlot = \"T1\"},\n        {name = \"OT\", rosterSlot = \"T2\"},\n        {name = \"H1\", rosterSlot = \"H1\"},\n        {name = \"H2\", rosterSlot = \"H2\"},\n        {name = \"M1\", rosterSlot = \"M1\"},\n        {name = \"M2\", rosterSlot = \"M2\"},\n        {name = \"R1\", rosterSlot = \"R1\"},\n        {name = \"R2\", rosterSlot = \"R2\"}\n    }\n\n    state.roleByID = {}\n    for _, definition in ipairs(definitions) do\n        local member = rosterMembers[definition.rosterSlot]\n        if member == nil or member.name == nil or member.job == nil then\n            state.roleByID = nil\n            self.used = true\n            return\n        end\n\n        local key = tostring(member.name) .. \"\\31\" .. tostring(member.job)\n        local actor = actorByNameJob[key]\n        if actor == nil and actorJobCount[member.job] == 1 and rosterJobCount[member.job] == 1 then\n            actor = actorByJob[member.job]\n        end\n        if actor == nil or actor.id == nil then\n            state.roleByID = nil\n            self.used = true\n            return\n        end\n\n        state.roleByID[actor.id] = definition.name\n    end\n\n    state.rosterResolved = true\nend\n\nlocal role = state.roleByID and state.roleByID[player.id]\nif role == nil then\n    self.used = true\n    return\nend\n\nlocal targetX = nil\nlocal targetZ = nil\n\n-- Marker IDs: circle=281, triangle=282, square=283, cross=284.\n-- Fixed waymark-side destinations use the same 22-yalm arena layout.\nlocal isTank = role == \"MT\" or role == \"OT\"\nlocal isHealer = role == \"H1\" or role == \"H2\"\nlocal isDPS = role == \"M1\" or role == \"M2\"\n    or role == \"R1\" or role == \"R2\"\n\nif isTank then\n    if marker == 284 then\n        targetX = 100.0\n        targetZ = 78.0\n    elseif marker == 283 then\n        targetX = 122.0\n        targetZ = 78.0\n    end\nelseif isHealer then\n    if marker == 284 then\n        targetX = 100.0\n        targetZ = 122.0\n    elseif marker == 282 then\n        targetX = 122.0\n        targetZ = 122.0\n    end\nelseif isDPS then\n    if marker == 282 then\n        targetX = 78.0\n        targetZ = 78.0\n    elseif marker == 283 then\n        targetX = 78.0\n        targetZ = 122.0\n    elseif marker == 281 then\n        local otherCircleX = nil\n        for entityID, otherMarker in pairs(state.symbols) do\n            if entityID ~= player.id and otherMarker == 281 then\n                local other = TensorCore.mGetEntity(entityID)\n                if other ~= nil and other.pos ~= nil then\n                    otherCircleX = other.pos.x\n                    break\n                end\n            end\n        end\n\n        if otherCircleX ~= nil then\n            local myWest = math.abs(player.pos.x - 78.0)\n            local myEast = math.abs(player.pos.x - 122.0)\n            local otherWest = math.abs(otherCircleX - 78.0)\n            local otherEast = math.abs(otherCircleX - 122.0)\n\n            -- Choose the globally consistent west/east split.\n            if (myWest + otherEast) <= (myEast + otherWest) then\n                targetX = 78.0\n            else\n                targetX = 122.0\n            end\n            targetZ = 100.0\n        end\n    end\nend\n\nif targetX ~= nil and targetZ ~= nil then\n    local drawer = TensorCore.getMoogleDrawer()\n    frogGuide.draw(\"p1_playstation\",drawer,\n        player.pos.x, player.pos.y, player.pos.z,\n        targetX, player.pos.y, targetZ,\n        8.0, 3.0\n    )\nend\n\nself.used = true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"6d9e0260-d620-393e-b85a-f5671b0fdf33",
 									true,
@@ -428,7 +867,301 @@ local tbl =
 			},
 		},
 	},
-	[50] = 
+	[38] =
+	{
+		
+		{
+			data =
+			{
+				displayPath = "",
+				name = "Local fixes",
+				uuid = "6335c1c7-3fc7-0a95-a341-6f6b8d2243ed",
+			},
+			objectType = "folder",
+		},
+
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							actionID = 16501,
+							atomicPriority = true,
+							conditions = 
+							{
+								
+								{
+									"f8b6b454-9b42-b26e-8ce7-cd5e6b457d9c",
+									true,
+								},
+
+								{
+									"9ab9ba2e-0690-2c58-b284-e686909bfd3f",
+									true,
+								},
+
+								{
+									"a03e4804-7aee-e3eb-92b2-2225ff6bfdd5",
+									true,
+								},
+
+								{
+									"0257359b-3350-abf8-ad1b-6e186feaf5ba",
+									true,
+								},
+
+								{
+									"75494fca-8941-8ace-8f53-39f08978d4d4",
+									true,
+								},
+							},
+							endIfUsed = true,
+							name = "Early opener Queen",
+							uuid = "161af7f0-924d-4492-82bc-f0040b63b080",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 13,
+							dequeueIfLuaFalse = true,
+							jobValue = "MACHINIST",
+							name = "Machinist",
+							uuid = "f8b6b454-9b42-b26e-8ce7-cd5e6b457d9c",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 7,
+							name = "In combat",
+							uuid = "9ab9ba2e-0690-2c58-b284-e686909bfd3f",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 6,
+							gaugeIndex = 2,
+							gaugeValue = 50,
+							name = "Battery >=50",
+							uuid = "a03e4804-7aee-e3eb-92b2-2225ff6bfdd5",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local t=TensorCore.mGetTarget()\nreturn t and t.contentid==3632 and t.targetable and t.attackable and t.hp.current>0",
+							name = "P2 Thordan available",
+							uuid = "0257359b-3350-abf8-ad1b-6e186feaf5ba",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return TensorReactions_CurrentTimer<321.5",
+							dequeueIfLuaFalse = true,
+							name = "P2 opener still active",
+							uuid = "75494fca-8941-8ace-8f53-39f08978d4d4",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes",
+				mechanicTime = 291.5,
+				name = "[MCH] Prioritise Queen in P2 opener",
+				timeRange = true,
+				timelineIndex = 38,
+				timerEndOffset = 30,
+				uuid = "63e244a9-3773-7ed7-9d7a-b393e8dd4bad",
+				version = 2,
+			},
+		},
+	},
+	[45] =
+	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "P2 Strength",
+				uuid = "84752f65-8de3-3f49-84f4-159cd5acce83",
+			},
+			objectType = "folder",
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_strength_spreads\nif s then\n if not s.resolved then s.resolved={}end\n for _,id in ipairs(eventArgs.hitTargets)do s.resolved[id]=true end\nend\nself.used=true\n",
+							conditions =
+							{
+
+								{
+									"3523282e-03c7-eaff-a184-be4ffc4be15a",
+									true,
+								},
+							},
+							name = "[Strength] Clear resolved spread tether",
+							uuid = "c98f4408-9e73-c12a-beb4-b9a3d6858479",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+
+					{
+						data =
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgOptionType = 3,
+							eventArgType = 2,
+							name = "Lightning spread hit",
+							spellIDList =
+							{
+								25549,
+							},
+							uuid = "3523282e-03c7-eaff-a184-be4ffc4be15a",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "P2 Strength",
+				eventType = 2,
+				loop = true,
+				mechanicTime = 317.5,
+				name = "[Strength] Clear resolved spread tether",
+				timeRange = true,
+				timelineIndex = 45,
+				timerEndOffset = 13.5,
+				uuid = "152b6b72-1694-f667-b1aa-a9b65a9c00b3",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e then self.used=true return end\nlocal s=data.frog_strength_spreads\nlocal t=TensorReactions_CurrentTimer\nif not s or (s.lastTime and t<s.lastTime-1)then s={axes={},count=0};data.frog_strength_spreads=s end\ns.lastTime=t\nlocal dx,dz=e.pos.x-100,e.pos.z-100\nif dx*dx+dz*dz<300 then self.used=true return end\nlocal axis=math.floor(math.atan2(dx,-dz)/(math.pi/4)+0.5)%4\nif not s.axes[axis]then s.axes[axis]=true;s.count=s.count+1 end\nif s.count==3 then for i=0,3 do if not s.axes[i]then s.safeAxis=i;break end end end\nself.used=true\n",
+							conditions =
+							{
+
+								{
+									"65bb060d-cf82-336d-8a3f-80e808bfdd6e",
+									true,
+								},
+							},
+							name = "[Strength] Initial triangle safe axis",
+							uuid = "e5889e00-92f1-9e2a-9d96-88aaff8a3948",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+
+					{
+						data =
+						{
+							category = "Event",
+							dequeueIfLuaFalse = true,
+							eventArgOptionType = 3,
+							eventArgType = 2,
+							name = "Spiral Thrust",
+							spellIDList =
+							{
+								25556,
+							},
+							uuid = "65bb060d-cf82-336d-8a3f-80e808bfdd6e",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "P2 Strength",
+				eventType = 3,
+				loop = true,
+				mechanicTime = 317.5,
+				name = "[Strength] Initial triangle safe axis",
+				timeRange = true,
+				timelineIndex = 45,
+				timerEndOffset = 13.5,
+				uuid = "6712a2b1-a8e6-5824-831a-4fba31a8417e",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\n\nlocal s=data.frog_strength_spreads\nif not s or s.finished or s.safeAxis==nil then self.used=true return end\nlocal guide=data.frog_draw_style_v5\nif guide.mode(\"p2_strength\")==\"Disabled\"then self.used=true return end\nlocal player=TensorCore.mGetPlayer()\nif not player or player.hp.current<=0 or (s.resolved and s.resolved[player.id]) then self.used=true return end\nlocal role=AnyoneCore.Roster.mySlot()\nif role==\"MT\"then role=\"T1\"elseif role==\"OT\"then role=\"T2\"end\nlocal group,radial,lateral\nif role==\"T1\"or role==\"H1\"or role==\"M1\"or role==\"R1\"then group=1\nelseif role==\"T2\"or role==\"H2\"or role==\"M2\"or role==\"R2\"then group=2\nelse self.used=true return end\nif role==\"T1\"or role==\"T2\"then radial=12;lateral=0\nelseif role==\"H1\"or role==\"H2\"then radial=19;lateral=0\nelseif role==\"M1\"or role==\"M2\"then radial=19.15;lateral=6.5\nelse radial=19.15;lateral=-6.5 end\nlocal angle=(s.safeAxis+(group==1 and 4 or 0))*math.pi/4\nlocal dx,dz=math.sin(angle),-math.cos(angle)\n-- Left/right are viewed facing the arena centre.\nlocal x=100+radial*dx-lateral*dz\nlocal z=100+radial*dz+lateral*dx\nlocal d=TensorCore.getStaticDrawer(0xFFFF6626,1,0,guide.flags)\nd:addCircle(x,player.pos.y+0.05,z,0.6,false,guide.flags)\nif (player.pos.x-x)^2+(player.pos.z-z)^2>1 then\n guide.draw(\"p2_strength\",d,player.pos.x,player.pos.y,player.pos.z,x,player.pos.y+0.05,z,8,2)\nend\nself.used=true\n\n",
+							name = "[Strength] Initial triangle spread tether",
+							uuid = "637beb4e-91d0-a8e3-936e-433d5b62ea65",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+				},
+				displayPath = "P2 Strength",
+				eventType = 12,
+				mechanicTime = 317.5,
+				name = "[Strength] Initial triangle spread tether",
+				timeRange = true,
+				timelineIndex = 45,
+				timerEndOffset = 13.5,
+				uuid = "ff4d71f3-44b6-4ad5-9fbb-84791052e65a",
+				version = 2,
+			},
+		},
+	},
+	[50] =
 	{
 		
 		{
@@ -442,9 +1175,9 @@ local tbl =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_bash=data.frog_bash or {}\nlocal s=data.frog_bash\ns.holders=s.holders or {}\ns.holders[eventArgs.sourceEntityID]=eventArgs.newTetherID==84 and eventArgs.newTargetID or nil\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"2e805132-4ef7-f28f-b49e-9bf9ad845737",
 									true,
@@ -458,9 +1191,9 @@ local tbl =
 				},
 				conditions = 
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "return (eventArgs.sourceEntityContentID==3634 or eventArgs.sourceEntityContentID==3635) and (eventArgs.oldTetherID==84 or eventArgs.newTetherID==84)",
@@ -493,7 +1226,7 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p2_strength\")==\"Disabled\" then self.used=true return end\n\nlocal player = TensorCore.mGetPlayer()\nif player == nil or player.pos == nil then\n    return\nend\n\ndata.frog_bash_guide = data.frog_bash_guide or {}\nlocal state = data.frog_bash_guide\n\nif state.role == nil then\n    local mySlot = AnyoneCore.Roster.mySlot()\n    if mySlot == \"MT\" then\n        state.role = \"T1\"\n    elseif mySlot == \"OT\" then\n        state.role = \"T2\"\n    elseif mySlot ~= nil then\n        state.role = mySlot\n    end\nend\n\nif state.role == nil then\n    local roster = AnyoneCore.Roster.members()\n    local party = AnyoneCore.API.getAgnosticPartyList()\n    if type(roster) ~= \"table\" or type(party) ~= \"table\" then\n        return\n    end\n\n    for slot, member in pairs(roster) do\n        if member ~= nil then\n            local exact\n            local unique\n            local partyCount = 0\n            local rosterCount = 0\n\n            for _, rosterMember in pairs(roster) do\n                if rosterMember ~= nil and rosterMember.job == member.job then\n                    rosterCount = rosterCount + 1\n                end\n            end\n\n            for _, partyMember in pairs(party) do\n                if partyMember ~= nil and partyMember.job == member.job then\n                    partyCount = partyCount + 1\n                    unique = partyMember\n                    if partyMember.name == member.name then\n                        exact = partyMember\n                    end\n                end\n            end\n\n            local resolved = exact or\n                (partyCount == 1 and rosterCount == 1 and unique)\n            if resolved ~= nil and resolved.id == player.id then\n                if slot == \"MT\" then\n                    state.role = \"T1\"\n                elseif slot == \"OT\" then\n                    state.role = \"T2\"\n                else\n                    state.role = slot\n                end\n                break\n            end\n        end\n    end\n\n    if state.role == nil then\n        self.used = true\n        return\n    end\nend\n\n\nif state.findActor == nil then\n    function state.findActor(id, cid, filter)\n        local entity = id and TensorCore.mGetEntity(id)\n        if entity and entity.contentid == cid and entity.pos and Argus.isEntityVisible(entity.id) then\n            return entity\n        end\n        for _, candidate in pairs(TensorCore.entityList(filter) or {}) do\n            if candidate.pos and Argus.isEntityVisible(candidate.id) then\n                return candidate\n            end\n        end\n    end\nend\n\nlocal isMT = state.role == \"T1\" or state.role == \"MT\"\nlocal isOT = state.role == \"T2\" or state.role == \"OT\"\nlocal flags = (Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)\n\nif not isMT and not isOT then\n    local thordan\n    local best = 100\n    for _, entity in pairs(TensorCore.entityList(\"contentid=3632\") or {}) do\n        if entity.pos and Argus.isEntityVisible(entity.id) then\n            local distance2 = (entity.pos.x-100)^2 + (entity.pos.z-100)^2\n            if distance2 > best then\n                best = distance2\n                thordan = entity\n            end\n        end\n    end\n    if not thordan then return end\n    local dx = thordan.pos.x-player.pos.x\n    local dz = thordan.pos.z-player.pos.z\n    local capture = data.frog_bash\n    local isDefamation = capture and capture.defamID == player.id\n    -- Dragon's Rage resolves at 345.4; stop stack guidance before towers.\n    if not isDefamation and TensorReactions_CurrentTimer >= 345.4 then\n        self.used = true\n        return\n    end\n    if isDefamation then dx,dz=-dx,-dz end\n    local directionLength=math.sqrt(dx*dx+dz*dz)\n    if directionLength>0.1 then\n        -- Unmarked guidance ends at Thordan; defamation remains an away indicator.\n        local guideLength=isDefamation and 10 or directionLength\n        local tipLength=math.min(2,guideLength*0.35)\n        local drawer=TensorCore.getCachedDrawer(nil,nil,0xFF00FF00,nil,1.5,0,flags)\n        if frogGuide.mode(\"p2_strength\")==\"Arrow\" then\n            local arrowDrawer=TensorCore.getStaticDrawer(0xFFFF6626,1.5,0,flags)\n            arrowDrawer:addArrow(player.pos.x,player.pos.y,player.pos.z,math.atan2(dx,dz),\n                guideLength-tipLength,0.75,tipLength,1.5,false,flags)\n        else\n            drawer:addLine(player.pos.x,player.pos.y,player.pos.z,\n                player.pos.x+dx/directionLength*guideLength,player.pos.y,\n                player.pos.z+dz/directionLength*guideLength,8,2)\n        end\n    end\n    self.used = true\n    return\nend\n\nlocal adelphel = state.findActor(state.adelphelID,3634,\"contentid=3634\")\nlocal janlenoux = state.findActor(state.janlenouxID,3635,\"contentid=3635\")\nif not adelphel or not janlenoux then return end\nstate.adelphelID,state.janlenouxID = adelphel.id,janlenoux.id\n\n-- Thordan lands opposite the knight pair. Their midpoint establishes the\n-- relative frame immediately, before Thordan leaves the arena center.\nlocal nx = 100-(adelphel.pos.x+janlenoux.pos.x)/2\nlocal nz = 100-(adelphel.pos.z+janlenoux.pos.z)/2\nlocal radius = math.sqrt(nx*nx+nz*nz)\nif radius < 1 then return end\nnx,nz=nx/radius,nz/radius\nlocal ex,ez=-nz,nx\nlocal aSide=(adelphel.pos.x-100)*ex+(adelphel.pos.z-100)*ez\nlocal jSide=(janlenoux.pos.x-100)*ex+(janlenoux.pos.z-100)*ez\nif math.abs(aSide-jSide)<1 then return end\nlocal west = aSide<jSide and adelphel or janlenoux\nlocal east = aSide<jSide and janlenoux or adelphel\nlocal knight = isMT and west or east\nstate.knightID = knight.id\n\n-- Read current tethers too, so a replay seek need not replay the capture event.\nlocal tethers = Argus.getTethersOnEnt(knight.id)\nfor _, tether in pairs(tethers or {}) do\n    if tether.type == 84 and tether.partnerid == player.id then\n        self.used = true\n        return\n    end\nend\nlocal capture = data.frog_bash\nif capture and capture.holders and capture.holders[knight.id] == player.id then\n    self.used = true\n    return\nend\n\nfrogGuide.draw(\"p2_strength\",TensorCore.getCachedDrawer(nil,nil,0xFFFF8000,nil,1.5,0,flags),\n    player.pos.x,player.pos.y,player.pos.z,\n    knight.pos.x,knight.pos.y,knight.pos.z,8,2)\nself.used = true\n",
+							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p2_strength\")==\"Disabled\" then self.used=true return end\n\nlocal player = TensorCore.mGetPlayer()\nif player == nil or player.pos == nil then\n    return\nend\n\ndata.frog_bash_guide = data.frog_bash_guide or {}\nlocal state = data.frog_bash_guide\n\nif state.role == nil then\n    local mySlot = AnyoneCore.Roster.mySlot()\n    if mySlot == \"MT\" then\n        state.role = \"T1\"\n    elseif mySlot == \"OT\" then\n        state.role = \"T2\"\n    elseif mySlot ~= nil then\n        state.role = mySlot\n    end\nend\n\nif state.role == nil then\n    local roster = AnyoneCore.Roster.members()\n    local party = AnyoneCore.API.getAgnosticPartyList()\n    if type(roster) ~= \"table\" or type(party) ~= \"table\" then\n        return\n    end\n\n    for slot, member in pairs(roster) do\n        if member ~= nil then\n            local exact\n            local unique\n            local partyCount = 0\n            local rosterCount = 0\n\n            for _, rosterMember in pairs(roster) do\n                if rosterMember ~= nil and rosterMember.job == member.job then\n                    rosterCount = rosterCount + 1\n                end\n            end\n\n            for _, partyMember in pairs(party) do\n                if partyMember ~= nil and partyMember.job == member.job then\n                    partyCount = partyCount + 1\n                    unique = partyMember\n                    if partyMember.name == member.name then\n                        exact = partyMember\n                    end\n                end\n            end\n\n            local resolved = exact or\n                (partyCount == 1 and rosterCount == 1 and unique)\n            if resolved ~= nil and resolved.id == player.id then\n                if slot == \"MT\" then\n                    state.role = \"T1\"\n                elseif slot == \"OT\" then\n                    state.role = \"T2\"\n                else\n                    state.role = slot\n                end\n                break\n            end\n        end\n    end\n\n    if state.role == nil then\n        self.used = true\n        return\n    end\nend\n\n\nif state.findActor == nil then\n    function state.findActor(id, cid, filter)\n        local entity = id and TensorCore.mGetEntity(id)\n        if entity and entity.contentid == cid and entity.pos and Argus.isEntityVisible(entity.id) then\n            return entity\n        end\n        for _, candidate in pairs(TensorCore.entityList(filter) or {}) do\n            if candidate.pos and Argus.isEntityVisible(candidate.id) then\n                return candidate\n            end\n        end\n    end\nend\n\nlocal isMT = state.role == \"T1\" or state.role == \"MT\"\nlocal isOT = state.role == \"T2\" or state.role == \"OT\"\nlocal flags = (Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)\n\nif not isMT and not isOT then\n    local thordan\n    local best = 100\n    for _, entity in pairs(TensorCore.entityList(\"contentid=3632\") or {}) do\n        if entity.pos and Argus.isEntityVisible(entity.id) then\n            local distance2 = (entity.pos.x-100)^2 + (entity.pos.z-100)^2\n            if distance2 > best then\n                best = distance2\n                thordan = entity\n            end\n        end\n    end\n    if not thordan then return end\n    local dx = thordan.pos.x-player.pos.x\n    local dz = thordan.pos.z-player.pos.z\n    local capture = data.frog_bash\n    if not capture or not capture.defams or (capture.defamCount or 0)<3 then self.used=true return end\n    local isDefamation = capture.defams[player.id]==true\n    -- Dragon's Rage resolves at 345.4; stop stack guidance before towers.\n    if not isDefamation and TensorReactions_CurrentTimer >= 345.4 then\n        self.used = true\n        return\n    end\n    if isDefamation then\n        if not state.defamPoints or state.defamBossID~=thordan.id then\n            local nx,nz=thordan.pos.x-100,thordan.pos.z-100\n            local length=math.sqrt(nx*nx+nz*nz)\n            if length<10 then self.used=true return end\n            nx,nz=nx/length,nz/length\n            local ex,ez=-nz,nx\n            -- Relative E/W, shifted 1.5y towards relative south; S stays opposite Thordan.\n            state.defamPoints={\n                {x=100+20*ex-1.5*nx,z=100+20*ez-1.5*nz},\n                {x=100-20*ex-1.5*nx,z=100-20*ez-1.5*nz},\n                {x=100-20*nx,z=100-20*nz}}\n            state.defamBossID=thordan.id\n        end\n        capture.defamAssignments=capture.defamAssignments or {}\n        local destination=capture.defamAssignments[player.id]\n        local bestDistance\n        if not destination then\n        for _,point in ipairs(state.defamPoints)do\n            local distance=(player.pos.x-point.x)^2+(player.pos.z-point.z)^2\n            local closest=true\n            for id in pairs(capture.defams)do\n                if id~=player.id then\n                    local other=TensorCore.mGetEntity(id)\n                    if not other then self.used=true return end\n                    local otherDistance=(other.pos.x-point.x)^2+(other.pos.z-point.z)^2\n                    if otherDistance<distance-0.0001 or (math.abs(otherDistance-distance)<=0.0001 and id<player.id)then closest=false;break end\n                end\n            end\n            if closest and (not point.ownerID or point.ownerID==player.id) and (not bestDistance or distance<bestDistance)then destination=point;bestDistance=distance end\n        end\n        if destination then\n            capture.defamAssignments[player.id]=destination\n            destination.ownerID=player.id\n        end\n        end\n        -- Wait until an eligible spot exists, then keep the assignment for this mechanic.\n        if not destination then self.used=true return end\n        dx,dz=destination.x-player.pos.x,destination.z-player.pos.z\n    end\n    local directionLength=math.sqrt(dx*dx+dz*dz)\n    if directionLength>0.1 then\n        -- Both modes end at their actual world destination.\n        local guideLength=directionLength\n        local tipLength=math.min(2,guideLength*0.35)\n        local drawer=TensorCore.getCachedDrawer(nil,nil,0xFF00FF00,nil,1.5,0,flags)\n        if frogGuide.mode(\"p2_strength\")==\"Arrow\" then\n            local arrowDrawer=TensorCore.getStaticDrawer(0xFFFF6626,1.5,0,flags)\n            arrowDrawer:addArrow(player.pos.x,player.pos.y,player.pos.z,math.atan2(dx,dz),\n                guideLength-tipLength,0.75,tipLength,1.5,false,flags)\n        else\n            drawer:addLine(player.pos.x,player.pos.y,player.pos.z,\n                player.pos.x+dx/directionLength*guideLength,player.pos.y,\n                player.pos.z+dz/directionLength*guideLength,8,2)\n        end\n    end\n    self.used = true\n    return\nend\n\nlocal adelphel = state.findActor(state.adelphelID,3634,\"contentid=3634\")\nlocal janlenoux = state.findActor(state.janlenouxID,3635,\"contentid=3635\")\nif not adelphel or not janlenoux then return end\nstate.adelphelID,state.janlenouxID = adelphel.id,janlenoux.id\n\n-- Thordan lands opposite the knight pair. Their midpoint establishes the\n-- relative frame immediately, before Thordan leaves the arena center.\nlocal nx = 100-(adelphel.pos.x+janlenoux.pos.x)/2\nlocal nz = 100-(adelphel.pos.z+janlenoux.pos.z)/2\nlocal radius = math.sqrt(nx*nx+nz*nz)\nif radius < 1 then return end\nnx,nz=nx/radius,nz/radius\nlocal ex,ez=-nz,nx\nlocal aSide=(adelphel.pos.x-100)*ex+(adelphel.pos.z-100)*ez\nlocal jSide=(janlenoux.pos.x-100)*ex+(janlenoux.pos.z-100)*ez\nif math.abs(aSide-jSide)<1 then return end\nlocal west = aSide<jSide and adelphel or janlenoux\nlocal east = aSide<jSide and janlenoux or adelphel\nlocal knight = isMT and west or east\nstate.knightID = knight.id\n\n-- Read current tethers too, so a replay seek need not replay the capture event.\nlocal tethers = Argus.getTethersOnEnt(knight.id)\nfor _, tether in pairs(tethers or {}) do\n    if tether.type == 84 and tether.partnerid == player.id then\n        self.used = true\n        return\n    end\nend\nlocal capture = data.frog_bash\nif capture and capture.holders and capture.holders[knight.id] == player.id then\n    self.used = true\n    return\nend\n\nfrogGuide.draw(\"p2_strength\",TensorCore.getCachedDrawer(nil,nil,0xFFFF8000,nil,1.5,0,flags),\n    player.pos.x,player.pos.y,player.pos.z,\n    knight.pos.x,knight.pos.y,knight.pos.z,8,2)\nself.used = true\n",
 							name = "Shield Bash role guidance",
 							uuid = "4018cefd-a34c-2b01-8d77-83359b2e16fe",
 							version = 2.1,
@@ -526,7 +1259,7 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "data.frog_bash = data.frog_bash or {}\ndata.frog_bash.defamID = eventArgs.entityID\nself.used = true",
+							actionLua = "data.frog_bash=data.frog_bash or {}\nlocal s=data.frog_bash\nif not s.defams then s.defams={};s.defamCount=0 end\nif not s.defams[eventArgs.entityID]then s.defams[eventArgs.entityID]=true;s.defamCount=s.defamCount+1 end\nself.used=true\n",
 							conditions = 
 							{
 								
@@ -550,9 +1283,9 @@ local tbl =
 							category = "Event",
 							dequeueIfLuaFalse = true,
 							eventArgType = 3,
-							markerIDList = 
+							markerIDList =
 							{
-								14,
+								330,
 							},
 							name = "Defamation Marker",
 							uuid = "fc3ff382-6e26-86b6-9abc-80a1863de952",
@@ -572,7 +1305,7 @@ local tbl =
 			},
 		},
 	},
-	[64] = 
+	[64] =
 	{
 		
 		{
@@ -763,7 +1496,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 4,
@@ -779,13 +1512,13 @@ local tbl =
 			},
 		},
 	},
-	[68] = 
+	[68] =
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
 					
 					{
@@ -835,13 +1568,13 @@ local tbl =
 			},
 		},
 	},
-	[71] = 
+	[71] =
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
 					
 					{
@@ -855,7 +1588,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 12,
@@ -902,11 +1635,11 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
 					
 					{
@@ -920,7 +1653,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 12,
@@ -935,11 +1668,11 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
 					
 					{
@@ -953,7 +1686,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 18,
@@ -968,7 +1701,7 @@ local tbl =
 			},
 		},
 	},
-	[72] = 
+	[72] =
 	{
 		
 		{
@@ -1003,7 +1736,713 @@ local tbl =
 			},
 		},
 	},
-	[86] = 
+	[82] =
+	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "Local fixes",
+				uuid = "bc32cf22-ae16-829b-a643-10a0944def43",
+			},
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				displayPath = "Local fixes",
+				name = "Monk downtime",
+				uuid = "f865b9f9-6b8c-b58e-bd53-ba7f5ca6f1ed",
+			},
+			objectType = "folder",
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_mnk_downtime\nif not s then self.used=true return end\nif Now()>(s.pbUntil or 0) then s.remaining=0 end\nif Now()>(s.chakraUntil or 0) then s.chakra=0 end\ns.prep={key=\"Sanctity Blitz preparation\",start=Now(),solar=not s.solar,blitz=(s.solar and s.lunar) and 25769 or ((not s.solar) and 25768 or 3545)}\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"3c282dca-0764-f9fe-8fc6-c3400fe465b0",
+									true,
+								},
+								
+								{
+									"e4c06415-72ce-cf30-8e2c-e51e7943c62f",
+									true,
+								},
+
+								{
+									"0c5a2957-d196-4b2a-9bb6-e11f2d03671a",
+									true,
+								},
+
+								{
+									"36a1686a-06f6-c55f-86c6-fd0b3d32be59",
+									true,
+								},
+
+								{
+									"88bee733-0b76-6112-9448-983bfc1b85c9",
+									true,
+								},
+
+								{
+									"354217f8-3ec1-1964-980a-7c03edbf18ba",
+									true,
+								},
+							},
+							name = "Choose missing Nadi once",
+							uuid = "a31705f3-2778-ac68-924c-04462536dabc",
+							version = 2.1,
+						},
+					},
+					
+					{
+						data = 
+						{
+							actionID = 69,
+							conditions = 
+							{
+								
+								{
+									"3c282dca-0764-f9fe-8fc6-c3400fe465b0",
+									true,
+								},
+
+								{
+									"e4c06415-72ce-cf30-8e2c-e51e7943c62f",
+									true,
+								},
+
+								{
+									"0c5a2957-d196-4b2a-9bb6-e11f2d03671a",
+									true,
+								},
+
+								{
+									"36a1686a-06f6-c55f-86c6-fd0b3d32be59",
+									true,
+								},
+
+								{
+									"67e4b75d-4e15-1f11-bd6e-7326022208f6",
+									true,
+								},
+
+								{
+									"354217f8-3ec1-1964-980a-7c03edbf18ba",
+									true,
+								},
+							},
+							ignoreWeaveRules = true,
+							uuid = "ee09da83-1eb5-13be-97ab-dcad6ebbe9db",
+							version = 2.1,
+						},
+					},
+					
+					{
+						data = 
+						{
+							actionID = 25767,
+							conditions = 
+							{
+								
+								{
+									"3c282dca-0764-f9fe-8fc6-c3400fe465b0",
+									true,
+								},
+
+								{
+									"e4c06415-72ce-cf30-8e2c-e51e7943c62f",
+									true,
+								},
+
+								{
+									"0c5a2957-d196-4b2a-9bb6-e11f2d03671a",
+									true,
+								},
+
+								{
+									"36a1686a-06f6-c55f-86c6-fd0b3d32be59",
+									true,
+								},
+
+								{
+									"a11de2e6-1ef5-dcad-8352-63b0409ab99f",
+									true,
+								},
+							},
+							uuid = "e5822efe-add7-ae07-a338-004d4dc6cdaf",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 16473,
+							conditions = 
+							{
+								
+								{
+									"3c282dca-0764-f9fe-8fc6-c3400fe465b0",
+									true,
+								},
+								
+								{
+									"e4c06415-72ce-cf30-8e2c-e51e7943c62f",
+									true,
+								},
+
+								{
+									"0c5a2957-d196-4b2a-9bb6-e11f2d03671a",
+									true,
+								},
+
+								{
+									"36a1686a-06f6-c55f-86c6-fd0b3d32be59",
+									true,
+								},
+
+								{
+									"d6067bb8-1b4d-835e-8599-a510b6a8b1a5",
+									true,
+								},
+
+								{
+									"2be86509-c650-e0b6-a5f9-066b43a0b432",
+									true,
+								},
+							},
+							uuid = "be558299-f982-607c-a125-788e4fac0a23",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 25767,
+							conditions =
+							{
+
+								{
+									"3c282dca-0764-f9fe-8fc6-c3400fe465b0",
+									true,
+								},
+
+								{
+									"e4c06415-72ce-cf30-8e2c-e51e7943c62f",
+									true,
+								},
+
+								{
+									"0c5a2957-d196-4b2a-9bb6-e11f2d03671a",
+									true,
+								},
+
+								{
+									"36a1686a-06f6-c55f-86c6-fd0b3d32be59",
+									true,
+								},
+
+								{
+									"d6067bb8-1b4d-835e-8599-a510b6a8b1a5",
+									true,
+								},
+
+								{
+									"01e64533-fc0a-b086-bf57-50c7a7af9039",
+									true,
+								},
+							},
+							uuid = "9bbe431b-70e9-84fb-b937-8a4f83e0bf91",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 70,
+							conditions =
+							{
+
+								{
+									"3c282dca-0764-f9fe-8fc6-c3400fe465b0",
+									true,
+								},
+
+								{
+									"e4c06415-72ce-cf30-8e2c-e51e7943c62f",
+									true,
+								},
+
+								{
+									"0c5a2957-d196-4b2a-9bb6-e11f2d03671a",
+									true,
+								},
+
+								{
+									"36a1686a-06f6-c55f-86c6-fd0b3d32be59",
+									true,
+								},
+
+								{
+									"f2eca9c5-171c-3b7a-96fd-0aa8a6d84387",
+									true,
+								},
+
+								{
+									"2be86509-c650-e0b6-a5f9-066b43a0b432",
+									true,
+								},
+							},
+							uuid = "fc633811-d3dc-3efa-bd34-1cb7fb4a52a1",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 25767,
+							conditions =
+							{
+
+								{
+									"3c282dca-0764-f9fe-8fc6-c3400fe465b0",
+									true,
+								},
+
+								{
+									"e4c06415-72ce-cf30-8e2c-e51e7943c62f",
+									true,
+								},
+
+								{
+									"0c5a2957-d196-4b2a-9bb6-e11f2d03671a",
+									true,
+								},
+
+								{
+									"36a1686a-06f6-c55f-86c6-fd0b3d32be59",
+									true,
+								},
+
+								{
+									"f2eca9c5-171c-3b7a-96fd-0aa8a6d84387",
+									true,
+								},
+
+								{
+									"01e64533-fc0a-b086-bf57-50c7a7af9039",
+									true,
+								},
+							},
+							uuid = "7c794613-79a5-d7a3-93a2-0d37874cd70e",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+
+					{
+						data = 
+						{
+							category = "Self",
+							conditionType = 13,
+							jobValue = "MONK",
+							name = "Monk only",
+							uuid = "3c282dca-0764-f9fe-8fc6-c3400fe465b0",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return FFXIV_Common_BotRunning == true",
+							name = "Bot running",
+							uuid = "e4c06415-72ce-cf30-8e2c-e51e7943c62f",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return gACRSelectedProfiles[20] == \"RikuMNK3\"",
+							name = "RikuMNK3",
+							uuid = "0c5a2957-d196-4b2a-9bb6-e11f2d03671a",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local t=TensorCore.mGetTarget()\nreturn not t or not t.targetable or not t.attackable or t.hp.current<=0",
+							name = "No attackable current target",
+							uuid = "36a1686a-06f6-c55f-86c6-fd0b3d32be59",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nif not s or not s.known then return false end\nlocal t=Now()\nreturn (s.remaining==0 or t>(s.pbUntil or 0)) and (s.chakra==0 or t>(s.chakraUntil or 0))",
+							name = "Nadi known; no pending PB or Blitz",
+							uuid = "88bee733-0b76-6112-9448-983bfc1b85c9",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 69,
+							category = "Self",
+							comparator = 2,
+							conditionType = 4,
+							uuid = "354217f8-3ec1-1964-980a-7c03edbf18ba",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"Sanctity Blitz preparation\" and Now()-s.prep.start<10000 and ((s.remaining==0 or Now()>(s.pbUntil or 0)) and s.chakra==0)",
+							name = "PB stage 0",
+							uuid = "67e4b75d-4e15-1f11-bd6e-7326022208f6",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"Sanctity Blitz preparation\" and Now()-s.prep.start<10000 and s.remaining==3 and s.chakra==0 and Now()<=(s.pbUntil or 0)",
+							name = "PB stage 1",
+							uuid = "a11de2e6-1ef5-dcad-8352-63b0409ab99f",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"Sanctity Blitz preparation\" and Now()-s.prep.start<10000 and s.remaining==2 and s.chakra==1 and Now()<=(s.pbUntil or 0)",
+							name = "PB stage 2",
+							uuid = "d6067bb8-1b4d-835e-8599-a510b6a8b1a5",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"Sanctity Blitz preparation\" and Now()-s.prep.start<10000 and s.remaining==1 and s.chakra==2 and Now()<=(s.pbUntil or 0)",
+							name = "PB stage 3",
+							uuid = "f2eca9c5-171c-3b7a-96fd-0aa8a6d84387",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.solar",
+							name = "Prepare Solar Nadi",
+							uuid = "2be86509-c650-e0b6-a5f9-066b43a0b432",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and not s.prep.solar",
+							name = "Prepare Lunar or Phantom",
+							uuid = "01e64533-fc0a-b086-bf57-50c7a7af9039",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes/Monk downtime",
+				mechanicTime = 439.2,
+				name = "[MNK] Sanctity Blitz preparation",
+				timeRange = true,
+				timelineIndex = 82,
+				timerEndOffset = -0.2,
+				timerStartOffset = -13,
+				uuid = "e21e6ecf-d6a4-590b-bb15-eb4cb8294221",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							actionID = 25768,
+							conditions = 
+							{
+								
+								{
+									"24979f9a-dc30-179f-838b-cf6dd69ee14e",
+									true,
+								},
+
+								{
+									"3108d8f2-a969-362e-b306-aa666826eb4d",
+									true,
+								},
+
+								{
+									"dab33b10-91e5-2db1-95a7-f579262e7574",
+									true,
+								},
+
+								{
+									"2c3729a3-75eb-b768-a767-f696b5494c89",
+									true,
+								},
+
+								{
+									"83fe5685-2250-2b3e-a3c7-62c95e344550",
+									true,
+								},
+
+								{
+									"68e8a8ba-f949-9f22-a742-175e22b9f40d",
+									true,
+								},
+							},
+							uuid = "81237a2b-1018-b3fe-b95b-33911a896e3d",
+							version = 2.1,
+						},
+					},
+					
+					{
+						data = 
+						{
+							actionID = 3545,
+							conditions = 
+							{
+								
+								{
+									"24979f9a-dc30-179f-838b-cf6dd69ee14e",
+									true,
+								},
+
+								{
+									"3108d8f2-a969-362e-b306-aa666826eb4d",
+									true,
+								},
+
+								{
+									"dab33b10-91e5-2db1-95a7-f579262e7574",
+									true,
+								},
+
+								{
+									"2c3729a3-75eb-b768-a767-f696b5494c89",
+									true,
+								},
+
+								{
+									"83fe5685-2250-2b3e-a3c7-62c95e344550",
+									true,
+								},
+
+								{
+									"128964e9-ec60-87fe-bdf6-25a65293dfa3",
+									true,
+								},
+							},
+							uuid = "97cd7937-d823-a3d1-b0d7-a3ecbcb7f9cb",
+							version = 2.1,
+						},
+					},
+					
+					{
+						data = 
+						{
+							actionID = 25769,
+							conditions = 
+							{
+								
+								{
+									"24979f9a-dc30-179f-838b-cf6dd69ee14e",
+									true,
+								},
+
+								{
+									"3108d8f2-a969-362e-b306-aa666826eb4d",
+									true,
+								},
+
+								{
+									"dab33b10-91e5-2db1-95a7-f579262e7574",
+									true,
+								},
+
+								{
+									"2c3729a3-75eb-b768-a767-f696b5494c89",
+									true,
+								},
+
+								{
+									"83fe5685-2250-2b3e-a3c7-62c95e344550",
+									true,
+								},
+
+								{
+									"00b186cb-9065-1d2c-afb9-515b80a2b807",
+									true,
+								},
+							},
+							targetType = "Current Target",
+							uuid = "3e970b83-1b9d-cd03-a15e-90faf5128edf",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+					
+					{
+						data = 
+						{
+							category = "Self",
+							conditionType = 13,
+							jobValue = "MONK",
+							name = "Monk only",
+							uuid = "24979f9a-dc30-179f-838b-cf6dd69ee14e",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "return FFXIV_Common_BotRunning == true",
+							name = "Bot running",
+							uuid = "3108d8f2-a969-362e-b306-aa666826eb4d",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "return gACRSelectedProfiles[20] == \"RikuMNK3\"",
+							name = "RikuMNK3",
+							uuid = "dab33b10-91e5-2db1-95a7-f579262e7574",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "local t=TensorCore.mGetTarget()\nreturn t and t.targetable and t.attackable and t.hp.current>0 and t.distance2d<=5+t.hitradius",
+							name = "Live target in Blitz range",
+							uuid = "2c3729a3-75eb-b768-a767-f696b5494c89",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"Sanctity Blitz preparation\" and s.chakra==3 and Now()<=(s.chakraUntil or 0)",
+							name = "Our Blitz is prepared",
+							uuid = "83fe5685-2250-2b3e-a3c7-62c95e344550",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.blitz==25768",
+							name = "Prepared Blitz 25768",
+							uuid = "68e8a8ba-f949-9f22-a742-175e22b9f40d",
+							version = 3,
+						},
+					},
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.blitz==3545",
+							name = "Prepared Blitz 3545",
+							uuid = "128964e9-ec60-87fe-bdf6-25a65293dfa3",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.blitz==25769",
+							name = "Prepared Blitz 25769",
+							uuid = "00b186cb-9065-1d2c-afb9-515b80a2b807",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes/Monk downtime",
+				mechanicTime = 439.2,
+				name = "[MNK] Sanctity Blitz preparation release",
+				timeRange = true,
+				timelineIndex = 82,
+				timerEndOffset = 8,
+				uuid = "09f9b098-0c9a-174f-b90e-705932facb73",
+				version = 2,
+			},
+		},
+	},
+	[86] =
 	{
 		
 		{
@@ -1039,7 +2478,7 @@ local tbl =
 			},
 		},
 	},
-	[99] = 
+	[99] =
 	{
 		
 		{
@@ -1053,14 +2492,14 @@ local tbl =
 						{
 							aType = "Lua",
 							actionLua = "local old = data.frog_dfg_v2\nlocal s = {line=old and old.line or {}, positions={}, jump={}, side={}, placement={}, planned={}, towers={{},{},{}}, placed={}, resolved={0,0,0}, towerByCaster={}, resolvedCasters={{},{},{}}, stacks=0, geirLocked={}, ready=false}\ndata.frog_dfg_v2 = s\n-- Snapshot the saved strategy for the entire mechanic, including replay seeks.\nlocal settings=data.frog_draw_settings and data.frog_draw_settings.settings\nif not settings then\n    local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n    if FileExists(path) then\n        local ok,saved=pcall(FileLoad,path)\n        if ok and type(saved)==\"table\" then settings=saved end\n    end\nend\ns.strategy=settings and settings.p3_strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\ns.faceSign=s.strategy==\"LPDU\" and 1 or -1\ns.customHold=settings~=nil and settings.p3_custom_hold==true\nlocal boss = TensorCore.mGetEntity(eventArgs.entityID)\nif not boss or not boss.pos or not boss.hitradius or boss.hitradius <= 0 then self.used=true return end\ns.bossID=boss.id\ns.center={x=boss.pos.x,y=boss.pos.y,z=boss.pos.z}\ns.radius=boss.hitradius\ns.drawer=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0)\nlocal party=TensorCore.getEntityGroupList(\"Party\")\nfor _,e in pairs(party or {}) do\n    s.positions[e.id]={x=e.pos.x,y=e.pos.y,z=e.pos.z}\nend\nfunction s.assign()\n    if s.ready then return end\n    local counts={0,0,0}\n    local highs={true,true,true}\n    for id,p in pairs(s.positions) do\n        local line=s.line[id]\n        if not line then return end\n        local e=TensorCore.mGetEntity(id)\n        if not e then return end\n        if not s.jump[id] then\n            if TensorCore.hasBuff(e,2755) then s.jump[id]=1\n            elseif TensorCore.hasBuff(e,2756) then s.jump[id]=2\n            elseif TensorCore.hasBuff(e,2757) then s.jump[id]=3 end\n        end\n        if not s.jump[id] then return end\n        counts[line]=counts[line]+1\n        if s.jump[id]~=1 then highs[line]=false end\n    end\n    if counts[1]~=3 or counts[2]~=2 or counts[3]~=3 then return end\n    local westSecond\n    for id,p in pairs(s.positions) do\n        if s.line[id]==2 and (not westSecond or p.x<s.positions[westSecond].x or (p.x==s.positions[westSecond].x and id<westSecond)) then westSecond=id end\n    end\n    for id,p in pairs(s.positions) do\n        local line,jump=s.line[id],s.jump[id]\n        local side\n        if not highs[line] then\n            if jump==1 then side=\"S\"\n            elseif jump==2 then side=s.strategy==\"LPDU\" and \"W\" or \"E\"\n            else side=s.strategy==\"LPDU\" and \"E\" or \"W\" end\n        elseif line==2 then side=id==westSecond and \"W\" or \"E\"\n        else\n            local dx,dz=p.x-s.center.x,p.z-s.center.z\n            if -dx>=dz and dx<=0 then side=\"W\" elseif dx>=dz then side=\"E\" else side=\"S\" end\n        end\n        s.side[id]=side\n        local r=s.radius\n        local x,z=s.center.x,s.center.z\n        if line==2 then\n            local q=(r+1)/math.sqrt(2)\n            x=x+(side==\"W\" and -q or q); z=z-q\n        elseif side==\"W\" then x=x-r elseif side==\"E\" then x=x+r else z=z+r end\n        -- Keep the player's placement on the edge; project the tower separately.\n        local tx=x\n        if jump==2 then\n            tx=x+14*s.faceSign\n        elseif jump==3 then\n            tx=x-14*s.faceSign\n        end\n        s.placement[id]={x=x,y=s.center.y+0.05,z=z}\n        s.planned[id]={x=tx,y=s.center.y+0.05,z=z}\n    end\n    s.ready=true\nend\nfunction s.tower(wave,side)\n    local best,score,owner\n    -- Captured jump positions supersede assignment predictions.\n    for id,p in pairs(s.planned) do\n        if s.line[id]==wave then\n            local t=s.towers[wave][id] or p\n            local v=side==\"W\" and -t.x or side==\"E\" and t.x or t.z\n            if not best or v>score then best,score,owner=t,v,id end\n        end\n    end\n    return best,owner\nend\nfunction s.guide(id)\n    local line,side=s.line[id],s.side[id]\n    if not s.ready or not line or not side then return nil end\n    if line==1 then\n        if not s.placed[id] then return s.placement[id],\"place1\" end\n        if side==\"S\" then\n            if s.stacks<2 then return nil,\"stack\" end\n            if s.resolved[3]<3 then return s.tower(3,\"S\"),\"soak3\" end\n        else\n            -- Wait at the stack until BOTH second-in-line jumps have landed.\n            -- Arrow jumps can reverse which player owns the west/east tower.\n            for other,wave in pairs(s.line) do\n                if wave==2 and not s.placed[other] then return nil,\"stack\" end\n            end\n            local tower,owner=s.tower(2,side)\n            if not owner then return nil,\"stack\" end\n            -- Stay to soak and bait; leave when this tower clone locks Geirskogul.\n            if not s.geirLocked[owner] then return tower,\"soak2\" end\n            if s.stacks<2 then return nil,\"stack\" end\n        end\n    elseif line==2 then\n        if s.stacks<1 then return nil,\"stack\" end\n        if not s.placed[id] then return s.placement[id],\"place2\" end\n        if s.stacks<2 then return nil,\"stack\" end\n        if s.resolved[3]<3 then return s.tower(3,side),\"soak3\" end\n    elseif line==3 then\n        if s.stacks<1 then return nil,\"stack\" end\n        if s.resolved[1]<3 then return s.tower(1,side),\"soak1\" end\n        if not s.placed[id] then return s.placement[id],\"place3\" end\n    end\n    return nil,\"done\"\nend\ns.assign()\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"1e7514aa-4db5-b043-87a1-d5922935a28e",
 									true,
 								},
-								
+
 								{
 									"f009e45f-b579-24c5-bc06-ab68944a4318",
 									true,
@@ -1074,9 +2513,9 @@ local tbl =
 				},
 				conditions = 
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -1087,9 +2526,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -1148,7 +2587,7 @@ local tbl =
 							category = "Event",
 							dequeueIfLuaFalse = true,
 							eventArgType = 3,
-							markerIDList = 
+							markerIDList =
 							{
 								319,
 								320,
@@ -1190,7 +2629,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 12,
@@ -1204,15 +2643,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_dfg_v2\nif not s then self.used=true return end\nlocal ref=s.towerByCaster[eventArgs.entityID]\nif ref and not s.resolvedCasters[ref.wave][eventArgs.entityID] then\n    s.resolvedCasters[ref.wave][eventArgs.entityID]=true\n    s.resolved[ref.wave]=s.resolved[ref.wave]+1\nend\nself.used=true",
@@ -1223,7 +2662,7 @@ local tbl =
 									"d819b5ec-0d81-f69e-9499-2725a6409a32",
 									true,
 								},
-								
+
 								{
 									"b923c2fc-0c50-5dac-903f-9a2507793b65",
 									true,
@@ -1250,9 +2689,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -1365,7 +2804,7 @@ local tbl =
 									"8d2b34e1-01b2-de19-925e-bd50b09ef266",
 									true,
 								},
-								
+
 								{
 									"1be7f415-ec1b-bd86-9378-a631df0112ce",
 									true,
@@ -1394,7 +2833,7 @@ local tbl =
 									"1be7f415-ec1b-bd86-9378-a631df0112ce",
 									true,
 								},
-								
+
 								{
 									"a67772f7-b8fe-a879-827d-b762a662ff6b",
 									true,
@@ -1417,7 +2856,7 @@ local tbl =
 							eventArgOptionType = 3,
 							eventArgType = 2,
 							name = "Jump placement",
-							spellIDList = 
+							spellIDList =
 							{
 								26382,
 								26383,
@@ -1440,9 +2879,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local p=TensorCore.mGetPlayer()\nreturn p~=nil and eventArgs.targetID==p.id",
@@ -1483,7 +2922,7 @@ local tbl =
 									"e9a70d95-dcf1-1735-bd95-efccb2f5ed70",
 									true,
 								},
-								
+
 								{
 									"1a6178c6-6976-e584-b31e-f340057f47a5",
 									true,
@@ -1510,9 +2949,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -1535,11 +2974,11 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
 					
 					{
@@ -1553,7 +2992,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				mechanicTime = 620.5,
@@ -1576,33 +3015,33 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "local p=TensorCore.mGetPlayer()\nlocal buff=TensorCore.getBuff(p,2756) or TensorCore.getBuff(p,2757)\nif not buff then return end\nlocal arrow=TensorCore.hasAnyBuff(p,2756,2757)\nlocal solver=data.frog_dfg_v2\nlocal heading=solver and solver.strategy==\"LPDU\" and math.pi/2 or -math.pi/2\ndata.frog_dfg_control={expires=Now()+buff.duration*1000,arrow=arrow,active=true,heading=heading}\nif arrow then\n    TensorCore.API.TensorACR.setLockFaceHeading(heading)\n    TensorCore.API.TensorACR.setHardLockFace(true)\n    TensorCore.API.TensorACR.toggleLockFace(true)\nend\nself.used=true",
-							conditions = 
+							actionLua = "if not self.softStarted then\n    local p=TensorCore.mGetPlayer()\n    local buff=TensorCore.getBuff(p,2756) or TensorCore.getBuff(p,2757)\n    if not buff then return end\n    local arrow=TensorCore.hasAnyBuff(p,2756,2757)\n    local solver=data.frog_dfg_v2\n    local heading=solver and solver.strategy==\"LPDU\" and math.pi/2 or -math.pi/2\n    data.frog_dfg_control={expires=Now()+buff.duration*1000,arrow=arrow,active=true,heading=heading}\n    if arrow then\n        TensorCore.API.TensorACR.setLockFaceHeading(heading)\n        TensorCore.API.TensorACR.setHardLockFace(false)\n        TensorCore.API.TensorACR.toggleLockFace(true)\n    end\n    self.softStarted=true\nend\nlocal c=data.frog_dfg_control\nif not c or not c.active or not c.arrow then self.used=true return end\nif Now()<c.expires-2000 then return end\nTensorCore.API.TensorACR.setLockFaceHeading(c.heading)\nTensorCore.API.TensorACR.setHardLockFace(true)\nself.used=true",
+							conditions =
 							{
-								
+
 								{
 									"a38ad0d7-85a4-dbb1-b038-0acf8ad32097",
 									true,
 								},
-								
+
 								{
 									"e0cd7562-14e4-5b79-b3a4-e6c4a92937ca",
 									true,
 								},
 							},
-							name = "Set strategy facing and snapshot deadline",
+							name = "Normal facing then hard at -2s",
 							uuid = "a25eea1f-24d7-6d85-be0c-0b8306ebbfc1",
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Misc",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"4323bed3-2a75-8a4f-9f85-e18c9b46cb4b",
 									true,
@@ -1614,14 +3053,14 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Misc",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"e8384e73-48b3-1fc0-9939-71b1e6a3e4b6",
 									true,
@@ -1646,7 +3085,7 @@ local tbl =
 									"7f000f46-8cb1-a1b7-bd89-347e0c53852e",
 									true,
 								},
-								
+
 								{
 									"8b9c249b-beeb-2252-aa39-07446f00b9e6",
 									true,
@@ -1667,7 +3106,7 @@ local tbl =
 						{
 							buffCheckType = 7,
 							buffDuration = 5,
-							buffIDList = 
+							buffIDList =
 							{
 								2756,
 								2757,
@@ -1680,9 +3119,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local c=data.frog_dfg_control\nif not c or not c.active or not c.arrow or c.resolvedAt then return false end\nlocal now=Now()\nreturn now>=c.expires-250 and now<c.expires+2000",
@@ -1691,9 +3130,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local c=data.frog_dfg_control\nif not c or not c.active then return false end\nlocal now=Now()\nreturn (c.resolvedAt~=nil and now>=c.resolvedAt+100) or now>=c.expires+2000",
@@ -1702,9 +3141,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							actionUUID = "6946d2c6-c9f5-17a9-b24e-67faef71a428",
 							category = "Action",
@@ -1713,9 +3152,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local s=data.frog_dfg_v2\nreturn s~=nil and s.customHold==true",
@@ -1724,9 +3163,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local c=data.frog_dfg_control\nreturn c~=nil and c.active==true and Now()>=c.expires+2000",
@@ -1778,11 +3217,11 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
 					
 					{
@@ -1796,7 +3235,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 10,
@@ -1830,7 +3269,7 @@ local tbl =
 									"127d5a27-6848-f92e-a8a2-1399b7cc6a4d",
 									true,
 								},
-								
+
 								{
 									"c23b76d4-bd05-52cb-97d6-ac19e282887e",
 									true,
@@ -1857,9 +3296,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -1883,7 +3322,167 @@ local tbl =
 			},
 		},
 	},
-	[127] = 
+	[118] =
+	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "Local fixes",
+				uuid = "ff94127e-fbb5-65f7-b47b-5a54bfe862b3",
+			},
+			objectType = "folder",
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "ACR_TensorMagnum3_Hotbar_Potion=false\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"dd5ac10e-6d68-cc64-a158-14bf7e310cff",
+									true,
+								},
+
+								{
+									"149789f1-6649-b1b7-bffc-f0820db9201f",
+									true,
+								},
+							},
+							name = "Clear pending potion",
+							uuid = "4f2b4bc4-5b9f-53ad-a3c5-1f7398ebe4c9",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							aType = "Misc",
+							conditions =
+							{
+
+								{
+									"dd5ac10e-6d68-cc64-a158-14bf7e310cff",
+									true,
+								},
+
+								{
+									"149789f1-6649-b1b7-bffc-f0820db9201f",
+									true,
+								},
+							},
+							endIfUsed = true,
+							name = "Use Dexterity potion",
+							usePot = true,
+							uuid = "fd6a2b0a-f4e2-2d7a-9ddd-8d1167dcb598",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "return TensorReactions_CurrentTimer>=676.9 and TensorReactions_CurrentTimer<681.9",
+							dequeueIfLuaFalse = true,
+							name = "Potion window still active",
+							uuid = "dd5ac10e-6d68-cc64-a158-14bf7e310cff",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 13,
+							dequeueIfLuaFalse = true,
+							jobValue = "MACHINIST",
+							name = "Machinist",
+							uuid = "149789f1-6649-b1b7-bffc-f0820db9201f",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes",
+				mechanicTime = 676.9,
+				name = "[MCH] P3 bounded potion",
+				timeRange = true,
+				timelineIndex = 118,
+				timerEndOffset = 5,
+				uuid = "52614b55-e58e-6bc7-844d-fab0741112ee",
+				version = 2,
+			},
+		},
+		
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							aType = "Lua",
+							actionLua = "ACR_TensorMagnum3_Hotbar_Potion=false\nself.used=true",
+							conditions = 
+							{
+								
+								{
+									"c359bd80-c6dd-e9ae-a315-be15ef814be7",
+									true,
+								},
+							},
+							name = "Expire pending potion",
+							uuid = "20a59689-b651-40e9-a5da-80f99bc5f936",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data = 
+						{
+							category = "Self",
+							conditionType = 13,
+							dequeueIfLuaFalse = true,
+							jobValue = "MACHINIST",
+							name = "Machinist",
+							uuid = "c359bd80-c6dd-e9ae-a315-be15ef814be7",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes",
+				mechanicTime = 676.9,
+				name = "[MCH] P3 potion queue cleanup",
+				timeRange = true,
+				timelineIndex = 118,
+				timerEndOffset = 6,
+				timerStartOffset = 5,
+				uuid = "a8febc22-a4d2-fd15-904f-6ac3ef3539bf",
+				version = 2,
+			},
+		},
+	},
+	[127] =
 	{
 		
 		{
@@ -1916,9 +3515,9 @@ local tbl =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_eyes_v1=data.frog_eyes_v1 or {}\ndata.frog_eyes_v1.hatebound=true\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"6bf9b6ea-aafc-2379-8f22-28fb519abfa5",
 									true,
@@ -1935,9 +3534,9 @@ local tbl =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_eyes_v1=data.frog_eyes_v1 or {}\nlocal s=data.frog_eyes_v1\ns.yellow=s.yellow or {}\nfor _,id in ipairs(eventArgs.hitTargets) do s.yellow[id]=true end\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"3c87a8c6-b7a8-175f-ad90-9fb36eea2223",
 									true,
@@ -1954,9 +3553,9 @@ local tbl =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_eyes_v1=data.frog_eyes_v1 or {}\nlocal s=data.frog_eyes_v1\ns.blue=s.blue or {}\nfor _,id in ipairs(eventArgs.hitTargets) do s.blue[id]=true end\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"35801e99-9d48-3ed0-96f4-c3a6c3f35ee1",
 									true,
@@ -1973,9 +3572,9 @@ local tbl =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_eyes_v1=data.frog_eyes_v1 or {}\nlocal s=data.frog_eyes_v1\ns.waves=s.waves or {}\ns.wave=s.wave or 0\nlocal t=TensorReactions_CurrentTimer\nlocal id=eventArgs.targetID\nlocal target=TensorCore.mGetEntity(id)\nlocal pos=target and target.pos\nif not pos then return end\nlocal w=s.waves[s.wave]\nif not w or t-w.time>2 then\n    if s.wave>=4 then self.used=true return end\n    s.wave=s.wave+1\n    w={time=t}\n    s.waves[s.wave]=w\nend\nfor _,hit in ipairs(w) do if hit.id==id then self.used=true return end end\nif #w<2 then w[#w+1]={id=id,x=pos.x,z=pos.z} end\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"63a3ec4c-e62a-d6f8-9abc-b200e77c3c85",
 									true,
@@ -1987,7 +3586,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 					
 					{
@@ -2002,9 +3601,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -2015,9 +3614,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -2028,9 +3627,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -2041,9 +3640,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -2200,9 +3799,9 @@ local tbl =
 							alertScale = 1.5,
 							alertTTS = true,
 							alertText = "POP NOW",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"13a06b30-7571-739f-80fc-e0f909fe1b6c",
 									true,
@@ -2215,9 +3814,9 @@ local tbl =
 				},
 				conditions = 
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "return data.frog_eyes_v1 ~= nil and data.frog_eyes_v1.callout == \"POP NOW\"",
@@ -2238,7 +3837,7 @@ local tbl =
 			},
 		},
 	},
-	[154] = 
+	[154] =
 	{
 		
 		{
@@ -2265,15 +3864,15 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_wrath_v1=data.frog_wrath_v1 or {}\nlocal s=data.frog_wrath_v1\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\nlocal dx,dz=e.pos.x-100,e.pos.z-100\nlocal r=math.sqrt(dx*dx+dz*dz)\nif r<15 then return end\ns.nx,s.nz=dx/r,dz/r\ns.phase=1\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"b9ad1751-34a9-bdf6-81cf-00a28790a877",
 									true,
@@ -2300,9 +3899,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -2356,20 +3955,20 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_wrath_v1=data.frog_wrath_v1 or {}\nlocal s=data.frog_wrath_v1\nlocal e=TensorCore.mGetEntity(eventArgs.sourceEntityID)\nif not e or not e.pos then return end\ns.ignID=eventArgs.newTargetID\ns.ignX,s.ignZ=e.pos.x,e.pos.z\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"a27ee1a7-3178-5b7b-9476-43f83d4e0b6b",
 									true,
 								},
-								
+
 								{
 									"b756bc8f-e96f-ef19-8353-fd1a0debc238",
 									true,
@@ -2471,7 +4070,7 @@ local tbl =
 							category = "Event",
 							dequeueIfLuaFalse = true,
 							eventArgType = 3,
-							markerIDList = 
+							markerIDList =
 							{
 								14,
 								20,
@@ -2513,7 +4112,7 @@ local tbl =
 									"9cbe3e84-594e-9bb2-b709-40d049cac022",
 									true,
 								},
-								
+
 								{
 									"114dc3b9-c1c9-170e-866e-d2c7f02c28c2",
 									true,
@@ -2540,9 +4139,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -2590,15 +4189,15 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_wrath_v1=data.frog_wrath_v1 or {}\nlocal s=data.frog_wrath_v1\ns.phase=3\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"a29828d8-d5cf-d447-973f-a856fab1f880",
 									true,
@@ -2625,16 +4224,16 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
 							eventArgOptionType = 3,
 							eventArgType = 2,
 							name = "Cauterize",
-							spellIDList = 
+							spellIDList =
 							{
 								27533,
 								27534,
@@ -2706,11 +4305,11 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
 					
 					{
@@ -2724,7 +4323,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 12,
@@ -2776,7 +4375,7 @@ local tbl =
 							eventArgOptionType = 3,
 							eventArgType = 2,
 							name = "Cauterize starts",
-							spellIDList = 
+							spellIDList =
 							{
 								27533,
 								27534,
@@ -2799,9 +4398,164 @@ local tbl =
 			},
 		},
 	},
-	[180] = 
+	[172] =
 	{
 		
+		{
+			data =
+			{
+				displayPath = "",
+				name = "Local fixes",
+				uuid = "abb189e0-cbb7-b229-b06e-918aa0a35243",
+			},
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				displayPath = "Local fixes",
+				name = "Monk downtime",
+				uuid = "6ca04656-0bb9-7dd3-91f0-6ec2d70bb209",
+			},
+			objectType = "folder",
+		},
+
+		{
+			data = 
+			{
+				actions = 
+				{
+					
+					{
+						data = 
+						{
+							actionID = 69,
+							conditions = 
+							{
+								
+								{
+									"a22d0722-da75-cfd4-9b8c-ddd4008296b5",
+									true,
+								},
+
+								{
+									"d5cbb4cd-3f41-e03f-bdf1-67dec76554f5",
+									true,
+								},
+
+								{
+									"55a3f0dd-a72f-f51e-9b8f-1478fa0c8b86",
+									true,
+								},
+
+								{
+									"23caaa82-f17e-3265-84cd-2d2d4660e07b",
+									true,
+								},
+
+								{
+									"d6b9230c-61f1-1c24-aca8-c0f0aff1948a",
+									true,
+								},
+
+								{
+									"0755c7ec-85eb-1eaf-9aae-13e5c5d40f94",
+									true,
+								},
+							},
+							ignoreWeaveRules = true,
+							uuid = "3c3837f3-5296-8a33-b8df-e1ce20522815",
+							version = 2.1,
+						},
+					},
+				},
+				conditions = 
+				{
+					
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 13,
+							jobValue = "MONK",
+							name = "Monk only",
+							uuid = "a22d0722-da75-cfd4-9b8c-ddd4008296b5",
+							version = 3,
+						},
+					},
+
+					{
+						data = 
+						{
+							category = "Lua",
+							conditionLua = "return FFXIV_Common_BotRunning == true",
+							name = "Bot running",
+							uuid = "d5cbb4cd-3f41-e03f-bdf1-67dec76554f5",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return gACRSelectedProfiles[20] == \"RikuMNK3\"",
+							name = "RikuMNK3",
+							uuid = "55a3f0dd-a72f-f51e-9b8f-1478fa0c8b86",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local t=TensorCore.mGetTarget()\nreturn not t or not t.targetable or not t.attackable or t.hp.current<=0",
+							name = "No attackable target",
+							uuid = "23caaa82-f17e-3265-84cd-2d2d4660e07b",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.known and (s.remaining==0 or Now()>(s.pbUntil or 0)) and (s.chakra==0 or Now()>(s.chakraUntil or 0))",
+							name = "No pending PB or Blitz",
+							uuid = "d6b9230c-61f1-1c24-aca8-c0f0aff1948a",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 69,
+							category = "Self",
+							comparator = 2,
+							conditionType = 4,
+							uuid = "0755c7ec-85eb-1eaf-9aae-13e5c5d40f94",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes/Monk downtime",
+				mechanicTime = 1051.2,
+				name = "[MNK] Wrath early PB",
+				timeRange = true,
+				timelineIndex = 172,
+				timerEndOffset = -1,
+				timerStartOffset = -5,
+				uuid = "6221ad09-2632-7e13-93b8-957c23f8a3dd",
+				version = 2,
+			},
+		},
+	},
+	[180] =
+	{
+
 		{
 			data = 
 			{
@@ -2813,9 +4567,9 @@ local tbl =
 						{
 							aType = "Lua",
 							actionLua = "if data.frog_draw_settings == nil then\n local p={\n  version=3,\n  path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]],\n  default=\"R1 H1 M1 MT OT M2 H2 R2\",\n  roles={MT=true,OT=true,H1=true,H2=true,M1=true,M2=true,R1=true,R2=true}\n }\n function p.parse(text)\n  if type(text)~=\"string\" then return nil,\"Enter all eight roles.\" end\n  local order,seen={},{}\n  for role in string.upper(text):gmatch(\"[^%s,]+\") do\n   if not p.roles[role] then return nil,\"Unknown role: \"..role end\n   if seen[role] then return nil,\"Duplicate role: \"..role end\n   seen[role]=true; order[#order+1]=role\n  end\n  if #order~=8 then return nil,\"Enter each of MT OT H1 H2 M1 M2 R1 R2 once.\" end\n  return order,table.concat(order,\" \")\n end\n function p.save(text)\n  local order,normalized=p.parse(text)\n  if not order then p.message=normalized; return false end\n  local nextSettings={}\n  for k,v in pairs(p.settings) do nextSettings[k]=v end\n  nextSettings.doth_conga=normalized\n  local ok,err=pcall(FileSave,p.path,nextSettings)\n  local readOK,saved=pcall(FileLoad,p.path)\n  if not ok or not readOK or type(saved)~=\"table\" or saved.doth_conga~=normalized then\n   p.message=\"Save failed: \"..tostring(err or saved); return false\n  end\n  p.settings=nextSettings\n  p.order,p.saved,p.edit=order,normalized,normalized\n  p.message=\"Saved. Used when DOTH begins.\"\n  return true\n end\n p.order,p.saved=p.parse(p.default)\n p.edit=p.saved\n p.settings={}\n if FileExists(p.path) then\n  local ok,settings=pcall(FileLoad,p.path)\n  local order,normalized\n  if ok and type(settings)==\"table\" then\n   p.settings=settings\n   order,normalized=p.parse(settings.doth_conga)\n  end\n  if order then p.order,p.saved,p.edit=order,normalized,normalized\n  else p.message=\"Invalid settings file; using defaults. Apply to repair.\" end\n else\n  local previous=data.frog_draw_settings\n  p.save(previous and previous.saved or p.default)\n end\n data.frog_draw_settings=p\nend\nlocal s = {\n orderMode=data.frog_draw_settings.settings.doth_order_mode==\"Live positions\" and \"Live positions\" or \"Configured conga\",\n phase=1, doom={}, markers={}, markerPos={}, dives={}, puddles={}, puddleByID={},\n slots={}, roleByID={}, dirty=true,\n order={},\n rosterSlots={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"},\n doomOrder={},clearOrder={}\n}\nfor i,role in ipairs(data.frog_draw_settings.order) do s.order[i]=role end\ndata.frog_doth_v1=s\nfunction s.resolveRoster()\n local members=AnyoneCore.Roster.members()\n local party=AnyoneCore.API.getAgnosticPartyList()\n if type(members)~=\"table\" or type(party)~=\"table\" then return false end\n local byName,byJob,counts,rcounts={},{},{},{}\n for _,a in pairs(party) do\n  if a.id and a.name and a.job then\n   byName[a.name..\"\\31\"..a.job]=a\n   byJob[a.job]=a\n   counts[a.job]=(counts[a.job] or 0)+1\n  end\n end\n for _,m in pairs(members) do\n  if m.job then rcounts[m.job]=(rcounts[m.job] or 0)+1 end\n end\n local seen={}\n for _,role in ipairs(s.order) do\n  local m=members[s.rosterSlots[role]]\n  if not m or not m.name or not m.job then return false end\n  local a=byName[m.name..\"\\31\"..m.job]\n  if not a and counts[m.job]==1 and rcounts[m.job]==1 then a=byJob[m.job] end\n  if not a or seen[a.id] then return false end\n  seen[a.id]=true\n  s.slots[role]=a.id\n  s.roleByID[a.id]=role\n end\n return true\nend\nfunction s.point(e,n,label)\n s.x=100+s.ex*e+s.nx*n\n s.z=100+s.ez*e+s.nz*n\n s.label=label\nend\n-- Preserve the four cleanse slots even when one or more puddles are missing.\ns.cleanseSlots={}\ns.cleanseAnchors={{e=-20,n=0},{e=-12,n=-16},{e=12,n=-16},{e=20,n=0}}\nfunction s.mapPuddles()\n for i=1,4 do s.cleanseSlots[i]=nil end\n for _,p in ipairs(s.puddles) do\n  local e=(p.x-100)*s.ex+(p.z-100)*s.ez\n  local n=(p.x-100)*s.nx+(p.z-100)*s.nz\n  local best,bestD,tied\n  for i,a in ipairs(s.cleanseAnchors) do\n   local d=(e-a.e)^2+(n-a.n)^2\n   if not bestD or d<bestD-0.0001 then best,bestD,tied=i,d,false\n   elseif math.abs(d-bestD)<=0.0001 then tied=true end\n  end\n  -- Do not infer a cleanse from an ambiguous location or a north-side drop.\n  if best and not tied and n<=1 and bestD<80 then\n   if s.cleanseSlots[best]==nil then s.cleanseSlots[best]=p\n   else s.cleanseSlots[best]=false end\n  end\n end\nend\nfunction s.puddlePoint(index,opposite,label)\n local p=s.cleanseSlots[index]\n if not p then\n  s.reason=p==false and \"Ambiguous cleanse in assigned slot\" or \"Waiting for assigned cleanse puddle\"\n  return\n end\n if opposite then s.x,s.z=200-p.x,200-p.z else s.x,s.z=p.x,p.z end\n s.label=label\nend\nfunction s.pairSide(id,marker,axis)\n local mine=s.markerPos[id]\n if not mine then return nil end\n local my=(mine.x-100)*(axis==\"east\" and s.ex or s.nx)+(mine.z-100)*(axis==\"east\" and s.ez or s.nz)\n for other,m in pairs(s.markers) do\n  if other~=id and m==marker then\n   local p=s.markerPos[other]\n   if not p then return nil end\n   local v=(p.x-100)*(axis==\"east\" and s.ex or s.nx)+(p.z-100)*(axis==\"east\" and s.ez or s.nz)\n   return my<v or (my==v and id<other)\n  end\n end\n return nil\nend\ns.rosterReady=s.resolveRoster()\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"8fb0bdd0-5d07-9283-a074-93e94ae77290",
 									true,
@@ -2829,16 +4583,16 @@ local tbl =
 				},
 				conditions = 
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
 							eventArgOptionType = 3,
 							eventArgType = 2,
 							name = "Death of the Heavens",
-							spellIDList = 
+							spellIDList =
 							{
 								27538,
 							},
@@ -2878,7 +4632,7 @@ local tbl =
 									"6deb6aaa-916a-086e-88e7-0e003b1d929a",
 									true,
 								},
-								
+
 								{
 									"1777e45a-d613-1661-be8f-71119959470f",
 									true,
@@ -2890,7 +4644,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 					
 					{
@@ -2905,9 +4659,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							comparator = 3,
@@ -2932,15 +4686,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_doth_v1\nif not s or s.nx then self.used=true return end\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\nlocal dx,dz=e.pos.x-100,e.pos.z-100\nlocal r=math.sqrt(dx*dx+dz*dz)\n-- The introductory knight ring is radius 12; the actual impact position is radius 9.\nif r<8 or r>10 then self.used=true return end\ns.nx,s.nz=dx/r,dz/r\ns.ex,s.ez=-s.nz,s.nx\ns.dirty=true\nself.used=true",
@@ -2958,7 +4712,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 					
 					{
@@ -2969,7 +4723,7 @@ local tbl =
 							eventArgOptionType = 3,
 							eventArgType = 2,
 							name = "Heavy Impact",
-							spellIDList = 
+							spellIDList =
 							{
 								25557,
 							},
@@ -2990,15 +4744,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_doth_v1\nif s then\n if s.orderMode==\"Live positions\" and not s.positionSnapshot then\n  -- Snapshot once, on the first Doom event. Never re-read moving players.\n  s.positionSnapshot={}\n  local party=AnyoneCore.API.getAgnosticPartyList()\n  if type(party)==\"table\" then\n   for _,a in pairs(party) do\n    if a.id then\n     local e=TensorCore.mGetEntity(a.id)\n     if e and e.pos then s.positionSnapshot[a.id]={x=e.pos.x,z=e.pos.z} end\n    end\n   end\n  end\n end\n s.doom[eventArgs.entityID]=true\n s.dirty=true\nend\nself.used=true",
@@ -3044,11 +4798,11 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
 					
 					{
@@ -3056,9 +4810,9 @@ local tbl =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_doth_v1\nif s and s.phase==1 then\n s.dives[eventArgs.spellID]=true\n if s.dives[27531] and s.dives[27533] and s.dives[27539] then\n  s.phase=2; s.baitAt=TensorReactions_CurrentTimer+3; s.dirty=true\n end\nend\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"b8f58a37-e7ee-2a68-847b-6678ae2d42e2",
 									true,
@@ -3075,9 +4829,9 @@ local tbl =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_doth_v1\nif s then s.phase=4; s.x,s.z=nil,nil; s.dirty=true end\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"33f43f20-dd44-dc0a-9528-2a0bd5033ba5",
 									true,
@@ -3089,7 +4843,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 					
 					{
@@ -3100,7 +4854,7 @@ local tbl =
 							eventArgOptionType = 3,
 							eventArgType = 2,
 							name = "Three dives",
-							spellIDList = 
+							spellIDList =
 							{
 								27531,
 								27533,
@@ -3119,7 +4873,7 @@ local tbl =
 							eventArgOptionType = 3,
 							eventArgType = 2,
 							name = "Heavensflame resolved",
-							spellIDList = 
+							spellIDList =
 							{
 								25310,
 							},
@@ -3152,9 +4906,9 @@ local tbl =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_doth_v1\nif s and not s.puddleByID[eventArgs.entityID] and #s.puddles<4 then\n local p={id=eventArgs.entityID,x=eventArgs.x,z=eventArgs.z}\n s.puddleByID[p.id]=p\n s.puddles[#s.puddles+1]=p\n s.puddlesSorted=false\n s.dirty=true\nend\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"8f44dce0-3a2a-42c7-90c9-4d23a42b16d1",
 									true,
@@ -3168,9 +4922,9 @@ local tbl =
 				},
 				conditions = 
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "return eventArgs.aoeID==27542",
@@ -3205,9 +4959,9 @@ local tbl =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_doth_v1\nif not s then self.used=true return end\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\ns.markers[e.id]=eventArgs.markerID\ns.markerPos[e.id]={x=e.pos.x,z=e.pos.z}\ns.phase=3\ns.dirty=true\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"21369feb-36b1-ea35-9660-9d709d2981f7",
 									true,
@@ -3221,14 +4975,14 @@ local tbl =
 				},
 				conditions = 
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
 							eventArgType = 3,
-							markerIDList = 
+							markerIDList =
 							{
 								281,
 								282,
@@ -3301,9 +5055,9 @@ local tbl =
 							alertScale = 1.5,
 							alertTTS = true,
 							alertText = "Bait circle",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"bb9d10f3-58b0-6e4d-b7d8-9b2b1430af65",
 									true,
@@ -3316,9 +5070,9 @@ local tbl =
 				},
 				conditions = 
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local s=data.frog_doth_v1\nreturn s~=nil and s.phase==2 and s.baiter==true and s.baitAt~=nil and TensorReactions_CurrentTimer>=s.baitAt",
@@ -3372,8 +5126,28 @@ local tbl =
 			},
 		},
 	},
-	[207] = 
+	[194] =
 	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "Local fixes",
+				uuid = "f5a527e9-07e2-9ac6-9169-ef65226c0d64",
+			},
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				displayPath = "Local fixes",
+				name = "Monk downtime",
+				uuid = "20aba979-a19b-a4ec-8a82-48cb1d408783",
+			},
+			objectType = "folder",
+		},
 		
 		{
 			data = 
@@ -3385,10 +5159,1435 @@ local tbl =
 						data = 
 						{
 							aType = "Lua",
-							actionLua = "local s=data.frog_vow_v1\nif not self.started then\n local settings=data.frog_draw_settings and data.frog_draw_settings.settings\n if not settings then\n  local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n  if FileExists(path) then\n   local ok,saved=pcall(FileLoad,path)\n   if ok and type(saved)==\"table\" then settings=saved end\n  end\n end\n s={bossID=eventArgs.entityID,holder=eventArgs.targetID,initial=eventArgs.targetID,\n    passAt=Now()+34000,passes=0,seen={[eventArgs.targetID]=true},order={},slots={},ready=false,done=false,\n    groups={T={\"MT\",\"OT\"},M={\"M1\",\"M2\"},R={\"R1\",\"R2\"}},\n    roleKeys={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"}}\n local orderText=settings and settings.vow_pass_order or \"T T M R\"\n if type(orderText)~=\"string\" then orderText=\"T T M R\" end\n for token in string.upper(orderText):gmatch(\"[^%s,]+\") do\n  if not s.groups[token] then s.done=true end\n  s.order[#s.order+1]=token\n end\n if #s.order~=4 then s.done=true end\n function s.choose()\n  s.receiver=nil\n  if not s.ready or s.done or s.passes>=4 then return end\n  -- R2 may receive the fourth pass again after Mortal Atonement falls off.\n  if s.passes==3 then s.receiver=s.slots.R2; return end\n  local candidates=s.groups[s.order[s.passes+1]]\n  for _,role in ipairs(candidates or {}) do\n   local id=s.slots[role]\n   if role~=\"H1\" and role~=\"H2\" and id and not s.seen[id] then s.receiver=id; return end\n  end\n end\n data.frog_vow_v1=s\n self.started=true\nend\nif s.done then self.used=true return end\n-- Join logical roster roles to current replay/live entities once.\nlocal members=AnyoneCore.Roster.members()\nlocal party=AnyoneCore.API.getAgnosticPartyList()\nif type(members)~=\"table\" or type(party)~=\"table\" then return end\nlocal byNameJob,byJob,partyCount,rosterCount={},{},{},{}\nfor _,actor in pairs(party) do\n if actor and actor.id and actor.job and actor.name then\n  byNameJob[tostring(actor.name)..\"\\31\"..tostring(actor.job)]=actor\n  byJob[actor.job]=actor\n  partyCount[actor.job]=(partyCount[actor.job] or 0)+1\n end\nend\nfor _,member in pairs(members) do\n if member and member.job then rosterCount[member.job]=(rosterCount[member.job] or 0)+1 end\nend\n-- Replay party helpers omit dead actors; resolve missing roster jobs from bodies.\nlocal missing=false\nfor job in pairs(rosterCount) do if not partyCount[job] then missing=true break end end\nif missing then\n for _,actor in pairs(EntityList(\"\")) do\n  if actor and actor.id and actor.job and actor.name and actor.hp.current<=0\n   and rosterCount[actor.job] and not party[actor.id] then\n   byNameJob[tostring(actor.name)..\"\\31\"..tostring(actor.job)]=actor\n   byJob[actor.job]=actor\n   partyCount[actor.job]=(partyCount[actor.job] or 0)+1\n  end\n end\nend\nlocal used={}\nfor role,key in pairs(s.roleKeys) do\n local member=members[key]\n if not member or not member.name or not member.job then return end\n local actor=byNameJob[tostring(member.name)..\"\\31\"..tostring(member.job)]\n if not actor and partyCount[member.job]==1 and rosterCount[member.job]==1 then actor=byJob[member.job] end\n if not actor or used[actor.id] then return end\n s.slots[role]=actor.id\n used[actor.id]=true\nend\nif not used[s.initial] then return end\ns.ready=true\ns.choose()\nself.used=true",
-							conditions = 
+							actionLua = "local s=data.frog_mnk_downtime\nif not s then self.used=true return end\nif Now()>(s.pbUntil or 0) then s.remaining=0 end\nif Now()>(s.chakraUntil or 0) then s.chakra=0 end\ns.prep={key=\"DOTH comet Blitz preparation\",start=Now(),solar=not s.solar,blitz=(s.solar and s.lunar) and 25769 or ((not s.solar) and 25768 or 3545)}\nself.used=true",
+							conditions =
 							{
-								
+
+								{
+									"67fec0f1-0279-2352-8c67-c491ec95cd27",
+									true,
+								},
+
+								{
+									"3390cf16-4070-e7f6-b2d1-3aec18aa67f9",
+									true,
+								},
+
+								{
+									"3b6f787d-5761-1dc7-8e11-4c10a53e8749",
+									true,
+								},
+
+								{
+									"a7b90a11-5df6-e717-b834-9d6b0553f377",
+									true,
+								},
+
+								{
+									"3b5ef3b1-ec78-8390-95a8-77e1bb9919c2",
+									true,
+								},
+
+								{
+									"3c4892ad-17df-9198-acef-d21e9f25da20",
+									true,
+								},
+							},
+							name = "Choose missing Nadi once",
+							uuid = "5015d0c7-8fe6-527f-96f1-540967322ece",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 69,
+							conditions =
+							{
+
+								{
+									"67fec0f1-0279-2352-8c67-c491ec95cd27",
+									true,
+								},
+
+								{
+									"3390cf16-4070-e7f6-b2d1-3aec18aa67f9",
+									true,
+								},
+
+								{
+									"3b6f787d-5761-1dc7-8e11-4c10a53e8749",
+									true,
+								},
+
+								{
+									"a7b90a11-5df6-e717-b834-9d6b0553f377",
+									true,
+								},
+
+								{
+									"dd1ba15a-5718-0763-87c9-decae2d2696a",
+									true,
+								},
+
+								{
+									"3c4892ad-17df-9198-acef-d21e9f25da20",
+									true,
+								},
+							},
+							ignoreWeaveRules = true,
+							uuid = "7dec280b-816e-2621-8fb8-4e7a751df67d",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 25767,
+							conditions =
+							{
+
+								{
+									"67fec0f1-0279-2352-8c67-c491ec95cd27",
+									true,
+								},
+
+								{
+									"3390cf16-4070-e7f6-b2d1-3aec18aa67f9",
+									true,
+								},
+
+								{
+									"3b6f787d-5761-1dc7-8e11-4c10a53e8749",
+									true,
+								},
+
+								{
+									"a7b90a11-5df6-e717-b834-9d6b0553f377",
+									true,
+								},
+
+								{
+									"71679f5b-095d-af68-8798-ae2abefa223f",
+									true,
+								},
+							},
+							uuid = "5f5e84e4-f955-86ee-94c6-6e3921dd1091",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 16473,
+							conditions =
+							{
+
+								{
+									"67fec0f1-0279-2352-8c67-c491ec95cd27",
+									true,
+								},
+
+								{
+									"3390cf16-4070-e7f6-b2d1-3aec18aa67f9",
+									true,
+								},
+
+								{
+									"3b6f787d-5761-1dc7-8e11-4c10a53e8749",
+									true,
+								},
+
+								{
+									"a7b90a11-5df6-e717-b834-9d6b0553f377",
+									true,
+								},
+
+								{
+									"e0c16651-1e4f-2908-b222-0c21f4910408",
+									true,
+								},
+
+								{
+									"52bc8036-3cb9-fed9-8de8-d7f19156830b",
+									true,
+								},
+							},
+							uuid = "562efe5f-fde7-ffc9-8964-9ff405442472",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 25767,
+							conditions =
+							{
+
+								{
+									"67fec0f1-0279-2352-8c67-c491ec95cd27",
+									true,
+								},
+
+								{
+									"3390cf16-4070-e7f6-b2d1-3aec18aa67f9",
+									true,
+								},
+
+								{
+									"3b6f787d-5761-1dc7-8e11-4c10a53e8749",
+									true,
+								},
+
+								{
+									"a7b90a11-5df6-e717-b834-9d6b0553f377",
+									true,
+								},
+
+								{
+									"e0c16651-1e4f-2908-b222-0c21f4910408",
+									true,
+								},
+
+								{
+									"d0308bb9-8d60-e009-9fe4-c4671c42af60",
+									true,
+								},
+							},
+							uuid = "f962f62c-1993-46d4-916b-9c42f4190c6b",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 70,
+							conditions =
+							{
+
+								{
+									"67fec0f1-0279-2352-8c67-c491ec95cd27",
+									true,
+								},
+
+								{
+									"3390cf16-4070-e7f6-b2d1-3aec18aa67f9",
+									true,
+								},
+
+								{
+									"3b6f787d-5761-1dc7-8e11-4c10a53e8749",
+									true,
+								},
+
+								{
+									"a7b90a11-5df6-e717-b834-9d6b0553f377",
+									true,
+								},
+
+								{
+									"97f1cf4f-9d87-74a0-af3e-b413a5eb408f",
+									true,
+								},
+
+								{
+									"52bc8036-3cb9-fed9-8de8-d7f19156830b",
+									true,
+								},
+							},
+							uuid = "0523c107-7729-964a-bed5-0fedac3ddfbf",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 25767,
+							conditions =
+							{
+
+								{
+									"67fec0f1-0279-2352-8c67-c491ec95cd27",
+									true,
+								},
+
+								{
+									"3390cf16-4070-e7f6-b2d1-3aec18aa67f9",
+									true,
+								},
+
+								{
+									"3b6f787d-5761-1dc7-8e11-4c10a53e8749",
+									true,
+								},
+
+								{
+									"a7b90a11-5df6-e717-b834-9d6b0553f377",
+									true,
+								},
+
+								{
+									"97f1cf4f-9d87-74a0-af3e-b413a5eb408f",
+									true,
+								},
+
+								{
+									"d0308bb9-8d60-e009-9fe4-c4671c42af60",
+									true,
+								},
+							},
+							uuid = "73da15c3-e454-7a7d-8b15-ccc2a9ba754e",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 13,
+							jobValue = "MONK",
+							name = "Monk only",
+							uuid = "67fec0f1-0279-2352-8c67-c491ec95cd27",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return FFXIV_Common_BotRunning == true",
+							name = "Bot running",
+							uuid = "3390cf16-4070-e7f6-b2d1-3aec18aa67f9",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return gACRSelectedProfiles[20] == \"RikuMNK3\"",
+							name = "RikuMNK3",
+							uuid = "3b6f787d-5761-1dc7-8e11-4c10a53e8749",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local t=TensorCore.mGetTarget()\nreturn not t or not t.targetable or not t.attackable or t.hp.current<=0",
+							name = "No attackable current target",
+							uuid = "a7b90a11-5df6-e717-b834-9d6b0553f377",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nif not s or not s.known then return false end\nlocal t=Now()\nreturn (s.remaining==0 or t>(s.pbUntil or 0)) and (s.chakra==0 or t>(s.chakraUntil or 0))",
+							name = "Nadi known; no pending PB or Blitz",
+							uuid = "3b5ef3b1-ec78-8390-95a8-77e1bb9919c2",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 69,
+							category = "Self",
+							comparator = 2,
+							conditionType = 4,
+							uuid = "3c4892ad-17df-9198-acef-d21e9f25da20",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"DOTH comet Blitz preparation\" and Now()-s.prep.start<10000 and ((s.remaining==0 or Now()>(s.pbUntil or 0)) and s.chakra==0)",
+							name = "PB stage 0",
+							uuid = "dd1ba15a-5718-0763-87c9-decae2d2696a",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"DOTH comet Blitz preparation\" and Now()-s.prep.start<10000 and s.remaining==3 and s.chakra==0 and Now()<=(s.pbUntil or 0)",
+							name = "PB stage 1",
+							uuid = "71679f5b-095d-af68-8798-ae2abefa223f",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"DOTH comet Blitz preparation\" and Now()-s.prep.start<10000 and s.remaining==2 and s.chakra==1 and Now()<=(s.pbUntil or 0)",
+							name = "PB stage 2",
+							uuid = "e0c16651-1e4f-2908-b222-0c21f4910408",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"DOTH comet Blitz preparation\" and Now()-s.prep.start<10000 and s.remaining==1 and s.chakra==2 and Now()<=(s.pbUntil or 0)",
+							name = "PB stage 3",
+							uuid = "97f1cf4f-9d87-74a0-af3e-b413a5eb408f",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.solar",
+							name = "Prepare Solar Nadi",
+							uuid = "52bc8036-3cb9-fed9-8de8-d7f19156830b",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and not s.prep.solar",
+							name = "Prepare Lunar or Phantom",
+							uuid = "d0308bb9-8d60-e009-9fe4-c4671c42af60",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes/Monk downtime",
+				mechanicTime = 1120.2,
+				name = "[MNK] DOTH comet Blitz preparation",
+				timeRange = true,
+				timelineIndex = 194,
+				timerEndOffset = -0.2,
+				timerStartOffset = -11.5,
+				uuid = "1e68811b-a3d6-2d34-a42a-3864dbd8148a",
+				version = 2,
+			},
+		},
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
+						{
+							actionID = 25768,
+							conditions =
+							{
+
+								{
+									"0ab42809-e7d3-c2b4-8a4a-b4d9175589f6",
+									true,
+								},
+
+								{
+									"448ffc71-c19d-0ba1-8abb-0c51c42ff0bf",
+									true,
+								},
+
+								{
+									"1040d906-652c-49a9-a41b-724d0fdbbee0",
+									true,
+								},
+
+								{
+									"fb422b25-5a1b-4a40-9481-55ac3c0f5c52",
+									true,
+								},
+
+								{
+									"b33ec153-7345-d4ff-9d01-25cda411a3ec",
+									true,
+								},
+
+								{
+									"97b9347d-af28-57ec-8755-827853fac179",
+									true,
+								},
+							},
+							uuid = "b6da5980-411a-b663-886d-67630cdc4ccc",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 3545,
+							conditions =
+							{
+
+								{
+									"0ab42809-e7d3-c2b4-8a4a-b4d9175589f6",
+									true,
+								},
+
+								{
+									"448ffc71-c19d-0ba1-8abb-0c51c42ff0bf",
+									true,
+								},
+
+								{
+									"1040d906-652c-49a9-a41b-724d0fdbbee0",
+									true,
+								},
+
+								{
+									"fb422b25-5a1b-4a40-9481-55ac3c0f5c52",
+									true,
+								},
+
+								{
+									"b33ec153-7345-d4ff-9d01-25cda411a3ec",
+									true,
+								},
+
+								{
+									"78c2b57b-5fbd-d9c7-bfc9-254690357346",
+									true,
+								},
+							},
+							uuid = "5dd8bab1-8006-4286-b602-06d8a8f237c9",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 25769,
+							conditions =
+							{
+
+								{
+									"0ab42809-e7d3-c2b4-8a4a-b4d9175589f6",
+									true,
+								},
+
+								{
+									"448ffc71-c19d-0ba1-8abb-0c51c42ff0bf",
+									true,
+								},
+
+								{
+									"1040d906-652c-49a9-a41b-724d0fdbbee0",
+									true,
+								},
+
+								{
+									"fb422b25-5a1b-4a40-9481-55ac3c0f5c52",
+									true,
+								},
+
+								{
+									"b33ec153-7345-d4ff-9d01-25cda411a3ec",
+									true,
+								},
+
+								{
+									"733df91a-2a7b-380a-af2c-59a206a461fa",
+									true,
+								},
+							},
+							targetType = "Current Target",
+							uuid = "3c53b1c7-5e6b-5cd2-b464-f3ba095a9217",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 13,
+							jobValue = "MONK",
+							name = "Monk only",
+							uuid = "0ab42809-e7d3-c2b4-8a4a-b4d9175589f6",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return FFXIV_Common_BotRunning == true",
+							name = "Bot running",
+							uuid = "448ffc71-c19d-0ba1-8abb-0c51c42ff0bf",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return gACRSelectedProfiles[20] == \"RikuMNK3\"",
+							name = "RikuMNK3",
+							uuid = "1040d906-652c-49a9-a41b-724d0fdbbee0",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local t=TensorCore.mGetTarget()\nreturn t and t.targetable and t.attackable and t.hp.current>0 and t.distance2d<=5+t.hitradius",
+							name = "Live target in Blitz range",
+							uuid = "fb422b25-5a1b-4a40-9481-55ac3c0f5c52",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"DOTH comet Blitz preparation\" and s.chakra==3 and Now()<=(s.chakraUntil or 0)",
+							name = "Our Blitz is prepared",
+							uuid = "b33ec153-7345-d4ff-9d01-25cda411a3ec",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.blitz==25768",
+							name = "Prepared Blitz 25768",
+							uuid = "97b9347d-af28-57ec-8755-827853fac179",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.blitz==3545",
+							name = "Prepared Blitz 3545",
+							uuid = "78c2b57b-5fbd-d9c7-bfc9-254690357346",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.blitz==25769",
+							name = "Prepared Blitz 25769",
+							uuid = "733df91a-2a7b-380a-af2c-59a206a461fa",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes/Monk downtime",
+				mechanicTime = 1120.2,
+				name = "[MNK] DOTH comet Blitz preparation release",
+				timeRange = true,
+				timelineIndex = 194,
+				timerEndOffset = 8,
+				uuid = "6442f25e-2032-e5f7-9e8b-d29876189ce4",
+				version = 2,
+			},
+		},
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
+						{
+							actionID = 7395,
+							conditions =
+							{
+
+								{
+									"300dcf2e-30b2-42e9-a0e0-13272bd05d01",
+									true,
+								},
+
+								{
+									"12bd0c4f-7368-90fc-be2b-efd62b81e8ed",
+									true,
+								},
+
+								{
+									"aa3dbade-a16a-830c-b30d-44fc654f7b00",
+									true,
+								},
+
+								{
+									"ee5bce04-0870-0645-b0ee-d9ca3e00c44b",
+									true,
+								},
+
+								{
+									"d3cbc99b-250b-dee4-b39c-26195aba7fc3",
+									true,
+								},
+							},
+							ignoreWeaveRules = true,
+							uuid = "db102cf8-4084-73de-a8ab-35b76b04cdfc",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 13,
+							jobValue = "MONK",
+							name = "Monk only",
+							uuid = "300dcf2e-30b2-42e9-a0e0-13272bd05d01",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return FFXIV_Common_BotRunning == true",
+							name = "Bot running",
+							uuid = "12bd0c4f-7368-90fc-be2b-efd62b81e8ed",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return gACRSelectedProfiles[20] == \"RikuMNK3\"",
+							name = "RikuMNK3",
+							uuid = "aa3dbade-a16a-830c-b30d-44fc654f7b00",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"DOTH comet Blitz preparation\" and s.chakra==3 and Now()<=(s.chakraUntil or 0)",
+							name = "Our comet preparation is active",
+							uuid = "ee5bce04-0870-0645-b0ee-d9ca3e00c44b",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 7395,
+							category = "Self",
+							comparator = 2,
+							conditionType = 4,
+							uuid = "d3cbc99b-250b-dee4-b39c-26195aba7fc3",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes/Monk downtime",
+				mechanicTime = 1120.2,
+				name = "[MNK] DOTH pre-comet Riddle of Fire",
+				timeRange = true,
+				timelineIndex = 194,
+				timerEndOffset = -1,
+				timerStartOffset = -3.2,
+				uuid = "2a768dac-903d-f7b8-b7ce-22668e3c403c",
+				version = 2,
+			},
+		},
+	},
+	[203] =
+	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "Local fixes",
+				uuid = "e63f80fc-2211-b476-9b95-56812303f472",
+			},
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_mch_p6_balance\nif not s then\n s={nOptions={contentid=3458,subgroup=\"Nearest\"},hOptions={contentid=4954,subgroup=\"Nearest\"}}\n data.frog_mch_p6_balance=s\nend\nlocal n=TensorCore.getEntityByGroup(\"ContentID\",s.nOptions)\nlocal h=TensorCore.getEntityByGroup(\"ContentID\",s.hOptions)\nlocal function usable(e)\n return e and e.targetable and e.attackable and e.hp.max>0 and e.hp.current>0\n  and math.abs(e.pos.z-100)<=30 and math.max(0,e.distance2d-e.hitradius)<=25\nend\nlocal nu,hu=usable(n),usable(h)\nlocal t=TensorCore.mGetTarget()\nlocal chosen\nif nu and hu then\n local gap=100*n.hp.current/n.hp.max-100*h.hp.current/h.hp.max\n s.gap=gap\n if gap>=2 then chosen=n\n elseif gap<= -2 then chosen=h end\nelseif nu and (not t or not usable(t)) then chosen=n\nelseif hu and (not t or not usable(t)) then chosen=h end\ns.desiredID=chosen and chosen.id or nil\nself.used=true\n",
+							conditions =
+							{
+
+								{
+									"3cdba6e9-afb9-a872-9d90-bbb14a2841df",
+									true,
+								},
+							},
+							name = "[MCH] P6 HP safety guard",
+							uuid = "3bd6e65a-a9ba-f53d-b6bf-e93b4b720082",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							aType = "Misc",
+							conditions =
+							{
+
+								{
+									"5fb76ed8-915e-c0fa-81ac-78d1cc957265",
+									true,
+								},
+
+								{
+									"3cdba6e9-afb9-a872-9d90-bbb14a2841df",
+									true,
+								},
+							},
+							name = "Correct unsafe HP split",
+							setTarget = true,
+							targetType = "Detection Target",
+							uuid = "3151f5b1-8b3a-12c7-b4be-f33e9a6822c4",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mch_p6_balance\nlocal t=TensorCore.mGetTarget()\nreturn s and s.desiredID and eventArgs.detectionTargetID==s.desiredID and (not t or t.id~=s.desiredID)",
+							name = "Dragon outside HP buffer",
+							uuid = "72e5c47b-7d11-fe11-80a8-cf6c5e55c6d8",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Filter",
+							conditions =
+							{
+
+								{
+									"72e5c47b-7d11-fe11-80a8-cf6c5e55c6d8",
+									true,
+								},
+							},
+							filterTargetSubtype = "Highest HP",
+							filterTargetType = "Enemy",
+							name = "Correct dragon",
+							uuid = "5fb76ed8-915e-c0fa-81ac-78d1cc957265",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 13,
+							dequeueIfLuaFalse = true,
+							jobValue = "MACHINIST",
+							name = "Machinist",
+							uuid = "3cdba6e9-afb9-a872-9d90-bbb14a2841df",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes",
+				loop = true,
+				mechanicTime = 1217.6,
+				name = "[MCH] P6 HP safety guard",
+				throttleTime = 200,
+				timeRange = true,
+				timelineIndex = 203,
+				timerEndOffset = 200,
+				uuid = "8c7180dd-3c17-6055-b503-d4cbeeefc73a",
+				version = 2,
+			},
+		},
+
+		{
+			data =
+			{
+				displayPath = "Local fixes",
+				name = "Monk downtime",
+				uuid = "afe1cc31-8f6d-2d96-b4c3-fb8ae341b904",
+			},
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
+						{
+							actionID = 7396,
+							conditions =
+							{
+
+								{
+									"5a43bc25-a0b0-fbbe-8bc5-c94290ddacdc",
+									true,
+								},
+
+								{
+									"0708317e-ddbf-d822-805c-90f618b1061c",
+									true,
+								},
+
+								{
+									"020a6479-e523-3cbf-99ae-626fea9e94df",
+									true,
+								},
+
+								{
+									"d447fc27-f7ed-6f5e-be58-1e752e931a6d",
+									true,
+								},
+
+								{
+									"0023a36b-2e3f-4b3a-94d1-d6ca9ff12159",
+									true,
+								},
+							},
+							uuid = "b1f1c35b-0611-82ad-8178-573093bebcd4",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 13,
+							jobValue = "MONK",
+							name = "Monk only",
+							uuid = "5a43bc25-a0b0-fbbe-8bc5-c94290ddacdc",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return FFXIV_Common_BotRunning == true",
+							name = "Bot running",
+							uuid = "0708317e-ddbf-d822-805c-90f618b1061c",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return gACRSelectedProfiles[20] == \"RikuMNK3\"",
+							name = "RikuMNK3",
+							uuid = "020a6479-e523-3cbf-99ae-626fea9e94df",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local t=TensorCore.mGetTarget()\nreturn t and t.targetable and t.attackable and t.hp.current>0",
+							name = "Live dragon selected",
+							uuid = "d447fc27-f7ed-6f5e-be58-1e752e931a6d",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 7396,
+							category = "Self",
+							comparator = 2,
+							conditionType = 4,
+							uuid = "0023a36b-2e3f-4b3a-94d1-d6ca9ff12159",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes/Monk downtime",
+				loop = true,
+				mechanicTime = 1217.6,
+				name = "[MNK] P6 Brotherhood on cooldown",
+				throttleTime = 250,
+				timeRange = true,
+				timelineIndex = 203,
+				timerEndOffset = 139.1,
+				uuid = "112c39f1-95bc-8432-b8be-db72b8250761",
+				version = 2,
+			},
+		},
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
+						{
+							actionID = 7395,
+							conditions =
+							{
+
+								{
+									"3346e467-3705-f87a-be71-21ce276963d3",
+									true,
+								},
+
+								{
+									"83286149-b325-19e5-9bb3-4e527bebdb22",
+									true,
+								},
+
+								{
+									"214af066-4236-f0b5-886e-0ae059c08c3f",
+									true,
+								},
+
+								{
+									"f1c8aaf9-31ff-a3e0-9765-41f370ca506d",
+									true,
+								},
+
+								{
+									"ad385b72-5541-f187-a0fd-74a99b4df426",
+									true,
+								},
+
+								{
+									"78b8af20-5e0c-b860-bc10-e4f67bc3bb52",
+									true,
+								},
+							},
+							endIfUsed = true,
+							uuid = "45ced26e-a62b-5f22-8031-9e604b115bcc",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 7395,
+							conditions =
+							{
+
+								{
+									"3346e467-3705-f87a-be71-21ce276963d3",
+									true,
+								},
+
+								{
+									"83286149-b325-19e5-9bb3-4e527bebdb22",
+									true,
+								},
+
+								{
+									"214af066-4236-f0b5-886e-0ae059c08c3f",
+									true,
+								},
+
+								{
+									"f1c8aaf9-31ff-a3e0-9765-41f370ca506d",
+									true,
+								},
+
+								{
+									"d8636e84-d9a4-01fc-917a-09a8be213794",
+									true,
+								},
+
+								{
+									"78b8af20-5e0c-b860-bc10-e4f67bc3bb52",
+									true,
+								},
+							},
+							endIfUsed = true,
+							ignoreWeaveRules = true,
+							uuid = "6f6c9f1a-f467-2cda-8f78-5628f89f8ad0",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 13,
+							jobValue = "MONK",
+							name = "Monk only",
+							uuid = "3346e467-3705-f87a-be71-21ce276963d3",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return FFXIV_Common_BotRunning == true",
+							name = "Bot running",
+							uuid = "83286149-b325-19e5-9bb3-4e527bebdb22",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return gACRSelectedProfiles[20] == \"RikuMNK3\"",
+							name = "RikuMNK3",
+							uuid = "214af066-4236-f0b5-886e-0ae059c08c3f",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local t=TensorCore.mGetTarget()\nreturn t and t.targetable and t.attackable and t.hp.current>0 and t.distance2d<=3+t.hitradius",
+							name = "Melee uptime",
+							uuid = "ad385b72-5541-f187-a0fd-74a99b4df426",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 7395,
+							category = "Self",
+							comparator = 2,
+							conditionType = 4,
+							uuid = "78b8af20-5e0c-b860-bc10-e4f67bc3bb52",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 7,
+							name = "In combat",
+							uuid = "f1c8aaf9-31ff-a3e0-9765-41f370ca506d",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local t=TensorCore.mGetTarget()\nreturn not t or not t.targetable or not t.attackable or t.hp.current<=0 or t.distance2d>3+t.hitradius",
+							name = "Personal downtime",
+							uuid = "d8636e84-d9a4-01fc-917a-09a8be213794",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes/Monk downtime",
+				loop = true,
+				mechanicTime = 1217.6,
+				name = "[MNK] P6 Riddle of Fire on cooldown",
+				throttleTime = 250,
+				timeRange = true,
+				timelineIndex = 203,
+				timerEndOffset = 139.1,
+				uuid = "93ae4200-66d4-aab0-a980-cc8e624f672a",
+				version = 2,
+			},
+		},
+	},
+	[205] =
+	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "Local fixes",
+				uuid = "bec9b432-726e-569e-b1fc-cbcf85f14938",
+			},
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
+						{
+							aType = "Lua",
+							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal s=data.frog_wb1_pairs\nif not s then self.used=true return end\ns.stay=false\nlocal guide=data.frog_draw_style_v5\nif guide.mode(\"p6_wb1\")==\"Disabled\" or not s.solution then self.used=true return end\nlocal player=TensorCore.mGetPlayer()\nif not player or player.hp.current<=0 then self.used=true return end\nif s.drawPlayerID~=player.id then s.anchorPoint=nil;s.drawPlayerID=player.id end\nlocal x,y,z\nlocal destination=s.solution[player.id]\n-- Resolve from the current replay player; never reuse another player's tether.\ns.personalAnchor=destination;s.anchorLane=s.anchors and s.anchors[player.id]\nif destination and (not s.anchors or not s.anchors[destination] or s.colors[destination]==s.colors[player.id])then self.used=true return end\nif s.personalAnchor then\n local anchor=TensorCore.mGetEntity(s.personalAnchor)\n if not anchor or anchor.hp.current<=0 then self.used=true return end\n x,y,z=anchor.pos.x,anchor.pos.y,anchor.pos.z\nelseif s.anchorLane then\n if not s.anchorPoint then s.anchorPoint={x=player.pos.x,y=player.pos.y,z=player.pos.z} end\n x,y,z=s.anchorPoint.x,s.anchorPoint.y,s.anchorPoint.z\nelse self.used=true return end\nlocal distance=(player.pos.x-x)^2+(player.pos.z-z)^2\ns.stay=distance<=1\nlocal color=s.stay and 0xFF40E080 or 0xFFFF6626\nlocal d=TensorCore.getStaticDrawer(color,1,0,guide.flags)\n-- Destination remains visible even when no movement is necessary.\nd:addCircle(x,y+0.05,z,0.8,false,guide.flags)\nd:addCircle(x,y+0.06,z,0.15,false,guide.flags)\nif not s.stay then guide.draw(\"p6_wb1\",d,player.pos.x,player.pos.y,player.pos.z,x,y+0.05,z,8,2) end\nself.used=true",
+							name = "[Draw] Wyrmsbreath 1 flex guidance",
+							uuid = "4e1d99fa-88f2-aa96-b19a-3584523efbb8",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+				},
+				displayPath = "Local fixes",
+				eventType = 12,
+				loop = true,
+				mechanicTime = 1235.1,
+				name = "[Draw] Wyrmsbreath 1 flex guidance",
+				timeRange = true,
+				timelineIndex = 205,
+				timerStartOffset = -8,
+				uuid = "07fd8dec-f07d-e54a-9500-57992f4ebff8",
+				version = 2,
+			},
+		},
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_wb1_pairs\nif not s then self.used=true return end\nlocal menu=data.frog_draw_settings\nif not s.saved then\n s.saved={}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then local ok,v=pcall(FileLoad,path);if ok and type(v)==\"table\" then s.saved=v end end\nend\nlocal settings=menu and menu.settings or s.saved\nlocal text=settings.p6_wb1_pairs or \"H1 R1 M1 M2 H2 R2\"\nlocal styles=settings.draw_styles\nif styles and styles.p6_wb1==\"Disabled\" then s.personalAnchor=nil;self.used=true return end\nlocal player=TensorCore.mGetPlayer()\nlocal members=AnyoneCore.Roster.members()\nlocal sameRoster=s.roleOrder and type(members)==\"table\"\nif sameRoster then\n for i,role in ipairs(s.roleOrder)do\n  local m=members[role]\n  if not m or m.name~=s.rosterNames[i] or m.job~=s.rosterJobs[i]then sameRoster=false;break end\n end\nend\nif sameRoster and player and s.playerID==player.id and s.signature==text and s.solvedVersion==s.colorVersion then self.used=true return end\nif Now()<s.settleUntil then self.used=true return end\ns.personalAnchor=nil;s.anchorLane=nil;s.solution=nil;s.anchors=nil\nlocal roles,seen={},{}\nfor role in text:gmatch(\"%S+\") do\n if (role~=\"H1\" and role~=\"H2\" and role~=\"M1\" and role~=\"M2\" and role~=\"R1\" and role~=\"R2\") or seen[role] then s.reason=\"Invalid pair assignments\";self.used=true return end\n seen[role]=true;roles[#roles+1]=role\nend\nif #roles~=6 then s.reason=\"Assign all six non-tank roles\";self.used=true return end\nlocal party=AnyoneCore.API.getAgnosticPartyList()\nif type(members)~=\"table\" or type(party)~=\"table\" then self.used=true return end\nlocal byName,byJob,counts,rcounts={},{},{},{}\nfor _,a in pairs(party) do\n if a.id and a.name and a.job then byName[a.name..\"\\31\"..a.job]=a;byJob[a.job]=a;counts[a.job]=(counts[a.job]or 0)+1 end\nend\nfor _,m in pairs(members) do if m.job then rcounts[m.job]=(rcounts[m.job]or 0)+1 end end\nlocal ids,used={},{}\ns.roleOrder=roles;s.rosterNames={};s.rosterJobs={}\nfor i,role in ipairs(roles) do\n local m=members[role]\n if not m or not m.name or not m.job then s.reason=\"Roster unresolved\";self.used=true return end\n s.rosterNames[i]=m.name;s.rosterJobs[i]=m.job\n local a=byName[m.name..\"\\31\"..m.job]\n if not a and counts[m.job]==1 and rcounts[m.job]==1 then a=byJob[m.job] end\n if not a or used[a.id] or not s.colors[a.id] then s.reason=\"Waiting for six colours / roster\";self.used=true return end\n used[a.id]=true;ids[i]=a.id\nend\nlocal best,bestCost\nfor _,p in ipairs({{1,2,3},{1,3,2},{2,1,3},{2,3,1},{3,1,2},{3,2,1}}) do\n local valid,cost=true,0\n for lane=1,3 do\n  if s.colors[ids[lane*2-1]]==s.colors[ids[p[lane]*2]] then valid=false;break end\n  cost=cost+(lane==p[lane] and 0 or 100)+math.abs(lane-p[lane])\n end\n if valid and (not bestCost or cost<bestCost) then best=p;bestCost=cost end\nend\nif not best then s.reason=\"No opposite-colour matching\";self.used=true return end\ns.solution={};s.anchors={}\nfor lane=1,3 do\n local anchor,flex=ids[lane*2-1],ids[best[lane]*2]\n s.solution[flex]=anchor;s.anchors[anchor]=lane\nend\nif player then\n s.playerID=player.id\n s.personalAnchor=s.solution[player.id];s.anchorLane=s.anchors[player.id]\n if s.personalAnchor and (not s.anchors[s.personalAnchor] or s.colors[s.personalAnchor]==s.colors[player.id])then s.personalAnchor=nil;s.reason=\"Invalid personal pair\" end\nend\ns.signature=text;s.solvedVersion=s.colorVersion;s.reason=nil\nself.used=true\n",
+							name = "[Draw] Wyrmsbreath 1 opposite-colour pairs",
+							uuid = "31552416-e055-c019-8433-e04f11a659d9",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+				},
+				displayPath = "Local fixes",
+				loop = true,
+				mechanicTime = 1235.1,
+				name = "[Draw] Wyrmsbreath 1 opposite-colour pairs",
+				throttleTime = 100,
+				timeRange = true,
+				timelineIndex = 205,
+				timerStartOffset = -8,
+				uuid = "dc5439e7-0717-4744-a654-3899a6931e5e",
+				version = 2,
+			},
+		},
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_wb1_pairs\nlocal t=TensorReactions_CurrentTimer\nif not s or (s.lastTime and t<s.lastTime-1) then s={colors={},colorVersion=0};data.frog_wb1_pairs=s end\ns.lastTime=t\nlocal id,color=eventArgs.sourceEntityID,eventArgs.newTargetContentID\nif s.colors[id]~=color then s.colors[id]=color;s.colorVersion=s.colorVersion+1;s.settleUntil=Now()+150 end\nself.used=true",
+							conditions =
+							{
+
+								{
+									"bc8dffc9-b10d-bd37-a1ca-35f8079c1293",
+									true,
+								},
+							},
+							name = "[Draw] Wyrmsbreath 1 colour capture",
+							uuid = "c069e9e0-c6fd-48c6-a6d1-14cba820d98a",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local id=eventArgs.newTetherID\nlocal c=eventArgs.newTargetContentID\nreturn eventArgs.sourceEntityContentID==0 and id>=193 and id<=196 and (c==3458 or c==4954)",
+							dequeueIfLuaFalse = true,
+							name = "Player-to-dragon colour tether",
+							uuid = "bc8dffc9-b10d-bd37-a1ca-35f8079c1293",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes",
+				eventType = 15,
+				loop = true,
+				mechanicTime = 1235.1,
+				name = "[Draw] Wyrmsbreath 1 colour capture",
+				timeRange = true,
+				timelineIndex = 205,
+				timerStartOffset = -8,
+				uuid = "21ebba5a-a1d1-fdea-8d70-aa94b7472a22",
+				version = 2,
+			},
+		},
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
+						{
+							aType = "Alert",
+							alertDuration = 1000,
+							alertScale = 1,
+							alertText = "Wyrmsbreath 1: STAY",
+							conditions =
+							{
+
+								{
+									"dfe989eb-56f2-2973-922c-03a5a464849a",
+									true,
+								},
+							},
+							name = "Stay confirmation",
+							uuid = "715604eb-7dd2-1f2b-bc7e-d5b6695f86f3",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_wb1_pairs\nlocal g=data.frog_draw_style_v5\nreturn s and s.stay==true and g and g.mode(\"p6_wb1\")~=\"Disabled\"",
+							name = "Pair solved; in position",
+							uuid = "dfe989eb-56f2-2973-922c-03a5a464849a",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes",
+				loop = true,
+				mechanicTime = 1235.1,
+				name = "[Draw] Wyrmsbreath 1 Stay confirmation",
+				throttleTime = 1000,
+				timeRange = true,
+				timelineIndex = 205,
+				timerStartOffset = -8,
+				uuid = "8c3d5484-0d74-e2ec-a312-ac5c7162404d",
+				version = 2,
+			},
+		},
+	},
+	[207] =
+	{
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_vow_v1\nif not self.started then\n local settings=data.frog_draw_settings and data.frog_draw_settings.settings\n if not settings then\n  local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n  if FileExists(path) then\n   local ok,saved=pcall(FileLoad,path)\n   if ok and type(saved)==\"table\" then settings=saved end\n  end\n end\n s={bossID=eventArgs.entityID,holder=eventArgs.targetID,initial=eventArgs.targetID,\n    passAt=Now()+34000,passes=0,seen={[eventArgs.targetID]=true},order={},slots={},ready=false,done=false,\n    groups={T={\"MT\",\"OT\"},M={\"M1\",\"M2\"},R={\"R1\",\"R2\"}},\n    roleKeys={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"}}\n local orderText=settings and settings.vow_pass_order or \"T T M R\"\n if type(orderText)~=\"string\" then orderText=\"T T M R\" end\n for token in string.upper(orderText):gmatch(\"[^%s,]+\") do\n  if not s.groups[token] then s.done=true end\n  s.order[#s.order+1]=token\n end\n if #s.order~=4 then s.done=true end\n function s.choose()\n  s.receiver=nil\n  if not s.ready or s.done or s.passes>=4 then return end\n  -- R2 may receive the fourth pass again after Mortal Atonement falls off.\n  if s.passes==3 then s.receiver=s.slots.R2; return end\n  local candidates=s.groups[s.order[s.passes+1]]\n  for _,role in ipairs(candidates or {}) do\n   local id=s.slots[role]\n   if role~=\"H1\" and role~=\"H2\" and id and not s.seen[id] then s.receiver=id; return end\n  end\n end\n data.frog_vow_v1=s\n self.started=true\nend\nif s.done then self.used=true return end\n-- Join logical roster roles to current replay/live entities once.\nlocal members=AnyoneCore.Roster.members()\nlocal party=AnyoneCore.API.getAgnosticPartyList()\nif type(members)~=\"table\" or type(party)~=\"table\" then return end\nlocal byNameJob,byJob,partyCount,rosterCount={},{},{},{}\nfor _,actor in pairs(party) do\n if actor and actor.id and actor.job and actor.name then\n  byNameJob[tostring(actor.name)..\"\\31\"..tostring(actor.job)]=actor\n  byJob[actor.job]=actor\n  partyCount[actor.job]=(partyCount[actor.job] or 0)+1\n end\nend\nfor _,member in pairs(members) do\n if member and member.job then rosterCount[member.job]=(rosterCount[member.job] or 0)+1 end\nend\n-- Replay party helpers omit dead actors; resolve missing roster jobs from bodies.\nlocal missing=false\nfor job in pairs(rosterCount) do if not partyCount[job] then missing=true break end end\nif missing then\n for _,actor in pairs(EntityList(\"\")) do\n  if actor and actor.id and actor.job and actor.name and actor.hp.current<=0\n   and rosterCount[actor.job] and not party[actor.id] then\n   byNameJob[tostring(actor.name)..\"\\31\"..tostring(actor.job)]=actor\n   byJob[actor.job]=actor\n   partyCount[actor.job]=(partyCount[actor.job] or 0)+1\n  end\n end\nend\nlocal used={}\nfor role,key in pairs(s.roleKeys) do\n local member=members[key]\n if not member or not member.name or not member.job then return end\n local actor=byNameJob[tostring(member.name)..\"\\31\"..tostring(member.job)]\n if not actor and partyCount[member.job]==1 and rosterCount[member.job]==1 then actor=byJob[member.job] end\n if not actor or used[actor.id] then return end\n s.slots[role]=actor.id\n used[actor.id]=true\nend\nif not used[s.initial] then return end\ns.ready=true\ns.choose()\nself.used=true",
+							conditions =
+							{
+
 								{
 									"b6549934-2e6f-6871-9101-c4f67acfdd3b",
 									true,
@@ -3400,11 +6599,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -3428,26 +6627,26 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_vow_v1\nif not s or s.done then self.used=true return end\nlocal id=eventArgs.entityID\nif id~=s.holder then\n if s.seen[id] and not (s.passes==3 and id==s.slots.R2) then\n  -- Do not suggest a fifth/repeated recipient after an invalid transfer.\n  s.done=true\n  s.receiver=nil\n else\n  s.passAt=Now()+34000\n  s.holder=id\n  s.seen[id]=true\n  s.passes=s.passes+1\n  if s.passes>=4 then s.done=true end\n  s.choose()\n end\nend\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"c0ecccec-8d8f-48c9-ad67-756217321951",
 									true,
 								},
-								
+
 								{
 									"2cdb9ee1-0d45-8df5-9f30-bcba233e0d48",
 									true,
@@ -3459,11 +6658,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -3474,9 +6673,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local s=data.frog_vow_v1\nif not s or not s.ready then return false end\nfor _,id in pairs(s.slots) do\n if id==eventArgs.entityID then return true end\nend\nreturn false",
@@ -3498,15 +6697,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\n\nself.used=true\nlocal s=data.frog_vow_v1\nif not s or not s.ready or s.done or s.passes>=4 then return end\nlocal boss=TensorCore.mGetEntity(s.bossID)\nif not boss then return end\nif boss.hp.current<=0 then s.done=true; s.receiver=nil; return end\nif frogGuide.mode(\"p6_vow\")==\"Disabled\" then return end\nlocal player=TensorCore.mGetPlayer()\nif not player or not player.pos or player.hp.current<=0 then return end\nif player.id~=s.holder and player.id~=s.receiver then return end\nlocal holder=TensorCore.mGetEntity(s.holder)\nlocal receiver=s.receiver and TensorCore.mGetEntity(s.receiver)\nif not holder or not receiver or not holder.pos or not receiver.pos\n or receiver.hp.current<=0 then return end\nlocal buff=TensorCore.getBuff(holder,2896)\nif not buff or buff.duration<=0 or buff.duration>10 then return end\nlocal dx,dz=holder.pos.x-receiver.pos.x,holder.pos.z-receiver.pos.z\n-- Action 27953 has a five-yalm radius; no hitbox padding.\nif dx*dx+dz*dz<=25 then return end\nlocal target=player.id==s.holder and receiver or holder\nlocal drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,frogGuide.flags)\nfrogGuide.draw(\"p6_vow\",drawer,player.pos.x,player.pos.y,player.pos.z,\n target.pos.x,target.pos.y,target.pos.z,8,2)\n",
@@ -3516,7 +6715,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 12,
@@ -3531,21 +6730,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_vow_v1\nlocal labels={MT=\"main tank\",OT=\"off tank\",M1=\"melee 1\",M2=\"melee 2\",R1=\"ranged 1\",R2=\"ranged 2\",H1=\"healer 1\",H2=\"healer 2\"}\nlocal from,to\nfor role,id in pairs(s.slots) do\n if id==s.holder then from=labels[role] end\n if id==s.receiver then to=labels[role] end\nend\nif not from or not to then return end\nTensorCore.addAlertText(5000,from..\" to \"..to,1.5,2,true)\ns.ttsPass=s.passes\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"7b8c4e3b-31a1-42dc-9ac3-8172b3364f98",
 									true,
@@ -3557,15 +6756,15 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
-							conditionLua = "local s=data.frog_vow_v1\nif not s or not s.ready or s.done or s.passes>=4 or not s.receiver or s.ttsPass==s.passes then return false end\nlocal g=data.frog_draw_style_v5\nlocal menu=data.frog_draw_settings\nlocal settings=menu and menu.settings or g and g.settings or {}\nlocal mode=settings.p6_vow_tts_mode or \"Personal\"\nif mode==\"Disabled\" then return false end\nif mode==\"Personal\" then\n local player=TensorCore.mGetPlayer()\n if not player or player.id~=s.receiver and player.id~=s.holder then return false end\nend\nlocal holder=TensorCore.mGetEntity(s.holder)\nlocal receiver=TensorCore.mGetEntity(s.receiver)\nif not holder or not receiver or receiver.hp.current<=0 then return false end\nlocal buff=TensorCore.getBuff(holder,2896)\nreturn buff~=nil and buff.duration>0 and buff.duration<=5",
-							name = "Vow pass in 5s",
+							conditionLua = "local s=data.frog_vow_v1\nif not s or not s.ready or s.done or s.passes>=4 or not s.receiver or s.ttsPass==s.passes then return false end\nlocal g=data.frog_draw_style_v5\nlocal menu=data.frog_draw_settings\nlocal settings=menu and menu.settings or g and g.settings or {}\nlocal mode=settings.p6_vow_tts_mode or \"Personal\"\nif mode==\"Disabled\" then return false end\nif mode==\"Personal\" then\n local player=TensorCore.mGetPlayer()\n if not player or player.id~=s.receiver and player.id~=s.holder then return false end\nend\nlocal holder=TensorCore.mGetEntity(s.holder)\nlocal receiver=TensorCore.mGetEntity(s.receiver)\nif not holder or not receiver or receiver.hp.current<=0 then return false end\nlocal buff=TensorCore.getBuff(holder,2896)\nlocal early=mode==\"Shotcaller\" and 10 or 5\nreturn buff~=nil and buff.duration>0 and buff.duration<=early",
+							name = "Vow pass warning",
 							uuid = "7b8c4e3b-31a1-42dc-9ac3-8172b3364f98",
 							version = 3,
 						},
@@ -3584,23 +6783,23 @@ local tbl =
 			},
 		},
 	},
-	[208] = 
+	[208] =
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local hrae=TensorCore.getEntityByGroup(\"ContentID\",{contentid=4954,subgroup=\"Nearest\"})\nlocal nidd=TensorCore.getEntityByGroup(\"ContentID\",{contentid=3458,subgroup=\"Nearest\"})\nif not hrae or not nidd or hrae.hp.max<=0 or nidd.hp.max<=0 or hrae.hp.current<=0 or nidd.hp.current<=0 then self.used=true return end\nlocal h=100*hrae.hp.current/hrae.hp.max\nlocal n=100*nidd.hp.current/nidd.hp.max\nlocal advice=\"KEEP THEM EVEN\"\nif math.abs(h-n)>3.5 then advice=h>n and \"HIT HRAE\" or \"HIT NIDD\" end\nTensorCore.sendParsedChatMessage(string.format(\"/e HRAE %.2f%% | NIDD %.2f%% | %s\",h,n,advice))\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"6d42e5a1-3794-9889-aca6-f66eb972a436",
 									true,
@@ -3612,11 +6811,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local menu=data.frog_draw_settings\nif menu then return menu.settings.p6_akh_afah_hp==true end\nif not data.frog_afah_hp_settings then\n local settings={}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,saved=pcall(FileLoad,path)\n  if ok and type(saved)==\"table\" then settings=saved end\n end\n data.frog_afah_hp_settings=settings\nend\nreturn data.frog_afah_hp_settings.p6_akh_afah_hp==true",
@@ -3636,23 +6835,23 @@ local tbl =
 			},
 		},
 	},
-	[213] = 
+	[213] =
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_wroth_start_v1={orbs={},seen={},count=0,stage=\"collecting\"}\nlocal s=data.frog_wroth_start_v1\nfunction s.tryDraw()\n    if s.stage~=\"collecting\" or s.count<6 or (s.diveX==nil and not s.dive) or not s.akhEnd then return end\n    local remaining=s.akhEnd-Now()\n    if remaining<=0 then s.stage=\"expired\" return end\n    -- The third triplet is opposite the second. Wait for its full triplet and the dive lane.\n    local tx,tz=0,0\n    for i=4,6 do tx=tx+s.orbs[i].x tz=tz+s.orbs[i].z end\n    tx,tz=200-tx/3,200-tz/3\n    -- Verified corner-triplet centres are 87/113 on each axis.\n    if math.abs(math.abs(tx-100)-13)>1 or math.abs(math.abs(tz-100)-13)>1 then\n        s.stage=\"unrecognised pattern\" return\n    end\n    local diveX=s.diveX or s.dive.x\n    -- Classify with tolerance: cast coordinates are slightly rounded.\n    if math.abs(diveX-100)<=2 then diveX=100\n    elseif math.abs(diveX-89)<=2 then diveX=89\n    elseif math.abs(diveX-111)<=2 then diveX=111\n    else return end\n    -- Prefer west for targetable Nidhogg uptime, including the 2-1 route.\n    -- Hraesvelgr always dives here; use east only when his lane blocks west.\n    local x=79\n    if math.abs(x-diveX)<=12 then x=200-x end\n    if math.abs(x-diveX)<=12 then return end\n    local z=tz>100 and 113 or 87\n    local dx,dz\n    -- The starting point must also clear every arm of the first three crosses.\n    for i=1,3 do\n        local orb=s.orbs[i]\n        if math.abs(x-orb.x)<=4 or math.abs(z-orb.z)<=4 then\n            s.stage=\"no verified first-wave-safe start\" return\n        end\n    end\n    dx,dz=x-100,z-100\n    local length=math.sqrt(dx*dx+dz*dz)\n    local flags=Argus2.RenderFlags.FLAG_RENDER_OVERLAY+Argus2.RenderFlags.FLAG_WARP_TERRAIN\n    local drawer=TensorCore.getStaticDrawer(0xFF33FF33,1,0,flags)\n    drawer:setGradient(0,1,0)\n    s.arrow=drawer:addTimedArrow(remaining,100,0.08,100,math.atan2(dx,dz),length-3,1.5,3,4,0,false,flags)\n    drawer:setGradient() -- Restore cached drawer defaults for other callers.\n    s.startX,s.startZ=x,z\n    s.stage=\"guiding\"\n    local direction=(z<100 and \"north\" or \"south\")..(x<100 and \"west\" or \"east\")\n    local markerNames={\"A\",\"B\",\"C\",\"D\",\"1\",\"2\",\"3\",\"4\"}\n    local marker,best=nil,math.huge\n    for id=1,8 do\n        local mx,my,mz,active=Argus.getWaymarkInfo(id)\n        if active and (mx-100)*(x-100)>0 and (mz-100)*(z-100)>0 then\n            local distance=(mx-x)^2+(mz-z)^2\n            if distance<best then marker,best=markerNames[id],distance end\n        end\n    end\n    local message=\"Wroth start: \"..(marker and marker..\", \" or \"\")..direction\n    TensorCore.addAlertText(8000,(marker and marker..\", \" or \"\")..direction,1.5,2,false)\n    TensorCore.sendTTS(message)\nend\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"45d8514e-1e80-26f4-b4a9-7af21505f39e",
 									true,
@@ -3664,11 +6863,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -3691,21 +6890,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_wroth_start_v1\nif not s then self.used=true return end\nif s.seen[eventArgs.entityID] or s.count>=9 then self.used=true return end\nlocal entity=TensorCore.mGetEntity(eventArgs.entityID)\nif not entity or not entity.pos then return end\ns.count=s.count+1\ns.seen[eventArgs.entityID]=true\ns.orbs[s.count]={x=entity.pos.x,z=entity.pos.z}\ns.tryDraw()\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"b5b0d057-a675-5a4c-a2c3-88187fd409eb",
 									true,
@@ -3717,11 +6916,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -3744,21 +6943,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_wroth_start_v1\nif not s then self.used=true return end\ns.dive={x=eventArgs.x,z=eventArgs.z,sin=math.sin(eventArgs.heading),cos=math.cos(eventArgs.heading),width=eventArgs.aoeWidth,length=eventArgs.aoeLength}\ns.tryDraw()\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"a09a4459-4950-d7ae-bbf0-1b14adcea33d",
 									true,
@@ -3769,15 +6968,15 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_wroth_start_v1\nif not s or s.akhEnd then self.used=true return end\nlocal timer=eventArgs.duration*1000\ns.akhEnd=Now()+timer\nlocal player=TensorCore.mGetPlayer()\nif AnyoneCore and player then\n    AnyoneCore.addWorldTextCountdownOnEnt(timer,player.id,AnyoneCore.white,true,1.5,2)\nend\ns.tryDraw()\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"a40633aa-ccc8-cc02-87ab-cf826530106e",
 									true,
@@ -3789,11 +6988,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "return eventArgs.aoeID==27967 and eventArgs.contentID==4954",
@@ -3803,9 +7002,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "return eventArgs.aoeID==27974 and (eventArgs.contentID==3458 or eventArgs.contentID==4954)",
@@ -3827,26 +7026,26 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_wroth_start_v1\nif not s or s.stage~=\"collecting\" then self.used=true return end\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\n-- Reject the normal combat position; only accept the off-arena dive staging lane.\nif math.abs(e.pos.z-100)<30 then self.used=true return end\nlocal x=e.pos.x\nif math.abs(x-100)<=2 then x=100\nelseif math.abs(x-89)<=2 then x=89\nelseif math.abs(x-111)<=2 then x=111\nelse self.used=true return end\ns.diveX=x\ns.tryDraw()\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"cfbd98aa-c590-0d46-94c9-0b0e6462fdaf",
 									true,
 								},
-								
+
 								{
 									"791d4b83-2c48-dc10-ab2f-2553672fee69",
 									true,
@@ -3858,11 +7057,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "return eventArgs.entityContentID==4954",
@@ -3874,9 +7073,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -3898,24 +7097,160 @@ local tbl =
 				version = 2,
 			},
 		},
-	},
-	[223] = 
-	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				displayPath = "",
+				name = "Local fixes",
+				uuid = "ff443817-93b3-b3c4-9568-9b87370472bc",
+			},
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				displayPath = "Local fixes",
+				name = "Monk downtime",
+				uuid = "2f2b9ddd-a97f-9906-aeb7-f7b593eec85e",
+			},
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
+						{
+							actionID = 7395,
+							conditions =
+							{
+
+								{
+									"cfc6b924-194e-b3ae-aa06-6ccdfde196fe",
+									true,
+								},
+
+								{
+									"f1cebb54-94f1-6fdb-9f95-5a7bdf0ecf17",
+									true,
+								},
+
+								{
+									"20159954-9ed3-e9ae-9d35-8a757872daf2",
+									true,
+								},
+
+								{
+									"ed405a61-fcc9-422f-b45e-c0012d093b3a",
+									true,
+								},
+
+								{
+									"b7d0ef42-2ccd-4fab-9c98-7e94463958b6",
+									true,
+								},
+							},
+							ignoreWeaveRules = true,
+							uuid = "0bd7d4cc-d47a-0d0e-9c32-cf9d4d6b6a9b",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 13,
+							jobValue = "MONK",
+							name = "Monk only",
+							uuid = "cfc6b924-194e-b3ae-aa06-6ccdfde196fe",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return FFXIV_Common_BotRunning == true",
+							name = "Bot running",
+							uuid = "f1cebb54-94f1-6fdb-9f95-5a7bdf0ecf17",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return gACRSelectedProfiles[20] == \"RikuMNK3\"",
+							name = "RikuMNK3",
+							uuid = "20159954-9ed3-e9ae-9d35-8a757872daf2",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local t=TensorCore.mGetTarget()\nreturn t and t.hp.current>0 and (not t.targetable or not t.attackable or t.distance2d>3+t.hitradius)",
+							name = "Live dragon; personal melee gap",
+							uuid = "ed405a61-fcc9-422f-b45e-c0012d093b3a",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 7395,
+							category = "Self",
+							comparator = 2,
+							conditionType = 4,
+							uuid = "b7d0ef42-2ccd-4fab-9c98-7e94463958b6",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes/Monk downtime",
+				enabled = false,
+				mechanicTime = 1282.7,
+				name = "[MNK] Wroth downtime Riddle of Fire",
+				timeRange = true,
+				timelineIndex = 213,
+				timerEndOffset = 18,
+				uuid = "ee53b245-be71-0bbf-9fe8-291d530c988c",
+				version = 2,
+			},
+		},
+	},
+	[223] =
+	{
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local hrae=TensorCore.getEntityByGroup(\"ContentID\",{contentid=4954,subgroup=\"Nearest\"})\nlocal nidd=TensorCore.getEntityByGroup(\"ContentID\",{contentid=3458,subgroup=\"Nearest\"})\nif not hrae or not nidd or hrae.hp.max<=0 or nidd.hp.max<=0 or hrae.hp.current<=0 or nidd.hp.current<=0 then self.used=true return end\nlocal h=100*hrae.hp.current/hrae.hp.max\nlocal n=100*nidd.hp.current/nidd.hp.max\nlocal advice=\"KEEP THEM EVEN\"\nif math.abs(h-n)>3.5 then advice=h>n and \"HIT HRAE\" or \"HIT NIDD\" end\nTensorCore.sendParsedChatMessage(string.format(\"/e HRAE %.2f%% | NIDD %.2f%% | %s\",h,n,advice))\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"693ecf25-8dcc-d9c4-a349-cb0153b91404",
 									true,
@@ -3927,11 +7262,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local menu=data.frog_draw_settings\nif menu then return menu.settings.p6_akh_afah_hp==true end\nif not data.frog_afah_hp_settings then\n local settings={}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,saved=pcall(FileLoad,path)\n  if ok and type(saved)==\"table\" then settings=saved end\n end\n data.frog_afah_hp_settings=settings\nend\nreturn data.frog_afah_hp_settings.p6_akh_afah_hp==true",
@@ -3951,27 +7286,27 @@ local tbl =
 			},
 		},
 	},
-	[233] = 
+	[233] =
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\n\nself.used=true\nlocal s=data.frog_wb2_v1\nif not s then\n s={slots={},roleKeys={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"},\n spots={MT={85.25,87.75},OT={115.28,110.83},H1={99.87,80.74},H2={99.96,119.40},\n M1={96.85,110.37},M2={103.93,89.59},R1={93.25,118.12},R2={106.80,81.32}}}\n function s.clear()\n  if s.line then Argus.deleteTimedShape(s.line); s.line=nil end\n  if s.ring then Argus.deleteTimedShape(s.ring); s.ring=nil end\n  if s.dot then Argus.deleteTimedShape(s.dot); s.dot=nil end\n end\n data.frog_wb2_v1=s\nend\n-- Remove only our old timed shapes if this is edited during a replay.\nif not s.frameMode then s.clear(); s.frameMode=true end\nlocal mode=frogGuide.mode(\"p6_wb2\")\nlocal player=TensorCore.mGetPlayer()\nlocal remaining=(1356.5-TensorReactions_CurrentTimer)*1000\nif mode==\"Disabled\" or not player or player.hp.current<=0 or remaining<=0 then s.clear(); return end\nif s.playerID~=player.id then\n s.clear(); s.spot=nil; s.playerID=player.id\nend\nif not s.spot then\n local now=Now()\n if s.nextRoster and now<s.nextRoster then return end\n s.nextRoster=now+500\n local members=AnyoneCore.Roster.members()\nlocal party=AnyoneCore.API.getAgnosticPartyList()\nif type(members)~=\"table\" or type(party)~=\"table\" then return end\nlocal byNameJob,byJob,partyCount,rosterCount={},{},{},{}\nfor _,actor in pairs(party) do\n if actor and actor.id and actor.job and actor.name then\n  byNameJob[tostring(actor.name)..\"\\31\"..tostring(actor.job)]=actor\n  byJob[actor.job]=actor\n  partyCount[actor.job]=(partyCount[actor.job] or 0)+1\n end\nend\nfor _,member in pairs(members) do\n if member and member.job then rosterCount[member.job]=(rosterCount[member.job] or 0)+1 end\nend\nlocal used={}\nfor role,key in pairs(s.roleKeys) do\n local member=members[key]\n if not member or not member.name or not member.job then return end\n local actor=byNameJob[tostring(member.name)..\"\\31\"..tostring(member.job)]\n if not actor and partyCount[member.job]==1 and rosterCount[member.job]==1 then actor=byJob[member.job] end\n if not actor or used[actor.id] then return end\n s.slots[role]=actor.id\n used[actor.id]=true\nend\n\n for role,id in pairs(s.slots) do\n  if id==player.id then s.role=role; s.spot=s.spots[role]; break end\n end\n if not s.spot then return end\nend\nlocal x,z=s.spot[1],s.spot[2]\nlocal flags=frogGuide.flags\nlocal ring=TensorCore.getCachedDrawer(0x00FF6626,0x00FF6626,0x00FF6626,0xFFFF6626,2,0,flags)\nring:addCircle(x,0.05,z,0.6,false,flags)\nlocal drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,flags)\ndrawer:addCircle(x,0.06,z,0.15,false,flags)\nlocal dx,dz=x-player.pos.x,z-player.pos.z\nif dx*dx+dz*dz<=1 then return end\nfrogGuide.draw(\"p6_wb2\",drawer,player.pos.x,player.pos.y,player.pos.z,x,0.05,z,8,2)\n",
+							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\n\nself.used=true\nlocal s=data.frog_wb2_v1\nif not s then\n s={slots={},roleKeys={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"},\n spots={MT={85.25,87.75},OT={115.28,110.83},H1={99.87,80.74},H2={99.96,119.40},\n M1={96.85,110.37},M2={103.93,89.59},R1={93.25,118.12},R2={106.80,81.32}}}\n function s.clear()\n  if s.line then Argus.deleteTimedShape(s.line); s.line=nil end\n  if s.ring then Argus.deleteTimedShape(s.ring); s.ring=nil end\n  if s.dot then Argus.deleteTimedShape(s.dot); s.dot=nil end\n end\n data.frog_wb2_v1=s\nend\n-- Remove only our old timed shapes if this is edited during a replay.\nif not s.frameMode then s.clear(); s.frameMode=true end\nlocal mode=frogGuide.mode(\"p6_wb2\")\nlocal player=TensorCore.mGetPlayer()\nlocal remaining=(1356.5-TensorReactions_CurrentTimer)*1000\nif mode==\"Disabled\" or not player or player.hp.current<=0 or remaining<=0 then s.clear(); return end\nif s.playerID~=player.id then\n s.clear(); s.spot=nil; s.playerID=player.id\nend\nlocal menu=data.frog_draw_settings\nlocal r1North=menu and menu.wb2R1North or (not menu and frogGuide.settings.p6_wb2_r1_north==true)\nif s.r1North~=r1North then s.spot=nil;s.r1North=r1North end\nif not s.spot then\n local now=Now()\n if s.nextRoster and now<s.nextRoster then return end\n s.nextRoster=now+500\n local members=AnyoneCore.Roster.members()\nlocal party=AnyoneCore.API.getAgnosticPartyList()\nif type(members)~=\"table\" or type(party)~=\"table\" then return end\nlocal byNameJob,byJob,partyCount,rosterCount={},{},{},{}\nfor _,actor in pairs(party) do\n if actor and actor.id and actor.job and actor.name then\n  byNameJob[tostring(actor.name)..\"\\31\"..tostring(actor.job)]=actor\n  byJob[actor.job]=actor\n  partyCount[actor.job]=(partyCount[actor.job] or 0)+1\n end\nend\nfor _,member in pairs(members) do\n if member and member.job then rosterCount[member.job]=(rosterCount[member.job] or 0)+1 end\nend\nlocal used={}\nfor role,key in pairs(s.roleKeys) do\n local member=members[key]\n if not member or not member.name or not member.job then return end\n local actor=byNameJob[tostring(member.name)..\"\\31\"..tostring(member.job)]\n if not actor and partyCount[member.job]==1 and rosterCount[member.job]==1 then actor=byJob[member.job] end\n if not actor or used[actor.id] then return end\n s.slots[role]=actor.id\n used[actor.id]=true\nend\n\n for role,id in pairs(s.slots) do\n  if id==player.id then s.role=role;local spotRole=role;if s.r1North and role==\"R1\" then spotRole=\"R2\" elseif s.r1North and role==\"R2\" then spotRole=\"R1\" end;s.spot=s.spots[spotRole]; break end\n end\n if not s.spot then return end\nend\nlocal x,z=s.spot[1],s.spot[2]\nlocal flags=frogGuide.flags\nlocal ring=TensorCore.getCachedDrawer(0x00FF6626,0x00FF6626,0x00FF6626,0xFFFF6626,2,0,flags)\nring:addCircle(x,0.05,z,0.6,false,flags)\nlocal drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,flags)\ndrawer:addCircle(x,0.06,z,0.15,false,flags)\nlocal dx,dz=x-player.pos.x,z-player.pos.z\nif dx*dx+dz*dz<=1 then return end\nfrogGuide.draw(\"p6_wb2\",drawer,player.pos.x,player.pos.y,player.pos.z,x,0.05,z,8,2)\n",
 							name = "Personal fixed spot and proximity guidance",
 							uuid = "6b0e76b6-f527-49d8-bf15-7735b6a37364",
 							version = 2.1,
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 12,
@@ -3985,21 +7320,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local player=TensorCore.mGetPlayer()\nlocal boiling=TensorCore.getBuff(player,2898)\nlocal pyretic=TensorCore.getBuff(player,960)\ndata.frog_wb2_hold={expires=Now()+(boiling and boiling.duration or 0)*1000,sawPyretic=pyretic~=nil}\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"3b470fca-b0bb-8099-ba21-5ed9116a86fd",
 									true,
@@ -4010,14 +7345,14 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Misc",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"b473ff67-cfe9-b640-8631-5a4059f3d003",
 									true,
@@ -4029,20 +7364,40 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "data.frog_wb2_hold.sawPyretic=true\nself.used=true",
-							conditions = 
+							actionLua = "local model=data.dsrBrdAutoSim\nif model and model.phase==\"p6\" then\n model.wb2ActualStopAt=TensorCore.API.TensorACR.getAutoSimTime()\n model.rebuildPersonalStop()\nend\nself.used=true",
+							conditions =
 							{
-								
+
 								{
 									"540278bc-84a0-6f1d-ab0a-af54ca50ddb6",
 									true,
 								},
-								
+							},
+							name = "Record AutoSim stop start",
+							uuid = "eaf9229e-88b9-b6ed-a497-c57431daef24",
+							version = 2.1,
+						},
+						inheritedIndex = 3,
+					},
+
+					{
+						data =
+						{
+							aType = "Lua",
+							actionLua = "data.frog_wb2_hold.sawPyretic=true\nself.used=true",
+							conditions =
+							{
+
+								{
+									"540278bc-84a0-6f1d-ab0a-af54ca50ddb6",
+									true,
+								},
+
 								{
 									"382e42e3-c30f-66d1-a28d-2d258df6fe25",
 									true,
@@ -4053,19 +7408,19 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Misc",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"540278bc-84a0-6f1d-ab0a-af54ca50ddb6",
 									true,
 								},
-								
+
 								{
 									"c07995c8-9a52-5e98-b92c-c426d13bff97",
 									true,
@@ -4079,11 +7434,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							buffCheckType = 3,
 							buffDuration = 2,
@@ -4095,9 +7450,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							buffID = 960,
 							category = "Self",
@@ -4106,19 +7461,19 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Filter",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"4703b73d-0ebe-000f-9005-e2c337c451be",
 									true,
 								},
-								
+
 								{
 									"382e42e3-c30f-66d1-a28d-2d258df6fe25",
 									true,
@@ -4131,9 +7486,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							actionUUID = "491ca33f-0e05-6a62-90ca-cce12b09f77c",
 							category = "Action",
@@ -4142,9 +7497,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							actionUUID = "5c91c650-d4ab-5f9f-a9a0-519bb6ff00ab",
 							category = "Action",
@@ -4153,9 +7508,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local s=data.frog_wb2_hold\nreturn s~=nil and s.hitHrae==true",
@@ -4175,17 +7530,17 @@ local tbl =
 			},
 		},
 	},
-	[234] = 
+	[234] =
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "self.used=true\nlocal cid=eventArgs.entityContentID\nif not ((cid==3458 and eventArgs.spellID==27966) or (cid==4954 and eventArgs.spellID==27967)) then return end\nlocal boss=TensorCore.mGetEntity(eventArgs.entityID)\nlocal player=TensorCore.mGetPlayer()\nif not boss or not player or boss.pos.z>=80 then return end\nlocal s=data.frog_p6_cauterize\nif s and s.hit then s=nil end\nif not s then\n s={dragons={},settings={}}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then s.settings=settings end\n end\n data.frog_p6_cauterize=s\nend\n-- These are the actual channeling actors, not Wyrmsbreath visual clones.\ns.dragons[cid]={x=boss.pos.x,y=boss.pos.y,z=boss.pos.z,radius=boss.hitradius}\nif TensorCore.getBuff(player,2898) or TensorCore.getBuff(player,960) then s.element=\"Fire\"\nelseif TensorCore.getBuff(player,2899) then s.element=\"Ice\" end\nlocal wb=data.frog_wb2_v1\nif wb and wb.playerID==player.id then s.role=wb.role end\nif not s.role then\n local members=AnyoneCore.Roster.members()\n local party=AnyoneCore.API.getAgnosticPartyList()\n if type(members)~=\"table\" or type(party)~=\"table\" then return end\n local keys={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"}\n for role,key in pairs(keys) do\n  local member=members[key]\n  if member and member.name and member.job then\n   local match,count=nil,0\n   for _,actor in pairs(party) do\n    if actor.job==member.job and actor.name==member.name then match=actor; count=count+1 end\n   end\n   -- Replays can anonymize names. Only use job matching when unique in both lists.\n   if count==0 then\n    local rosterCount=0\n    for _,other in pairs(members) do if other.job==member.job then rosterCount=rosterCount+1 end end\n    if rosterCount==1 then\n     for _,actor in pairs(party) do\n      if actor.job==member.job then match=actor; count=count+1 end\n     end\n    end\n   end\n   if count==1 and match.id==player.id then s.role=role; break end\n  end\n end\nend\n",
@@ -4195,7 +7550,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 3,
@@ -4210,15 +7565,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "self.used=true\nlocal s=data.frog_p6_cauterize\nif not s or s.hit then return end\nlocal player=TensorCore.mGetPlayer()\nif not player or player.hp.current<=0 then return end\nlocal menu=data.frog_draw_settings\nlocal settings=menu and menu.settings or s.settings\nlocal styles=settings.draw_styles\nlocal mode=styles and styles.p6_cauterize or \"Tether\"\nif mode==\"Disabled\" then return end\nlocal n,h=s.dragons[3458],s.dragons[4954]\nif not n or not h then return end\nlocal dragon\nlocal tank=s.role==\"MT\" or s.role==\"OT\"\nif tank then\n local assignment=settings.p6_cauterize_mt or \"Nidhogg\"\n if assignment==\"Hraesvelgr\" then dragon=h\n elseif assignment==\"Fixed West\" then dragon=n.x<h.x and n or h\n elseif assignment==\"Fixed East\" then dragon=n.x>h.x and n or h\n else dragon=n end\n if s.role==\"OT\" then dragon=dragon==n and h or n end\nelseif s.element==\"Fire\" then dragon=h\nelseif s.element==\"Ice\" then dragon=n\nelse return end\n-- Green is the chosen lane with the other dragon's lane subtracted.\n-- Reported geometry: 80y length, 22y total width. Clip the visible base to P6's 21y square.\nlocal opposite=dragon==n and h or n\nlocal channel=Argus2.getNextUnusedChannel(true)\nif channel then\n local left=math.max(79,dragon.x-11)\n local right=math.min(121,dragon.x+11)\n local flags=Argus2.RenderFlags.FLAG_WARP_TERRAIN\n if right>left then\n  Argus.addRectFilled((left+right)/2,0.05,79,42,right-left,0,\n   0x9900FF00,0xCC00FF00,1,false,1.5,0.5,2,false,\n   flags+Argus2.RenderFlags.FLAG_OCCLUSION_BASE,channel)\n  Argus.addRectFilled(opposite.x,0.05,opposite.z,80,22,0,\n   0xFFFFFFFF,nil,nil,true,0,1,0,false,\n   flags+Argus2.RenderFlags.FLAG_OCCLUDE,channel)\n end\nend\nlocal x,z\nif tank then\n -- North wall directly in front of the selected dragon, just inside the arena.\n x,z=dragon.x,80.5\nelse\n if not dragon.radius or dragon.radius<=0 then return end\n -- North-facing Cauterize travels south; use the middle of the south hitbox edge.\n x,z=dragon.x,dragon.z+dragon.radius\nend\nlocal flags=Argus2.RenderFlags.FLAG_WARP_TERRAIN\nif not s.drawer then s.drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,flags) end\ns.drawer:addCircle(x,0.06,z,0.3,false,flags)\nlocal p=player.pos\nlocal dx,dz=x-p.x,z-p.z\nlocal length=math.sqrt(dx*dx+dz*dz)\nif length<=0.6 then return end\nif mode==\"Arrow\" then\n local tip=math.min(2,length*0.35)\n s.drawer:addArrow(p.x,p.y+0.08,p.z,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,flags)\nelse\n s.drawer:addLine(p.x,p.y,p.z,x,0.06,z,8,2)\nend\n",
@@ -4228,7 +7583,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 12,
@@ -4243,15 +7598,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "self.used=true\nlocal cid=eventArgs.entityContentID\nif not ((cid==3458 and eventArgs.spellID==27966) or (cid==4954 and eventArgs.spellID==27967)) then return end\nlocal player=TensorCore.mGetPlayer()\nif not player then return end\nfor _,id in ipairs(eventArgs.hitTargets) do\n if id==player.id then\n  local s=data.frog_p6_cauterize\n  if s then s.hit=true end\n  local hold=data.frog_wb2_hold\n  if cid==4954 and hold then hold.hitHrae=true end\n  return\n end\nend\n",
@@ -4261,7 +7616,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 2,
@@ -4277,17 +7632,17 @@ local tbl =
 			},
 		},
 	},
-	[243] = 
+	[243] =
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "if eventArgs.entityContentID~=11319 then self.used=true return end\nlocal aura=eventArgs.newActiveAura1\nif aura~=1119 and aura~=1120 then self.used=true return end\nif eventArgs.oldActiveAura1==aura then self.used=true return end\ndata.frog_p7_element=data.frog_p7_element or {}\nlocal s=data.frog_p7_element\nif s.draw then Argus.deleteTimedShape(s.draw); s.draw=nil end\ns.bossID=eventArgs.entityID\ns.element=aura==1120 and \"ice\" or \"fire\"\n-- Keep element tracking active even when the area draw is disabled.\nlocal menu=data.frog_draw_settings\nif not menu and not s.settings then\n s.settings={}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then s.settings=settings end\n end\nend\nlocal settings=menu and menu.settings or s.settings\nif settings and settings.p7_element_draws==false then self.used=true return end\nlocal flags=Argus2.RenderFlags.FLAG_WARP_TERRAIN\nlocal color=GUI:ColorConvertFloat4ToU32(1,0,0,0.9)\nlocal outline=GUI:ColorConvertFloat4ToU32(1,0,0,1)\nlocal drawer=TensorCore.getCachedDrawer(color,nil,color,outline,3.5,0,flags)\ndrawer.gradientDistance=1.5\ndrawer.gradientMinOpacity=0.5\ndrawer.gradientIntensity=2\nif aura==1120 then\n s.draw=drawer:addTimedDonutOnEnt(12000,s.bossID,8,50,0,false,false,flags)\nelse\n s.draw=drawer:addTimedCircleOnEnt(12000,s.bossID,8,0,false,false,flags)\nend\nself.used=true",
@@ -4297,7 +7652,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 25,
@@ -4312,15 +7667,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "if eventArgs.entityContentID==11319 and (eventArgs.spellID==28049 or eventArgs.spellID==28050) then\n local s=data.frog_p7_element\n if s then\n  if s.draw then Argus.deleteTimedShape(s.draw); s.draw=nil end\n  s.element=nil\n end\nend\nself.used=true",
@@ -4330,7 +7685,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 2,
@@ -4345,15 +7700,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "if not data.frog_p7_guidance then\n local s={\n  roles={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"},\n  order={\"M1\",\"M2\",\"R1\",\"R2\",\"H1\",\"H2\"},\n  times={1561.2,1565.3,1585.8,1589.9,1619,1623.1,1640.2,1644.3,1665.9,1670,1699.1,1703.2,1720.2,1724.3},\n  slots={},byID={},byNameJob={},byJob={},partyCount={},rosterCount={},used={},\n  settings={},resolved=0,flags=Argus2.RenderFlags.FLAG_RENDER_OVERLAY+Argus2.RenderFlags.FLAG_WARP_TERRAIN\n }\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then s.settings=settings end\n end\n function s.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or s.settings\n  local styles=settings and settings.draw_styles\n  local mode=styles and styles[key]\n  if mode==\"Arrow\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function s.autoMode()\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or s.settings\n  local mode=settings and settings.p7_auto_mode\n  if mode==\"Shotcaller\" or mode==\"Disabled\" then return mode end\n  return \"Personal\"\n end\n function s.clear()\n  if s.draw then Argus.deleteTimedShape(s.draw); s.draw=nil end\n  s.drawMode=nil\n end\n function s.drawTo(player,key,x,y,z)\n  local mode=s.mode(key)\n  if mode==\"Disabled\" then s.clear(); return end\n  local p=player.pos\n  local dx,dz=x-p.x,z-p.z\n  local length=math.sqrt(dx*dx+dz*dz)\n  if length<0.2 then s.clear(); return end\n  if s.drawMode~=mode then s.clear() end\n  s.drawMode=mode\n  if mode==\"Arrow\" then\n   if not s.arrow then s.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,s.flags) end\n   local tip=math.min(2,length*0.35)\n   local heading=math.atan2(dx,dz)\n   s.arrow:addArrow(p.x,p.y+0.08,p.z,heading,length-tip,0.75,tip,1.5,false,s.flags)\n  else\n   if not s.line then s.line=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0) end\n   s.line:addLine(p.x,p.y,p.z,x,y,z,8,2)\n  end\n end\n function s.nearestAuto(t)\n  local best,delta\n  for i,at in ipairs(s.times) do\n   local d=math.abs(t-at)\n   if not delta or d<delta then best,delta=i,d end\n  end\n  if delta and delta<2 then return best end\n end\n data.frog_p7_guidance=s\nend\nlocal s=data.frog_p7_guidance\nif s.akhStrategyVersion~=1 then\n function s.tower(role,n)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or s.settings\n  if settings.p7_akh_strategy==\"3-3-2\" or n==1 then\n   if role==\"MT\" or role==\"OT\" then return 29454 end\n   if role==\"H1\" or role==\"M1\" or role==\"R1\" then return 29453 end\n   return 29452\n  end\n  if role~=\"MT\" and role~=\"OT\" then return 29453 end\n  if not s.warRole then return end\n  if n==2 then return role==s.warRole and 29454 or 29452 end\n  return role==s.warRole and 29452 or 29454\n end\n s.akhStrategyVersion=1\nend\nif s.ready then self.used=true return end\nlocal t=TensorReactions_CurrentTimer\nif s.nextRoster and t<s.nextRoster then return end\ns.nextRoster=t+1\nlocal members=AnyoneCore.Roster.members()\nlocal party=AnyoneCore.API.getAgnosticPartyList()\nif type(members)~=\"table\" or type(party)~=\"table\" then return end\nfor k in pairs(s.byNameJob) do s.byNameJob[k]=nil end\nfor k in pairs(s.byJob) do s.byJob[k]=nil end\nfor k in pairs(s.partyCount) do s.partyCount[k]=nil end\nfor k in pairs(s.rosterCount) do s.rosterCount[k]=nil end\nfor k in pairs(s.used) do s.used[k]=nil end\nfor _,actor in pairs(party) do\n if actor and actor.id and actor.job and actor.name then\n  s.byNameJob[tostring(actor.name)..\"\\31\"..tostring(actor.job)]=actor\n  s.byJob[actor.job]=actor\n  s.partyCount[actor.job]=(s.partyCount[actor.job] or 0)+1\n end\nend\nfor _,member in pairs(members) do\n if member and member.job then s.rosterCount[member.job]=(s.rosterCount[member.job] or 0)+1 end\nend\nfor role,key in pairs(s.roles) do\n local member=members[key]\n if not member or not member.name or not member.job then return end\n local actor=s.byNameJob[tostring(member.name)..\"\\31\"..tostring(member.job)]\n if not actor and s.partyCount[member.job]==1 and s.rosterCount[member.job]==1 then actor=s.byJob[member.job] end\n if not actor or s.used[actor.id] then return end\n s.slots[role]=actor.id; s.used[actor.id]=true\nend\nfor role,id in pairs(s.slots) do\n s.byID[id]=role\n local actor=TensorCore.mGetEntity(id)\n if (role==\"MT\" or role==\"OT\") and actor and actor.job==21 then s.warRole=role end\nend\ns.ready=true\nself.used=true",
@@ -4363,7 +7718,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				mechanicTime = 1542.1,
@@ -4376,15 +7731,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_p7_guidance\nif not s or eventArgs.entityContentID~=11319 then self.used=true return end\nlocal id=eventArgs.spellID\nlocal t=TensorReactions_CurrentTimer\nif id==28051 or id==28057 or id==28059 then s.bossID=eventArgs.entityID end\nif id==29452 or id==29453 or id==29454 then\n local n=t<1610 and 1 or t<1690 and 2 or 3\n if not s.akh or s.akh.n~=n then s.akh={n=n,towers={},expires=t+20} end\n local entity=TensorCore.mGetEntity(eventArgs.entityID)\n if entity then\n  local p=entity.pos\n  s.akh.towers[id]={x=p.x,y=p.y,z=p.z}\n end\nelseif id==28058 or id==28114 or id==28115 then\n local n=t<1640 and 1 or 2\n if not s.giga or s.giga.n~=n then s.giga={n=n,spots={},step=1,expires=t+19} end\n local entity=TensorCore.mGetEntity(eventArgs.entityID)\n if entity then\n  local p=entity.pos\n  local index=id==28058 and 1 or id==28114 and 2 or 3\n  s.giga.spots[index]={x=p.x,y=p.y,z=p.z}\n end\nend\nself.used=true",
@@ -4394,7 +7749,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 3,
@@ -4409,15 +7764,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_p7_guidance\nif not s or eventArgs.entityContentID~=11319 then self.used=true return end\nlocal id=eventArgs.spellID\nlocal t=TensorReactions_CurrentTimer\nif id==28062 then\n s.bossID=eventArgs.entityID\nelseif id==28065 then\n local i=s.nearestAuto(t)\n if i then\n  s.resolved=math.max(s.resolved,i)\n  if s.activeAuto==i then s.clear(); s.activeAuto=nil end\n end\nelseif id==28053 then\n if s.akh then s.akh.lastPending=true end\nelseif id==28054 or id==28055 then\n if s.akh and s.akh.lastPending then s.akh=nil; s.clear() end\nelseif id==28058 then\n if s.giga then s.giga.step=2 end\nelseif id==28114 then\n if s.giga then s.giga.step=3 end\nelseif id==28115 then\n if s.giga then s.giga=nil; s.clear() end\nend\nself.used=true",
@@ -4427,7 +7782,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 2,
@@ -4442,15 +7797,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_p7_guidance\nif not s then self.used=true return end\nlocal t=TensorReactions_CurrentTimer\nif s.lastTime and t<s.lastTime-2 then\n s.clear(); s.akh=nil; s.giga=nil; s.resolved=0; s.warned=nil; s.moved=nil; s.activeAuto=nil\nend\ns.lastTime=t\nlocal player=TensorCore.mGetPlayer()\nlocal element=data.frog_p7_element\nlocal bossID=s.bossID or (element and element.bossID)\nlocal boss=bossID and TensorCore.mGetEntity(bossID)\nif not s.ready or not player or not player.alive or not boss or not boss.alive then s.clear(); self.used=true return end\nlocal role=s.byID[player.id]\nlocal bp=boss.pos\nlocal key,x,y,z\nlocal menu=data.frog_draw_settings\nlocal settings=menu and menu.settings or s.settings\nlocal storedMode=settings and settings.p7_auto_mode\nlocal autoMode=storedMode==\"Shotcaller\" and \"Shotcaller\" or storedMode==\"Disabled\" and \"Disabled\" or \"Personal\"\n-- Rebuild the six-role sequence only when the saved setting changes.\nlocal storedOrder=settings and settings.p7_auto_order or \"M R H\"\nif s.autoOrderSource~=storedOrder then\n local compact=type(storedOrder)==\"string\" and string.upper(storedOrder):gsub(\"[%s,]\",\"\") or \"\"\n local order,seen={},{}\n local valid=#compact==3\n for token in compact:gmatch(\".\") do\n  if (token~=\"M\" and token~=\"R\" and token~=\"H\") or seen[token] then valid=false; break end\n  seen[token]=true; order[#order+1]=token..\"1\"; order[#order+1]=token..\"2\"\n end\n s.order=valid and order or {\"M1\",\"M2\",\"R1\",\"R2\",\"H1\",\"H2\"}\n s.autoOrderSource=storedOrder\nend\n-- Call only inside this hit's lead-in, never across intervening mechanics.\nfor i,at in ipairs(s.times) do\n if i>s.resolved and t>=at-6 and t<=at+1 then\n  local autoRole=s.order[(i-1)%6+1]\n  local personal=role==autoRole\n  local callEnabled=autoMode==\"Shotcaller\" or autoMode==\"Personal\" and personal\n  if callEnabled and s.warned~=i then\n   local text=autoMode==\"Shotcaller\" and autoRole..\" auto\" or \"Take next auto\"\n   TensorCore.addAlertText(3500,text,1.5,2,true,75); s.warned=i\n  end\n  if personal and autoMode~=\"Disabled\" and t>=at-2.2 then\n   if autoMode==\"Personal\" and s.moved~=i then\n    TensorCore.addAlertText(2200,\"Move in\",1.5,2,true,75); s.moved=i\n   end\n   s.activeAuto=i\n   key,x,y,z=\"p7_trinity\",bp.x,bp.y,bp.z\n  end\n  break\n end\nend\nif not role then s.clear(); self.used=true return end\nlocal elementName=element and element.element\n-- Only use the hidden status while an elemental telegraph is active.\n-- Resolution clears element.element, preventing a lingering status from rearming it.\nif elementName then\n local buff=TensorCore.getBuff(boss,2056)\n if buff and buff.stacks==299 then elementName=\"ice\"\n elseif buff and buff.stacks==298 then elementName=\"fire\" end\nend\nif not key and s.akh and t<s.akh.expires and (elementName or s.akh.elementKnown) then\n s.akh.elementKnown=true\n local towerID=s.tower(role,s.akh.n)\n local tower=towerID and s.akh.towers[towerID]\n if tower then\n  local dx,dz=tower.x-bp.x,tower.z-bp.z\n  local length=math.sqrt(dx*dx+dz*dz)\n  if length>0.1 then\n   local radius=elementName==\"fire\" and 9 or elementName==\"ice\" and 7 or length\n   key,x,y,z=\"p7_akh\",bp.x+dx/length*radius,tower.y,bp.z+dz/length*radius\n  end\n end\nelseif not key and s.giga and t<s.giga.expires and (elementName or s.giga.elementKnown) then\n s.giga.elementKnown=true\n local spot=s.giga.spots[s.giga.step]\n if spot then\n  local dx,dz=bp.x-spot.x,bp.z-spot.z\n  local length=math.sqrt(dx*dx+dz*dz)\n  if length>0.1 then\n   local meleeRadius=boss.hitradius+3.5\n   local radius=elementName==\"ice\" and math.min(7,meleeRadius) or meleeRadius\n   key,x,y,z=\"p7_giga\",bp.x+dx/length*radius,bp.y,bp.z+dz/length*radius\n  end\n end\nend\nif key then s.drawTo(player,key,x,y,z) else s.clear() end\nself.used=true",
@@ -4460,7 +7815,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 12,
@@ -4472,6 +7827,709 @@ local tbl =
 				timerEndOffset = 210,
 				timerStartOffset = -5,
 				uuid = "36b39445-1b58-5601-9cf0-58dc33461b9e",
+				version = 2,
+			},
+		},
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "Local fixes",
+				uuid = "b0039054-0676-5b76-9d34-dacc88b49437",
+			},
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				displayPath = "Local fixes",
+				name = "Monk downtime",
+				uuid = "33515d2f-db8e-0323-a1e3-aad84580fd85",
+			},
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_mnk_downtime\nif not s then self.used=true return end\nif Now()>(s.pbUntil or 0) then s.remaining=0 end\nif Now()>(s.chakraUntil or 0) then s.chakra=0 end\ns.prep={key=\"P7 transition Blitz preparation\",start=Now(),solar=not s.solar,blitz=(s.solar and s.lunar) and 25769 or ((not s.solar) and 25768 or 3545)}\nself.used=true",
+							conditions =
+							{
+
+								{
+									"fa687da8-b60e-5e8f-9ab6-6156a7b9f31d",
+									true,
+								},
+
+								{
+									"f2cc40a3-a3b7-085e-9c2e-e3394cb91f64",
+									true,
+								},
+
+								{
+									"e6f007b7-8da1-8e61-a872-7912408ac2bf",
+									true,
+								},
+
+								{
+									"4613c2d8-c5ef-c31f-ae22-534a89f7203d",
+									true,
+								},
+
+								{
+									"4d1ed524-e359-9c16-8235-b3c5db9ff513",
+									true,
+								},
+
+								{
+									"8a9ca9fe-c5c7-65db-98f9-0e0a31b85676",
+									true,
+								},
+							},
+							name = "Choose missing Nadi once",
+							uuid = "ea3f884f-aee7-2581-b1af-378f9d9323da",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 69,
+							conditions =
+							{
+
+								{
+									"fa687da8-b60e-5e8f-9ab6-6156a7b9f31d",
+									true,
+								},
+
+								{
+									"f2cc40a3-a3b7-085e-9c2e-e3394cb91f64",
+									true,
+								},
+
+								{
+									"e6f007b7-8da1-8e61-a872-7912408ac2bf",
+									true,
+								},
+
+								{
+									"4613c2d8-c5ef-c31f-ae22-534a89f7203d",
+									true,
+								},
+
+								{
+									"c40a64af-7756-8712-be24-2a7997974e8d",
+									true,
+								},
+
+								{
+									"8a9ca9fe-c5c7-65db-98f9-0e0a31b85676",
+									true,
+								},
+							},
+							ignoreWeaveRules = true,
+							uuid = "81fc5cb6-75be-c983-92c9-c13a039b713c",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 25767,
+							conditions =
+							{
+
+								{
+									"fa687da8-b60e-5e8f-9ab6-6156a7b9f31d",
+									true,
+								},
+
+								{
+									"f2cc40a3-a3b7-085e-9c2e-e3394cb91f64",
+									true,
+								},
+
+								{
+									"e6f007b7-8da1-8e61-a872-7912408ac2bf",
+									true,
+								},
+
+								{
+									"4613c2d8-c5ef-c31f-ae22-534a89f7203d",
+									true,
+								},
+
+								{
+									"ef00b399-5cae-c2c1-b080-ba382339414e",
+									true,
+								},
+							},
+							uuid = "3978c1cd-d9f2-3cd9-a024-2b214267c42c",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 16473,
+							conditions =
+							{
+
+								{
+									"fa687da8-b60e-5e8f-9ab6-6156a7b9f31d",
+									true,
+								},
+
+								{
+									"f2cc40a3-a3b7-085e-9c2e-e3394cb91f64",
+									true,
+								},
+
+								{
+									"e6f007b7-8da1-8e61-a872-7912408ac2bf",
+									true,
+								},
+
+								{
+									"4613c2d8-c5ef-c31f-ae22-534a89f7203d",
+									true,
+								},
+
+								{
+									"35f0cb76-2f6f-f21a-8c0d-1fa86a1ca97c",
+									true,
+								},
+
+								{
+									"48027bdd-2c2e-0340-a5ff-64f3b6fdc121",
+									true,
+								},
+							},
+							uuid = "f36a3478-20f4-92c2-a75f-cd73c1b202d2",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 25767,
+							conditions =
+							{
+
+								{
+									"fa687da8-b60e-5e8f-9ab6-6156a7b9f31d",
+									true,
+								},
+
+								{
+									"f2cc40a3-a3b7-085e-9c2e-e3394cb91f64",
+									true,
+								},
+
+								{
+									"e6f007b7-8da1-8e61-a872-7912408ac2bf",
+									true,
+								},
+
+								{
+									"4613c2d8-c5ef-c31f-ae22-534a89f7203d",
+									true,
+								},
+
+								{
+									"35f0cb76-2f6f-f21a-8c0d-1fa86a1ca97c",
+									true,
+								},
+
+								{
+									"caaf041d-84bf-358e-accd-6d048c77de94",
+									true,
+								},
+							},
+							uuid = "10d89634-297a-fc60-bf0b-330c2ffc55df",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 70,
+							conditions =
+							{
+
+								{
+									"fa687da8-b60e-5e8f-9ab6-6156a7b9f31d",
+									true,
+								},
+
+								{
+									"f2cc40a3-a3b7-085e-9c2e-e3394cb91f64",
+									true,
+								},
+
+								{
+									"e6f007b7-8da1-8e61-a872-7912408ac2bf",
+									true,
+								},
+
+								{
+									"4613c2d8-c5ef-c31f-ae22-534a89f7203d",
+									true,
+								},
+
+								{
+									"48c33ee3-21d0-4a90-9f72-f420ee505ab9",
+									true,
+								},
+
+								{
+									"48027bdd-2c2e-0340-a5ff-64f3b6fdc121",
+									true,
+								},
+							},
+							uuid = "914d8268-8e66-85b0-9c05-0bbc5b4681ea",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 25767,
+							conditions =
+							{
+
+								{
+									"fa687da8-b60e-5e8f-9ab6-6156a7b9f31d",
+									true,
+								},
+
+								{
+									"f2cc40a3-a3b7-085e-9c2e-e3394cb91f64",
+									true,
+								},
+
+								{
+									"e6f007b7-8da1-8e61-a872-7912408ac2bf",
+									true,
+								},
+
+								{
+									"4613c2d8-c5ef-c31f-ae22-534a89f7203d",
+									true,
+								},
+
+								{
+									"48c33ee3-21d0-4a90-9f72-f420ee505ab9",
+									true,
+								},
+
+								{
+									"caaf041d-84bf-358e-accd-6d048c77de94",
+									true,
+								},
+							},
+							uuid = "40452d3d-ff74-58c7-9490-c727d04fcf69",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 13,
+							jobValue = "MONK",
+							name = "Monk only",
+							uuid = "fa687da8-b60e-5e8f-9ab6-6156a7b9f31d",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return FFXIV_Common_BotRunning == true",
+							name = "Bot running",
+							uuid = "f2cc40a3-a3b7-085e-9c2e-e3394cb91f64",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return gACRSelectedProfiles[20] == \"RikuMNK3\"",
+							name = "RikuMNK3",
+							uuid = "e6f007b7-8da1-8e61-a872-7912408ac2bf",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local t=TensorCore.mGetTarget()\nreturn not t or not t.targetable or not t.attackable or t.hp.current<=0",
+							name = "No attackable current target",
+							uuid = "4613c2d8-c5ef-c31f-ae22-534a89f7203d",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nif not s or not s.known then return false end\nlocal t=Now()\nreturn (s.remaining==0 or t>(s.pbUntil or 0)) and (s.chakra==0 or t>(s.chakraUntil or 0))",
+							name = "Nadi known; no pending PB or Blitz",
+							uuid = "4d1ed524-e359-9c16-8235-b3c5db9ff513",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 69,
+							category = "Self",
+							comparator = 2,
+							conditionType = 4,
+							uuid = "8a9ca9fe-c5c7-65db-98f9-0e0a31b85676",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"P7 transition Blitz preparation\" and Now()-s.prep.start<10000 and ((s.remaining==0 or Now()>(s.pbUntil or 0)) and s.chakra==0)",
+							name = "PB stage 0",
+							uuid = "c40a64af-7756-8712-be24-2a7997974e8d",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"P7 transition Blitz preparation\" and Now()-s.prep.start<10000 and s.remaining==3 and s.chakra==0 and Now()<=(s.pbUntil or 0)",
+							name = "PB stage 1",
+							uuid = "ef00b399-5cae-c2c1-b080-ba382339414e",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"P7 transition Blitz preparation\" and Now()-s.prep.start<10000 and s.remaining==2 and s.chakra==1 and Now()<=(s.pbUntil or 0)",
+							name = "PB stage 2",
+							uuid = "35f0cb76-2f6f-f21a-8c0d-1fa86a1ca97c",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"P7 transition Blitz preparation\" and Now()-s.prep.start<10000 and s.remaining==1 and s.chakra==2 and Now()<=(s.pbUntil or 0)",
+							name = "PB stage 3",
+							uuid = "48c33ee3-21d0-4a90-9f72-f420ee505ab9",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.solar",
+							name = "Prepare Solar Nadi",
+							uuid = "48027bdd-2c2e-0340-a5ff-64f3b6fdc121",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and not s.prep.solar",
+							name = "Prepare Lunar or Phantom",
+							uuid = "caaf041d-84bf-358e-accd-6d048c77de94",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes/Monk downtime",
+				mechanicTime = 1542.1,
+				name = "[MNK] P7 transition Blitz preparation",
+				timeRange = true,
+				timelineIndex = 243,
+				timerEndOffset = -0.2,
+				timerStartOffset = -11.5,
+				uuid = "dfec9f59-c52a-f253-9839-517b96ef0734",
+				version = 2,
+			},
+		},
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
+						{
+							actionID = 25768,
+							conditions =
+							{
+
+								{
+									"d37bf234-d47e-1bbb-9267-865a1e0150bb",
+									true,
+								},
+
+								{
+									"1ed23268-7cf5-0923-b8e0-a280b3bd40d5",
+									true,
+								},
+
+								{
+									"de667b7c-e4eb-d7e3-8f55-e79caa7d37f2",
+									true,
+								},
+
+								{
+									"f1980c40-80a4-39bd-a6b5-0f392d6bf256",
+									true,
+								},
+
+								{
+									"8c60c961-f344-9f24-8a28-ab91a9f52e38",
+									true,
+								},
+
+								{
+									"bc625f75-701e-87f4-882c-0fe9ea379fc1",
+									true,
+								},
+							},
+							uuid = "f49cad9b-5b0c-f8f2-8b1c-cc280cc43cb6",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 3545,
+							conditions =
+							{
+
+								{
+									"d37bf234-d47e-1bbb-9267-865a1e0150bb",
+									true,
+								},
+
+								{
+									"1ed23268-7cf5-0923-b8e0-a280b3bd40d5",
+									true,
+								},
+
+								{
+									"de667b7c-e4eb-d7e3-8f55-e79caa7d37f2",
+									true,
+								},
+
+								{
+									"f1980c40-80a4-39bd-a6b5-0f392d6bf256",
+									true,
+								},
+
+								{
+									"8c60c961-f344-9f24-8a28-ab91a9f52e38",
+									true,
+								},
+
+								{
+									"0f4eab7e-8549-754f-b5de-2809507a483b",
+									true,
+								},
+							},
+							uuid = "8f9a9788-82a8-e429-885f-e949328dd0dd",
+							version = 2.1,
+						},
+					},
+
+					{
+						data =
+						{
+							actionID = 25769,
+							conditions =
+							{
+
+								{
+									"d37bf234-d47e-1bbb-9267-865a1e0150bb",
+									true,
+								},
+
+								{
+									"1ed23268-7cf5-0923-b8e0-a280b3bd40d5",
+									true,
+								},
+
+								{
+									"de667b7c-e4eb-d7e3-8f55-e79caa7d37f2",
+									true,
+								},
+
+								{
+									"f1980c40-80a4-39bd-a6b5-0f392d6bf256",
+									true,
+								},
+
+								{
+									"8c60c961-f344-9f24-8a28-ab91a9f52e38",
+									true,
+								},
+
+								{
+									"7b68832b-537a-6dfb-8df8-6ad1ba0a176e",
+									true,
+								},
+							},
+							targetType = "Current Target",
+							uuid = "249d6041-7a81-3a38-94c5-b8692d3d5a06",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+
+					{
+						data =
+						{
+							category = "Self",
+							conditionType = 13,
+							jobValue = "MONK",
+							name = "Monk only",
+							uuid = "d37bf234-d47e-1bbb-9267-865a1e0150bb",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return FFXIV_Common_BotRunning == true",
+							name = "Bot running",
+							uuid = "1ed23268-7cf5-0923-b8e0-a280b3bd40d5",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "return gACRSelectedProfiles[20] == \"RikuMNK3\"",
+							name = "RikuMNK3",
+							uuid = "de667b7c-e4eb-d7e3-8f55-e79caa7d37f2",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local t=TensorCore.mGetTarget()\nreturn t and t.targetable and t.attackable and t.hp.current>0 and t.distance2d<=5+t.hitradius",
+							name = "Live target in Blitz range",
+							uuid = "f1980c40-80a4-39bd-a6b5-0f392d6bf256",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"P7 transition Blitz preparation\" and s.chakra==3 and Now()<=(s.chakraUntil or 0)",
+							name = "Our Blitz is prepared",
+							uuid = "8c60c961-f344-9f24-8a28-ab91a9f52e38",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.blitz==25768",
+							name = "Prepared Blitz 25768",
+							uuid = "bc625f75-701e-87f4-882c-0fe9ea379fc1",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.blitz==3545",
+							name = "Prepared Blitz 3545",
+							uuid = "0f4eab7e-8549-754f-b5de-2809507a483b",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.blitz==25769",
+							name = "Prepared Blitz 25769",
+							uuid = "7b68832b-537a-6dfb-8df8-6ad1ba0a176e",
+							version = 3,
+						},
+					},
+				},
+				displayPath = "Local fixes/Monk downtime",
+				mechanicTime = 1542.1,
+				name = "[MNK] P7 transition Blitz preparation release",
+				timeRange = true,
+				timelineIndex = 243,
+				timerEndOffset = 8,
+				uuid = "834ed73d-0de1-f664-a35b-0840fab54d58",
 				version = 2,
 			},
 		},
