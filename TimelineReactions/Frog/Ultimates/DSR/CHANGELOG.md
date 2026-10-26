@@ -1,5 +1,11 @@
 # DSR Draws release notes
 
+## 2026-10-26
+
+- Add an **Open AnyoneCore roster** button above the draw settings so party roles can be checked and corrected before using role-based guidance.
+- Keep Wyrmsbreath and Eyes pairing logic unchanged; the reported mismatches were traced to party roster assignments.
+- Validate the saved menu action and exported Lua syntax. Opening the roster uses the existing AnyoneCore manual roster window.
+
 ## 2026-10-25
 
 ### Strength of the Ward
