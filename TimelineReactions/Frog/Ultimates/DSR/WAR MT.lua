@@ -7,45 +7,22 @@ local tbl =
 			data =
 			{
 				displayPath = "",
-				name = "Frog\\Ultimates\\DSR\\Draws",
-				uuid = "a0b14b14-c9ba-55c0-285b-fbb24a044aa4",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "de2d9a97-469f-6bab-ac48-ae8df9f313e7",
 			},
-			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
 
 		{
 			data =
 			{
-				name = "[Settings] Draw Settings",
-				uuid = "22d12936-22d4-d931-a60b-b94f5e796a7e",
-				version = 2,
+				displayPath = "",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "a0b14b14-c9ba-55c0-285b-fbb24a044aa4",
 			},
-			inheritedObjectUUID = "40ce343b-d6ae-f0e8-8fed-38b54bcd6171",
-			inheritedOverwrites =
-			{
-				actions =
-				{
-
-					{
-						type = "add",
-						value =
-						{
-							data =
-							{
-								name = "Persistent Draw Priorities Menu",
-								uuid = "60c32c03-37f0-88af-922b-400996d76f7f",
-								version = 2.1,
-							},
-							inheritedObjectUUID = "037d4e2f-1842-5c02-8610-55c301569a25",
-							inheritedOverwrites =
-							{
-								actionLua = "if data.frog_draw_settings == nil or data.frog_draw_settings.version~=32 then\n local p={\n  version=32,\n  path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]],\n  default=\"R1 H1 M1 MT OT M2 H2 R2\",\n  styleItems={\"Tether\",\"Arrow\",\"Disabled\"},\n  styleRows={\n   {\"p1_playstation\",\"P1 PlayStation\"},{\"p2_strength\",\"P2 Strength\"},\n   {\"p2_sanctity\",\"P2 Sanctity\"},{\"p3_dfg\",\"P3 Dive from Grace\"},\n   {\"p4_eyes\",\"P4 Eyes\"},{\"p5_wrath\",\"P5 Wrath\"},{\"p5_doth\",\"P5 DOTH\"},{\"p6_vow\",\"P6 Mortal Vow\"},{\"p6_wb1\",\"P6 Wyrmsbreath 1\"},{\"p6_wb2\",\"P6 Wyrmsbreath 2\"},{\"p6_cauterize\",\"P6 Double Cauterize\"},\n   {\"p7_trinity\",\"P7 Trinity\"},{\"p7_akh\",\"P7 Akh Morn\"},{\"p7_giga\",\"P7 Gigaflare\"}\n  },\n  styles={},\n  wb1Anchors={\"H1\",\"M1\",\"H2\"},wb1Flex={\"R1\",\"M2\",\"R2\"},\n  wb2Default=\"H1 R1 M1 M2 H2 R2\",wb2Edit=\"H1 R1 M1 M2 H2 R2\",\n  wb1Roles={\"H1\",\"H2\",\"M1\",\"M2\",\"R1\",\"R2\"},wb2R1North=false,\n  cautMT=\"Nidhogg\",\n  cautItems={\"Nidhogg\",\"Hraesvelgr\",\"Fixed West\",\"Fixed East\"},\n  cautOpposite={\"Hraesvelgr\",\"Nidhogg\",\"Fixed East\",\"Fixed West\"},\n  autoOrderDefault=\"M R H\",\n  autoOrderEdit=\"M R H\",\n  elementDraws=true,\n  akhStrategy=\"6-1-1\",\n  akhStrategyItems={\"6-1-1\",\"3-3-2\"},\n  autoMode=\"Personal\",\n  autoModeItems={\"Personal\",\"Shotcaller\",\"Disabled\"},\n  dothMode=\"Configured conga\",\n  dothModeItems={\"Configured conga\",\"Live positions\"},\n  akhAfahHP=false,\n  vowTTSMode=\"Personal\",\n  vowDefault=\"T T M R\",\n  vowEdit=\"T T M R\",\n  vowGroups={T={\"MT\",\"OT\"},M={\"M1\",\"M2\"},R={\"R1\",\"R2\"}},\n  strategyItems={\"Westhogg\",\"Easthogg\"},\n  strategy=\"NAUR\",\n  holdItems={\"On\",\"Off\"},\n  customHold=false,\n  roles={MT=true,OT=true,H1=true,H2=true,M1=true,M2=true,R1=true,R2=true}\n }\n function p.parse(text)\n  if type(text)~=\"string\" then return nil,\"Enter all eight roles.\" end\n  local order,seen={},{}\n  for role in string.upper(text):gmatch(\"[^%s,]+\") do\n   if not p.roles[role] then return nil,\"Unknown role: \"..role end\n   if seen[role] then return nil,\"Duplicate role: \"..role end\n   seen[role]=true; order[#order+1]=role\n  end\n  if #order~=8 then return nil,\"Enter each of MT OT H1 H2 M1 M2 R1 R2 once.\" end\n  return order,table.concat(order,\" \")\n end\n function p.parseVow(text)\n  local order={}\n  for token in string.upper(text or \"\"):gmatch(\"[^%s,]+\") do\n   if not p.vowGroups[token] then return nil,\"Vow order uses T, M or R. Healers cannot receive.\" end\n   order[#order+1]=token\n  end\n  if #order~=4 then return nil,\"Enter four Vow passes.\" end\n  for _,initial in ipairs({\"M1\",\"M2\",\"R1\",\"R2\"}) do\n   local used={[initial]=true}\n   for _,token in ipairs(order) do\n    local chosen\n    for _,role in ipairs(p.vowGroups[token]) do\n     if not used[role] then chosen=role; break end\n    end\n    if not chosen then return nil,\"Vow order runs out of eligible receivers.\" end\n    used[chosen]=true\n   end\n  end\n  return order,table.concat(order,\" \")\n end\n function p.parseAuto(text)\n  if type(text)~=\"string\" then return nil,\"Auto order uses M, R and H once each.\" end\n  local compact=string.upper(text):gsub(\"[%s,]\",\"\")\n  if #compact~=3 then return nil,\"Enter M, R and H once each.\" end\n  local order,seen={},{}\n  for token in compact:gmatch(\".\") do\n   if token~=\"M\" and token~=\"R\" and token~=\"H\" then return nil,\"Auto order only accepts M, R and H.\" end\n   if seen[token] then return nil,\"Duplicate auto role: \"..token end\n   seen[token]=true; order[#order+1]=token\n  end\n  return order,table.concat(order,\" \")\n end\n function p.validatePairs(text)\n  local roles,seen={},{}\n  for role in (text or \"\"):gmatch(\"%S+\") do\n   if not (role==\"H1\" or role==\"H2\" or role==\"M1\" or role==\"M2\" or role==\"R1\" or role==\"R2\") or seen[role] then return nil,\"Each WB1 role must appear once.\" end\n   seen[role]=true;roles[#roles+1]=role\n  end\n  if #roles~=6 then return nil,\"Assign three anchor/flex pairs.\" end\n  return roles\n end\n function p.lineupPoints(roles)\n  local roster=AnyoneCore and AnyoneCore.Roster\n  if not roster or not roster.isReady() then return nil,\"Set the AnyoneCore roster first.\" end\n  local members=roster.members();local party=AnyoneCore.API.getAgnosticPartyList()\n  if type(members)~=\"table\" or type(party)~=\"table\" then return nil,\"Party roster unavailable.\" end\n  local slots={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"}\n  local points,used={},{}\n  local cx,cz=0,0\n  for _,role in ipairs(roles)do\n   local member=members[slots[role]]\n   if not member then return nil,\"Missing roster role: \"..role end\n   local candidate,count=nil,0\n   for _,a in pairs(party)do\n    if a.name==member.name and a.job==member.job then candidate=a;count=count+1 end\n   end\n   if count==0 then\n    local sameJob=0;for _,m in pairs(members)do if m.job==member.job then sameJob=sameJob+1 end end\n    if sameJob==1 then for _,a in pairs(party)do if a.job==member.job then candidate=a;count=count+1 end end end\n   end\n   if count~=1 or used[candidate.id] then return nil,\"Cannot uniquely match \"..role..\" to the party.\" end\n   local actor=TensorCore.mGetEntity(candidate.id)\n   if not actor or not actor.alive then return nil,\"All lineup players must be present and alive.\" end\n   used[actor.id]=true\n   points[#points+1]={role=role,x=actor.pos.x,z=actor.pos.z};cx=cx+actor.pos.x;cz=cz+actor.pos.z\n  end\n  return points\n end\n function p.captureLineup(roles)\n  local points,message=p.lineupPoints(roles)\n  if not points then return nil,message end\n  local cx,cz=0,0\n  for _,v in ipairs(points)do cx=cx+v.x;cz=cz+v.z end\n  cx=cx/#points;cz=cz/#points\n  local xx,xz,zz=0,0,0\n  for _,v in ipairs(points)do local x,z=v.x-cx,v.z-cz;xx=xx+x*x;xz=xz+x*z;zz=zz+z*z end\n  local h=0.5*math.atan2(2*xz,xx-zz)\n  local ux,uz=math.cos(h),math.sin(h)\n  local eastWest=math.abs(ux)>=math.abs(uz)\n  if (eastWest and ux<0) or (not eastWest and uz<0)then ux=-ux;uz=-uz end\n  local width=0\n  for _,v in ipairs(points)do\n   v.rank=(v.x-cx)*ux+(v.z-cz)*uz\n   width=math.max(width,math.abs((v.x-cx)*uz-(v.z-cz)*ux))\n  end\n  table.sort(points,function(a,b)return a.rank<b.rank end)\n  if width>3 then return nil,\"Form a single lineup before capturing.\" end\n  local order={}\n  for i,v in ipairs(points)do\n   if i>1 and v.rank-points[i-1].rank<0.3 then return nil,\"Lineup overlaps; separate the players or drag the boxes.\" end\n   order[i]=v.role\n  end\n  return order,eastWest and \"Captured W to E. Reverse if needed.\" or \"Captured N to S. Reverse if needed.\"\n end\n function p.captureDOTH()\n  local points,message=p.lineupPoints({\"MT\",\"OT\",\"H1\",\"H2\",\"M1\",\"M2\",\"R1\",\"R2\"})\n  if not points then return nil,message end\n  table.sort(points,function(a,b)return a.x<b.x end)\n  local order={}\n  for i,v in ipairs(points)do\n   if i>1 and v.x-points[i-1].x<0.3 then return nil,\"Separate players west to east before capturing DOTH.\" end\n   order[i]=v.role\n  end\n  return order,\"Captured DOTH west to east.\"\n end\n function p.captureWB1()\n  local points,message=p.lineupPoints(p.wb1Roles)\n  if not points then return nil,message end\n  local marks={}\n  for i=1,8 do\n   local x,y,z,active=Argus.getWaymarkInfo(i)\n   if active then\n    local near={}\n    for _,v in ipairs(points)do near[#near+1]={role=v.role,d=(v.x-x)^2+(v.z-z)^2}end\n    table.sort(near,function(a,b)return a.d<b.d end)\n    if near[2].d<=36 and near[2].d-near[1].d>=0.25 then\n     marks[#marks+1]={x=x,z=z,anchor=near[1].role,flex=near[2].role,cost=near[1].d+near[2].d}\n    end\n   end\n  end\n  local best,second,chosen=math.huge,math.huge,nil\n  for a=1,#marks-2 do for b=a+1,#marks-1 do for c=b+1,#marks do\n   local tri={marks[a],marks[b],marks[c]}\n   local area=math.abs((tri[2].x-tri[1].x)*(tri[3].z-tri[1].z)-(tri[3].x-tri[1].x)*(tri[2].z-tri[1].z))\n   local used,valid,cost={},area>2,0\n   for _,m in ipairs(tri)do\n    if used[m.anchor] or used[m.flex]then valid=false end\n    used[m.anchor]=true;used[m.flex]=true;cost=cost+m.cost\n   end\n   if valid then\n    if cost<best then second=best;best=cost;chosen=tri elseif cost<second then second=cost end\n   end\n  end end end\n  if not chosen or second-best<0.25 then return nil,\"Stand in three clear anchor/flex pairs beside the triangle markers.\" end\n  table.sort(chosen,function(a,b)return a.x<b.x end)\n  if chosen[2].x-chosen[1].x<1 or chosen[3].x-chosen[2].x<1 then return nil,\"The three WB1 markers must define left, middle and right.\" end\n  local order={}\n  for _,m in ipairs(chosen)do order[#order+1]=m.anchor;order[#order+1]=m.flex end\n  return order,\"Captured closest anchor and second-closest flex at each triangle marker.\"\n end\n function p.save(text)\n  local order,normalized=p.parse(text)\n  if not order then p.message=normalized; return false end\n  local vowOrder,vowText=p.parseVow(p.vowEdit)\n  if not vowOrder then p.message=vowText; return false end\n  local autoOrder,autoText=p.parseAuto(p.autoOrderEdit)\n  if not autoOrder then p.message=autoText; return false end\n  local pairText=table.concat({p.wb1Anchors[1],p.wb1Flex[1],p.wb1Anchors[2],p.wb1Flex[2],p.wb1Anchors[3],p.wb1Flex[3]},\" \")\n  local pairsOK,pairError=p.validatePairs(pairText)\n  if not pairsOK then p.message=pairError;return false end\n  local wb2=p.validatePairs(p.wb2Edit)\n  if not wb2 then p.message=\"WB2 requires each non-tank role once.\";return false end\n  local wb2Text=table.concat(wb2,\" \")\n  local nextSettings={}\n  for k,v in pairs(p.settings) do nextSettings[k]=v end\n  nextSettings.p6_wb1_pairs=pairText\n  nextSettings.p6_wb2_r1_north=p.wb2R1North\n  nextSettings.p6_wb2_order=wb2Text\n  nextSettings.doth_conga=normalized\n  nextSettings.doth_order_mode=p.dothMode==\"Live positions\" and \"Live positions\" or \"Configured conga\"\n  nextSettings.vow_pass_order=vowText\n  nextSettings.p6_vow_tts_mode=p.vowTTSMode\n  nextSettings.p6_akh_afah_hp=p.akhAfahHP\n  nextSettings.p6_dragon_hp_window=p.dragonHP\n  nextSettings.p3_custom_hold=p.customHold\n  nextSettings.p3_strategy=p.strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\n  nextSettings.p7_element_draws=p.elementDraws\n  nextSettings.p7_akh_strategy=p.akhStrategy==\"3-3-2\" and \"3-3-2\" or \"6-1-1\"\n  nextSettings.p7_auto_order=autoText\n  nextSettings.p7_auto_mode=p.autoMode\n  nextSettings.p6_cauterize_mt=p.cautMT\n  nextSettings.draw_styles={}\n  for _,row in ipairs(p.styleRows) do\n   local choice=p.styles[row[1]]\n   nextSettings.draw_styles[row[1]]=choice==\"Disabled\" and \"Disabled\" or choice==\"Arrow\" and \"Arrow\" or \"Tether\"\n  end\n  local ok,err=pcall(FileSave,p.path,nextSettings)\n  local readOK,saved=pcall(FileLoad,p.path)\n  local stylesOK=readOK and type(saved)==\"table\" and type(saved.draw_styles)==\"table\"\n  if stylesOK then\n   for _,row in ipairs(p.styleRows) do\n    if saved.draw_styles[row[1]]~=nextSettings.draw_styles[row[1]] then stylesOK=false break end\n   end\n  end\n  if not ok or not readOK or (type(saved)==\"table\" and (saved.p6_wb1_pairs~=pairText or saved.p6_wb2_r1_north~=p.wb2R1North)) or type(saved)~=\"table\" or saved.doth_conga~=normalized or saved.p6_wb2_order~=wb2Text or saved.doth_order_mode~=nextSettings.doth_order_mode or saved.p7_element_draws~=nextSettings.p7_element_draws or saved.p7_akh_strategy~=nextSettings.p7_akh_strategy or saved.p7_auto_order~=autoText or saved.p7_auto_mode~=nextSettings.p7_auto_mode or saved.p6_cauterize_mt~=nextSettings.p6_cauterize_mt or not stylesOK or saved.p3_strategy~=nextSettings.p3_strategy or saved.p3_custom_hold~=nextSettings.p3_custom_hold or saved.vow_pass_order~=vowText or saved.p6_vow_tts_mode~=nextSettings.p6_vow_tts_mode or saved.p6_akh_afah_hp~=nextSettings.p6_akh_afah_hp or saved.p6_dragon_hp_window~=nextSettings.p6_dragon_hp_window then\n   p.message=\"Save failed: \"..tostring(err or saved); return false\n  end\n  p.settings=nextSettings\n  if not p.elementDraws then\n   local element=data.frog_p7_element\n   if element and element.draw then Argus.deleteTimedShape(element.draw); element.draw=nil end\n  end\n  p.autoOrderEdit=autoText\n  p.vowEdit=vowText\n  p.order,p.saved,p.edit=order,normalized,normalized\n  p.message=\"Saved.\"\n  return true\n end\n p.order,p.saved=p.parse(p.default)\n p.edit=p.saved\n p.settings={}\n if FileExists(p.path) then\n  local ok,settings=pcall(FileLoad,p.path)\n  local order,normalized\n  if ok and type(settings)==\"table\" then\n   p.settings=settings\n   order,normalized=p.parse(settings.doth_conga)\n  end\n  if order then p.order,p.saved,p.edit=order,normalized,normalized\n  else p.message=\"Invalid settings file; using defaults. Apply to repair.\" end\n else\n  local previous=data.frog_draw_settings\n  p.save(previous and previous.saved or p.default)\n end\n for _,row in ipairs(p.styleRows) do\n  local styles=p.settings.draw_styles\n  local choice=type(styles)==\"table\" and styles[row[1]]\n  p.styles[row[1]]=choice==\"Disabled\" and \"Disabled\" or choice==\"Arrow\" and \"Arrow\" or \"Tether\"\n end\n local pairRoles=p.validatePairs(p.settings.p6_wb1_pairs or \"H1 R1 M1 M2 H2 R2\")\n if pairRoles then for lane=1,3 do p.wb1Anchors[lane]=pairRoles[lane*2-1];p.wb1Flex[lane]=pairRoles[lane*2] end end\n p.wb2R1North=p.settings.p6_wb2_r1_north==true\n local wb2=p.validatePairs(p.settings.p6_wb2_order or \"\")\n p.wb2Edit=wb2 and table.concat(wb2,\" \") or (p.wb2R1North and \"H1 R2 M1 M2 H2 R1\" or p.wb2Default)\n local autoOrder,autoText=p.parseAuto(p.settings.p7_auto_order or p.autoOrderDefault)\n p.autoOrderEdit=autoOrder and autoText or p.autoOrderDefault\n if not autoOrder then p.message=\"Invalid auto order; Save to use M R H.\" end\n p.elementDraws=p.settings.p7_element_draws~=false\n p.akhStrategy=p.settings.p7_akh_strategy==\"3-3-2\" and \"3-3-2\" or \"6-1-1\"\n p.autoMode=p.settings.p7_auto_mode==\"Shotcaller\" and \"Shotcaller\" or p.settings.p7_auto_mode==\"Disabled\" and \"Disabled\" or \"Personal\"\n local vowOrder,vowText=p.parseVow(p.settings.vow_pass_order or p.vowDefault)\n p.vowEdit=vowOrder and vowText or p.vowDefault\n p.akhAfahHP=p.settings.p6_akh_afah_hp==true\n p.dragonHP=p.settings.p6_dragon_hp_window~=false\n p.vowTTSMode=p.settings.p6_vow_tts_mode==\"Shotcaller\" and \"Shotcaller\" or p.settings.p6_vow_tts_mode==\"Disabled\" and \"Disabled\" or \"Personal\"\n if not vowOrder then p.message=\"Invalid Vow order; Save to use T T M R.\" end\n p.strategy=p.settings.p3_strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\n p.customHold=p.settings.p3_custom_hold==true\n p.dothMode=p.settings.doth_order_mode==\"Live positions\" and \"Live positions\" or \"Configured conga\"\n for _,value in ipairs(p.cautItems) do\n  if p.settings.p6_cauterize_mt==value then p.cautMT=value; break end\n end\n -- Preserve any unsaved edits when adding the new P6 settings.\n local previous=data.frog_draw_settings\n if previous then\n  for _,key in ipairs({\"edit\",\"vowEdit\",\"autoOrderEdit\",\"elementDraws\",\"akhStrategy\",\"autoMode\",\"strategy\",\"customHold\",\"dothMode\",\"cautMT\",\"vowTTSMode\",\"akhAfahHP\",\"dragonHP\",\"wb1Anchors\",\"wb1Flex\",\"wb2R1North\",\"wb2Edit\",\"message\"}) do\n   if previous[key]~=nil then p[key]=previous[key] end\n  end\n  for _,row in ipairs(p.styleRows) do\n   if previous.styles and previous.styles[row[1]] then p.styles[row[1]]=previous.styles[row[1]] end\n  end\n end\n data.frog_draw_settings=p\nend\n\nlocal p=data.frog_draw_settings\n-- Keep current edits intact when the menu layout changes.\nif p.strategyItems[1]~=\"Westhogg\" then\n p.strategyItems[1]=\"Westhogg\"; p.strategyItems[2]=\"Easthogg\"\nend\nlocal visible=GUI:Begin(\"Frog Draws\",nil,GUI.WindowFlags_AlwaysAutoResize)\nif visible then\n if GUI:Button(\"Open AnyoneCore roster\") then\n  local popup=AnyoneCore and AnyoneCore.RosterPopup\n  if popup and type(popup.openManual)==\"function\" then\n   local ok,err=pcall(popup.openManual)\n   if not ok then p.message=\"Roster could not open: \"..tostring(err) end\n  else p.message=\"AnyoneCore roster is unavailable\" end\n end\n GUI:Separator()\n local function changed(field,value)\n  if value~=nil and value~=p[field] then p[field]=value; p.message=\"Unsaved changes\" end\n end\n local function choice(id,label,index,items)\n  local selected=GUI:Combo(\"##\"..id,index,items)\n  GUI:SameLine(); GUI:TextUnformatted(label)\n  return selected\n end\n local function style(key,label)\n  local value=p.styles[key]\n  local index=value==\"Disabled\" and 3 or value==\"Arrow\" and 2 or 1\n  local selected=choice(key,label,index,p.styleItems)\n  local valueNew=p.styleItems[selected]\n  if valueNew and valueNew~=value then p.styles[key]=valueNew; p.message=\"Unsaved changes\" end\n end\n local function order(field,id,label,width,default)\n  GUI:PushItemWidth(width)\n  changed(field,GUI:InputText(\"##\"..id,p[field]))\n  GUI:PopItemWidth()\n  GUI:SameLine(); GUI:TextUnformatted(label)\n  if GUI:Button(\"Reset##\"..id) then changed(field,default) end\n end\n local function lineup(id,text,defaults,valid)\n  p.lineupWidgets=p.lineupWidgets or {}\n  local w=p.lineupWidgets[id]\n  if not w or w.text~=text then\n   local values=valid(text)\n   if not values then values=valid(defaults)end\n   w={text=text,values=values};p.lineupWidgets[id]=w\n  end\n  local captured=false;local changedOrder=false;local note\n  if GUI:Button(\"Capture lineup##\"..id)then\n   local expected=valid(defaults)\n   local values,message\n   if id==\"wb1\"then values,message=p.captureWB1()elseif id==\"doth\"then values,message=p.captureDOTH()else values,message=p.captureLineup(expected)end\n   if values then w.values=values;captured=true;changedOrder=true;note=message else p.message=message end\n  end\n  if GUI:IsItemHovered()then GUI:SetTooltip(\"Capture the live lineup. DOTH: west to east. Drag onto a box centre to swap; use its left/right edge to insert before/after.\")end\n  GUI:SameLine()\n  if GUI:Button(\"Reverse##\"..id)then\n   local values=w.values\n   for i=1,math.floor(#values/2)do values[i],values[#values-i+1]=values[#values-i+1],values[i]end\n   changedOrder=true\n  end\n  local drop\n  for i,role in ipairs(w.values)do\n   local label=role\n   local width=36\n   if id==\"wb1\"then\n    if i%2==1 then\n     GUI:Separator()\n     GUI:TextUnformatted(({\"Left pair\",\"Middle pair\",\"Right pair\"})[math.floor((i+1)/2)])\n    else GUI:SameLine()end\n    label=(i%2==1 and \"Anchor: \" or \"Flex: \")..role\n    width=110\n   elseif id==\"wb2\"then\n    if i%2==1 then GUI:Separator()else GUI:SameLine()end\n    label=({\"North wall: \",\"SW outer: \",\"SW inner: \",\"NE inner: \",\"South wall: \",\"NE outer: \"})[i]..role\n    width=145\n   elseif i>1 then GUI:SameLine()end\n   GUI:Button(label..\"##\"..id..\"_\"..role,width,26)\n   if GUI:IsItemClicked(0)then p.lineupDrag={id=id,index=i}end\n   local ax,ay=GUI:GetItemRectMin();local bx,by=GUI:GetItemRectMax()\n   if p.lineupDrag and p.lineupDrag.id==id and GUI:IsMouseHoveringRect(ax,ay,bx,by,true)then\n    drop=i\n    local mx=GUI:GetMousePos()\n    local fraction=(mx-ax)/math.max(1,bx-ax)\n    p.lineupDropMode=fraction<0.25 and \"before\" or fraction>0.75 and \"after\" or \"swap\"\n    GUI:SetTooltip(p.lineupDropMode==\"swap\" and \"Swap with \"..role or (p.lineupDropMode==\"before\" and \"Insert before \" or \"Insert after \")..role)\n   end\n  end\n  if p.lineupDrag and p.lineupDrag.id==id and GUI:IsMouseReleased(0)then\n   local from=p.lineupDrag.index\n   if drop and drop~=from then\n    if p.lineupDropMode==\"swap\"then\n     w.values[from],w.values[drop]=w.values[drop],w.values[from]\n     changedOrder=true\n    else\n     local slot=drop+(p.lineupDropMode==\"after\" and 1 or 0)\n     if from<slot then slot=slot-1 end\n     if slot~=from then table.insert(w.values,slot,table.remove(w.values,from));changedOrder=true end\n    end\n   end\n   p.lineupDrag=nil;p.lineupDropMode=nil\n  end\n  if changedOrder then\n   w.text=table.concat(w.values,\" \")\n   p.message=note or \"Unsaved changes\"\n   return w.text,captured,note\n  end\n  return text,false\n end\n GUI:PushItemWidth(145)\n if GUI:CollapsingHeader(\"P1 - Vault\") then\n  style(\"p1_playstation\",\"PlayStation\")\n end\n if GUI:CollapsingHeader(\"P2 - Thordan\") then\n  style(\"p2_strength\",\"Strength\")\n  style(\"p2_sanctity\",\"Sanctity\")\n end\n if GUI:CollapsingHeader(\"P3 - Nidhogg\") then\n  style(\"p3_dfg\",\"Dive from Grace\")\n  local selected=choice(\"p3_strategy\",\"Strategy\",p.strategy==\"LPDU\" and 2 or 1,p.strategyItems)\n  changed(\"strategy\",selected==2 and \"LPDU\" or \"NAUR\")\n  selected=choice(\"p3_custom_hold\",\"Lock face / stop actions\",p.customHold and 1 or 2,p.holdItems)\n  changed(\"customHold\",selected==1)\n end\n if GUI:CollapsingHeader(\"P4 - Eyes\") then\n  style(\"p4_eyes\",\"Orbs and Mirage Dive\")\n end\n if GUI:CollapsingHeader(\"P5 - Dark Thordan\") then\n  style(\"p5_wrath\",\"Wrath Of The Heavens\")\n  style(\"p5_doth\",\"Death Of The Heavens\")\n  local selected=choice(\"doth_order_mode\",\"DOTH order\",p.dothMode==\"Live positions\" and 2 or 1,p.dothModeItems)\n  changed(\"dothMode\",p.dothModeItems[selected])\n  GUI:TextUnformatted(\"DOTH order - drag to rearrange\")\n  local value,captured,note=lineup(\"doth\",p.edit,p.default,p.parse)\n  if value~=p.edit then p.dothMode=\"Configured conga\" end\n  changed(\"edit\",value)\n  if captured then p.dothMode=\"Configured conga\";if p.save(p.edit)then p.message=note..\" Saved.\"end end\n end\n if GUI:CollapsingHeader(\"P6 - Double Dragons\") then\n  local hpWindow=choice(\"p6_dragon_hp_window\",\"Dragon HP window\",p.dragonHP and 1 or 2,p.holdItems)\n  changed(\"dragonHP\",hpWindow==1)\n  local afahHP=choice(\"p6_akh_afah_hp\",\"Akh Afah HP callout\",p.akhAfahHP and 1 or 2,p.holdItems)\n  changed(\"akhAfahHP\",afahHP==1)\n  style(\"p6_vow\",\"Mortal Vow\")\n  local vowMode=choice(\"p6_vow_tts_mode\",\"Vow callouts\",p.vowTTSMode==\"Personal\" and 1 or p.vowTTSMode==\"Disabled\" and 3 or 2,p.autoModeItems)\n  changed(\"vowTTSMode\",p.autoModeItems[vowMode])\n  if p.styles.p6_vow~=\"Disabled\" then\n   order(\"vowEdit\",\"vow_order\",\"Vow passes (T / M / R)\",145,p.vowDefault)\n  end\n  style(\"p6_wb1\",\"Wyrmsbreath 1\")\n  GUI:TextUnformatted(\"WB1 pairs - anchor stays, flex adjusts\")\n  local pairsText=table.concat({p.wb1Anchors[1],p.wb1Flex[1],p.wb1Anchors[2],p.wb1Flex[2],p.wb1Anchors[3],p.wb1Flex[3]},\" \")\n  local value,captured,note=lineup(\"wb1\",pairsText,\"H1 R1 M1 M2 H2 R2\",p.validatePairs)\n  if value~=pairsText then\n   local roles=p.validatePairs(value)\n   for i=1,3 do p.wb1Anchors[i]=roles[i*2-1];p.wb1Flex[i]=roles[i*2]end\n   p.message=\"Unsaved changes\"\n  end\n  if captured and p.save(p.edit)then p.message=note..\" Saved.\"end\n  GUI:TextUnformatted(\"Anchors hold; flexers match opposite colours.\")\n  style(\"p6_wb2\",\"Wyrmsbreath 2\")\n  GUI:TextUnformatted(\"WB2 fixed spots - drag roles between labelled positions\")\n  local value,captured,note=lineup(\"wb2\",p.wb2Edit,p.wb2Default,p.validatePairs)\n  changed(\"wb2Edit\",value)\n  if captured and p.save(p.edit)then p.message=note..\" Saved.\"end\n  style(\"p6_cauterize\",\"Double Cauterize\")\n  if p.styles.p6_cauterize~=\"Disabled\" then\n   local index=1\n   for i,value in ipairs(p.cautItems) do if value==p.cautMT then index=i; break end end\n   local selected=choice(\"p6_cauterize_mt\",\"MT takes\",index,p.cautItems)\n   changed(\"cautMT\",p.cautItems[selected])\n   GUI:TextUnformatted(\"OT takes: \"..p.cautOpposite[selected])\n  end\n end\n if GUI:CollapsingHeader(\"P7 - Dragon-King\") then\n  style(\"p7_trinity\",\"Trinity\")\n  style(\"p7_akh\",\"Akh Morn\")\n  if p.styles.p7_akh~=\"Disabled\" then\n   local selected=choice(\"p7_akh_strategy\",\"Akh Morn groups\",p.akhStrategy==\"3-3-2\" and 2 or 1,p.akhStrategyItems)\n   changed(\"akhStrategy\",p.akhStrategyItems[selected])\n   if p.akhStrategy==\"3-3-2\" then GUI:TextUnformatted(\"G1 NW / G2 NE / tanks S\") end\n  end\n  style(\"p7_giga\",\"Gigaflare\")\n  local selected=choice(\"p7_element_draws\",\"Flames / ice\",p.elementDraws and 1 or 2,p.holdItems)\n  changed(\"elementDraws\",selected==1)\n  selected=choice(\"p7_auto_mode\",\"Auto callouts\",p.autoMode==\"Shotcaller\" and 2 or p.autoMode==\"Disabled\" and 3 or 1,p.autoModeItems)\n  changed(\"autoMode\",p.autoModeItems[selected])\n  if p.autoMode~=\"Disabled\" then\n   GUI:PushItemWidth(145)\n   changed(\"autoOrderEdit\",GUI:InputText(\"##p7_auto_order\",p.autoOrderEdit))\n   GUI:PopItemWidth()\n   GUI:SameLine(); GUI:TextUnformatted(\"Auto order (M / R / H; G1 first)\")\n   local valid,err=p.parseAuto(p.autoOrderEdit)\n   if not valid then GUI:TextUnformatted(err) end\n  end\n end\n GUI:PopItemWidth()\n GUI:Separator()\n if GUI:Button(\"Save\") then p.save(p.edit) end\n if p.message then GUI:SameLine(); GUI:TextUnformatted(p.message) end\nend\nGUI:End()\nself.used=true\n",
-							},
-						},
-					},
-				},
-			},
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
+			objectType = "folder",
 		},
 
 		{
@@ -98,17 +75,6 @@ local tbl =
 				version = 2,
 			},
 			inheritedIndex = 10,
-		},
-
-		{
-			data =
-			{
-				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "ed614957-af42-0663-c73d-2d052c1041c7",
-			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
-			objectType = "folder",
 		},
 
 		{
@@ -790,7 +756,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "dfaa6310-4b66-14ac-2631-9d72b406fa40",
+				uuid = "c7c9d950-7861-3954-18c4-743adfc7cae0",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -818,7 +784,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "8d10da89-b44c-7cd5-4efe-7093186852f9",
+				uuid = "93f9aec9-1684-9a7d-a4b3-833bea523419",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -908,7 +874,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "c8ba5955-78a2-fe09-dc65-a707c2138bc5",
+				uuid = "b448ba95-4301-d851-ff18-1defa4346465",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -922,7 +888,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "abb4e2ae-c871-1d3a-69f8-cf944da236de",
+				uuid = "986d39ee-de88-5032-9bb9-6bacb29039fe",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -930,6 +896,17 @@ local tbl =
 	},
 	[10] =
 	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "01244329-a605-1445-06fe-059b3119c439",
+			},
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			objectType = "folder",
+		},
 
 		{
 			data =
@@ -954,17 +931,6 @@ local tbl =
 			{
 				name = "[Draw] Blade Draw",
 			},
-		},
-
-		{
-			data =
-			{
-				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "5fac3769-211d-4e2d-0d5e-9b23aabb3119",
-			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
-			objectType = "folder",
 		},
 
 		{
@@ -1090,7 +1056,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "8d6bbf70-37a7-c4c4-7da3-1a42a030c7e0",
+				uuid = "abb07030-26b1-bd5c-41e2-8d1abfb11580",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -1104,7 +1070,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "2d633eb7-d9f9-d7db-5428-df95ba5c10e7",
+				uuid = "b9b4aa77-bdb1-e8d3-b537-c3edfe8bff07",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -1118,7 +1084,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "bf4d5f16-d476-555a-2bf3-f06c00281586",
+				uuid = "bf4e7cd6-15b3-46b2-6e83-dd8450bdcd26",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -1358,6 +1324,17 @@ local tbl =
 			data =
 			{
 				displayPath = "",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "54dd6ccc-97f8-82c0-63c1-7b8e0071491c",
+			},
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				displayPath = "",
 				name = "Frog\\Ultimates\\DSR\\Draws",
 				uuid = "8d0ea723-e30a-f13f-4fe0-9f95761be8b3",
 			},
@@ -1391,17 +1368,6 @@ local tbl =
 			{
 				name = "[Draw] Symbol Guidance",
 			},
-		},
-
-		{
-			data =
-			{
-				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "35c2560c-3705-5b68-3c57-15f6af21987c",
-			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
-			objectType = "folder",
 		},
 
 		{
@@ -1441,7 +1407,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "51265043-db43-610f-33d9-d3c9e6c99cf3",
+				uuid = "49c92703-1001-ca47-fbd4-52017124c893",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -1500,7 +1466,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "38c25de2-e3e8-d2ce-67a9-fe50b7846f52",
+				uuid = "d02d8ba2-6541-a766-0d94-35284857f572",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -1514,7 +1480,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "f376c481-af12-5ef5-d528-1bfb89f08df1",
+				uuid = "0dc26041-4daf-90fd-5983-ddc3b73cec91",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -1613,7 +1579,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "b7cb7545-6261-0e49-0e14-333b0b888f75",
+				uuid = "31971b05-10fd-a421-4a9c-8b13bb792795",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -1718,7 +1684,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "a9bee3c0-5a7b-2aec-50fb-0d2e8ab7a6b0",
+				uuid = "07e4ab80-4ddb-3a24-2a35-8fa6cefa4650",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -1880,7 +1846,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "5f75f1fd-a5ff-9261-68f6-0d637d937ead",
+				uuid = "cad834bd-f809-fc09-61ce-7d6b301f1e4d",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -1930,7 +1896,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "599e7c3a-5bc2-a7c6-bea7-4858ff1bf9ea",
+				uuid = "3e0ab1fa-adae-c2fe-a872-08d0172c1b0a",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -1944,7 +1910,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "ed22b68d-bcf4-cf59-3295-3fbfa9df6b3d",
+				uuid = "7852b44d-c4a6-19f1-bed5-ca1770bcae5d",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -1957,10 +1923,10 @@ local tbl =
 			data =
 			{
 				displayPath = "",
-				name = "Frog\\Ultimates\\DSR\\Draws",
-				uuid = "07127e14-e3be-9bf8-c01b-b17209d6e1e4",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "2d919d97-217f-28f3-0996-e0cd8c6edda7",
 			},
-			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
 
@@ -1968,10 +1934,10 @@ local tbl =
 			data =
 			{
 				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "6a20cbd7-5f34-740b-d99f-f66525c6cb87",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "07127e14-e3be-9bf8-c01b-b17209d6e1e4",
 			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
 			objectType = "folder",
 		},
 	},
@@ -1983,7 +1949,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "489f294a-bcb3-ccc6-5e48-fe0c1d11e87a",
+				uuid = "5f5fb10a-0e9f-e7fe-c8f0-4da4686aca9a",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -2098,9 +2064,20 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "0a0e97bf-5505-c933-8832-df69eab82c2f",
+				uuid = "1513427f-f51f-5acb-8c12-b7a1c26acb4f",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "36dbd66c-1a30-5420-2650-a82ecc3b3f7c",
+			},
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
 			objectType = "folder",
 		},
 
@@ -2152,7 +2129,7 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Only actual hide-and-reappear events arm the Strength callout.\ndata.frog_strength_marker_v2 = data.frog_strength_marker_v2 or {hidden={}, visible={}, ids={}}\nlocal s = data.frog_strength_marker_v2\nif s.called then self.used = true return end\nlocal cid = eventArgs.entityContentID\ns.ids[cid] = eventArgs.entityID\ns.visible[cid] = eventArgs.isVisible\nif not eventArgs.isVisible then s.hidden[cid] = true end\nif not s.hidden[3634] or not s.hidden[3635] or not s.visible[3634] or not s.visible[3635] then\n    self.used = true\n    return\nend\nlocal adelphel = TensorCore.mGetEntity(s.ids[3634])\nlocal janlenoux = TensorCore.mGetEntity(s.ids[3635])\nif not adelphel or not janlenoux then return end\nlocal nx = 100 - (adelphel.pos.x + janlenoux.pos.x) / 2\nlocal nz = 100 - (adelphel.pos.z + janlenoux.pos.z) / 2\nlocal radius = math.sqrt(nx * nx + nz * nz)\nif radius < 1 then return end\nnx, nz = nx / radius, nz / radius\nlocal ex, ez = -nz, nx\nlocal aSide = (adelphel.pos.x - 100) * ex + (adelphel.pos.z - 100) * ez\nlocal jSide = (janlenoux.pos.x - 100) * ex + (janlenoux.pos.z - 100) * ez\nif math.abs(aSide - jSide) < 1 then return end\nlocal px, pz = 100 + nx * 23, 100 + nz * 23\nlocal nearest, best\nfor id = 1, 8 do\n    local x, y, z, active = Argus.getWaymarkInfo(id)\n    if active then\n        local mx, mz = x - px, z - pz\n        local distance = mx * mx + mz * mz\n        if not best or distance < best then\n            nearest, best = id, distance\n        end\n    end\nend\nif not nearest then s.called = true\nself.used = true return end\nlocal labels = \"ABCD1234\"\nlocal marker = labels:sub(nearest, nearest)\nTensorCore.addAlertText(8000, \"Thordan: \" .. marker, 1.5, 2, false)\nTensorCore.sendTTS(\"Thordan at \" .. marker)\ns.called = true\nself.used = true",
+							actionLua = "\ndata.frog_strength_marker_v2 = data.frog_strength_marker_v2 or {hidden={}, visible={}, ids={}}\nlocal s = data.frog_strength_marker_v2\nif s.called then self.used = true return end\nlocal cid = eventArgs.entityContentID\ns.ids[cid] = eventArgs.entityID\ns.visible[cid] = eventArgs.isVisible\nif not eventArgs.isVisible then s.hidden[cid] = true end\nif not s.hidden[3634] or not s.hidden[3635] or not s.visible[3634] or not s.visible[3635] then\n    self.used = true\n    return\nend\nlocal adelphel = TensorCore.mGetEntity(s.ids[3634])\nlocal janlenoux = TensorCore.mGetEntity(s.ids[3635])\nif not adelphel or not janlenoux then return end\nlocal nx = 100 - (adelphel.pos.x + janlenoux.pos.x) / 2\nlocal nz = 100 - (adelphel.pos.z + janlenoux.pos.z) / 2\nlocal radius = math.sqrt(nx * nx + nz * nz)\nif radius < 1 then return end\nnx, nz = nx / radius, nz / radius\nlocal ex, ez = -nz, nx\nlocal aSide = (adelphel.pos.x - 100) * ex + (adelphel.pos.z - 100) * ez\nlocal jSide = (janlenoux.pos.x - 100) * ex + (janlenoux.pos.z - 100) * ez\nif math.abs(aSide - jSide) < 1 then return end\nlocal px, pz = 100 + nx * 23, 100 + nz * 23\nlocal nearest, best\nfor id = 1, 8 do\n    local x, y, z, active = Argus.getWaymarkInfo(id)\n    if active then\n        local mx, mz = x - px, z - pz\n        local distance = mx * mx + mz * mz\n        if not best or distance < best then\n            nearest, best = id, distance\n        end\n    end\nend\nif not nearest then s.called = true\nself.used = true return end\nlocal labels = \"ABCD1234\"\nlocal marker = labels:sub(nearest, nearest)\nTensorCore.addAlertText(8000, \"Thordan: \" .. marker, 1.5, 2, false)\nTensorCore.sendTTS(\"Thordan at \" .. marker)\ns.called = true\nself.used = true",
 							conditions =
 							{
 
@@ -2171,7 +2148,7 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Only actual hide-and-reappear events arm the Strength callout.\ndata.frog_strength_marker_v2 = data.frog_strength_marker_v2 or {hidden={}, visible={}, ids={}}\nlocal s = data.frog_strength_marker_v2\nif s.called then self.used = true return end\nlocal cid = eventArgs.entityContentID\ns.ids[cid] = eventArgs.entityID\ns.visible[cid] = eventArgs.isVisible\nif not eventArgs.isVisible then s.hidden[cid] = true end\nif not s.hidden[3634] or not s.hidden[3635] or not s.visible[3634] or not s.visible[3635] then\n    self.used = true\n    return\nend\nlocal adelphel = TensorCore.mGetEntity(s.ids[3634])\nlocal janlenoux = TensorCore.mGetEntity(s.ids[3635])\nif not adelphel or not janlenoux then return end\nlocal nx = 100 - (adelphel.pos.x + janlenoux.pos.x) / 2\nlocal nz = 100 - (adelphel.pos.z + janlenoux.pos.z) / 2\nlocal radius = math.sqrt(nx * nx + nz * nz)\nif radius < 1 then return end\nnx, nz = nx / radius, nz / radius\nlocal ex, ez = -nz, nx\nlocal aSide = (adelphel.pos.x - 100) * ex + (adelphel.pos.z - 100) * ez\nlocal jSide = (janlenoux.pos.x - 100) * ex + (janlenoux.pos.z - 100) * ez\nif math.abs(aSide - jSide) < 1 then return end\nlocal px, pz = 100 + nx * 23, 100 + nz * 23\nlocal nearest, best\nfor id = 1, 8 do\n    local x, y, z, active = Argus.getWaymarkInfo(id)\n    if active then\n        local mx, mz = x - px, z - pz\n        local distance = mx * mx + mz * mz\n        if not best or distance < best then\n            nearest, best = id, distance\n        end\n    end\nend\nif not nearest then s.called = true\nself.used = true return end\nlocal labels = \"ABCD1234\"\nlocal marker = labels:sub(nearest, nearest)\nTensorCore.addAlertText(8000, \"Thordan: \" .. marker, 1.5, 2, false)\nTensorCore.sendTTS(\"Thordan at \" .. marker)\ns.called = true\nself.used = true",
+							actionLua = "\ndata.frog_strength_marker_v2 = data.frog_strength_marker_v2 or {hidden={}, visible={}, ids={}}\nlocal s = data.frog_strength_marker_v2\nif s.called then self.used = true return end\nlocal cid = eventArgs.entityContentID\ns.ids[cid] = eventArgs.entityID\ns.visible[cid] = eventArgs.isVisible\nif not eventArgs.isVisible then s.hidden[cid] = true end\nif not s.hidden[3634] or not s.hidden[3635] or not s.visible[3634] or not s.visible[3635] then\n    self.used = true\n    return\nend\nlocal adelphel = TensorCore.mGetEntity(s.ids[3634])\nlocal janlenoux = TensorCore.mGetEntity(s.ids[3635])\nif not adelphel or not janlenoux then return end\nlocal nx = 100 - (adelphel.pos.x + janlenoux.pos.x) / 2\nlocal nz = 100 - (adelphel.pos.z + janlenoux.pos.z) / 2\nlocal radius = math.sqrt(nx * nx + nz * nz)\nif radius < 1 then return end\nnx, nz = nx / radius, nz / radius\nlocal ex, ez = -nz, nx\nlocal aSide = (adelphel.pos.x - 100) * ex + (adelphel.pos.z - 100) * ez\nlocal jSide = (janlenoux.pos.x - 100) * ex + (janlenoux.pos.z - 100) * ez\nif math.abs(aSide - jSide) < 1 then return end\nlocal px, pz = 100 + nx * 23, 100 + nz * 23\nlocal nearest, best\nfor id = 1, 8 do\n    local x, y, z, active = Argus.getWaymarkInfo(id)\n    if active then\n        local mx, mz = x - px, z - pz\n        local distance = mx * mx + mz * mz\n        if not best or distance < best then\n            nearest, best = id, distance\n        end\n    end\nend\nif not nearest then s.called = true\nself.used = true return end\nlocal labels = \"ABCD1234\"\nlocal marker = labels:sub(nearest, nearest)\nTensorCore.addAlertText(8000, \"Thordan: \" .. marker, 1.5, 2, false)\nTensorCore.sendTTS(\"Thordan at \" .. marker)\ns.called = true\nself.used = true",
 							conditions =
 							{
 
@@ -2398,7 +2375,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "334589f3-f507-c3ff-d560-de6d9be9afa3",
+				uuid = "751147b3-5602-c1e7-aec8-8e55800c1b43",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -2406,6 +2383,31 @@ local tbl =
 	},
 	[50] =
 	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "23f3976d-8870-47c1-4af8-d6f78e5bbcfd",
+			},
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				name = "Draw line to Warrior for alignment",
+				uuid = "b2438d75-da67-faba-bf97-f166eb692fd4",
+				version = 2,
+			},
+			inheritedObjectUUID = "85f754e5-a6fa-3aee-88cb-1b9ce885c7d1",
+			inheritedOverwrites =
+			{
+				enabled = false,
+			},
+		},
 
 		{
 			data =
@@ -2457,31 +2459,6 @@ local tbl =
 			inheritedOverwrites =
 			{
 				name = "[Draw] Defamation Capture",
-			},
-		},
-
-		{
-			data =
-			{
-				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "ca0f6bad-b6ba-19e9-fbb4-279f97f77add",
-			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
-			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Draw line to Warrior for alignment",
-				uuid = "b2438d75-da67-faba-bf97-f166eb692fd4",
-				version = 2,
-			},
-			inheritedObjectUUID = "85f754e5-a6fa-3aee-88cb-1b9ce885c7d1",
-			inheritedOverwrites =
-			{
-				enabled = false,
 			},
 		},
 
@@ -2671,7 +2648,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "84357e8f-a834-32c3-87fc-99fdf41a78ff",
+				uuid = "0a9e614f-d216-b95b-bdc5-857502134a9f",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -2685,7 +2662,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "8cdaf04e-8fd0-4062-e9d9-38d402bc9f3e",
+				uuid = "d27d4f0e-cc93-36da-e621-994c723feb5e",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -2790,7 +2767,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "58047c75-4a84-a701-4a4e-d34764c4afa5",
+				uuid = "94654235-7bd2-2aa9-e9f6-878fe6b14045",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -2858,6 +2835,17 @@ local tbl =
 	},
 	[64] =
 	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "501f2b2c-44b9-8f78-a2d3-b21a26f5a6fc",
+			},
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			objectType = "folder",
+		},
 
 		{
 			data =
@@ -2939,17 +2927,6 @@ local tbl =
 				name = "[Draw] Sword Capture",
 			},
 		},
-
-		{
-			data =
-			{
-				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "036d486c-00cc-c640-de94-3f428b0b0c5c",
-			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
-			objectType = "folder",
-		},
 	},
 	[65] =
 	{
@@ -2959,7 +2936,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "2ba23795-652e-1ef9-6e4f-c0230a5e6345",
+				uuid = "b9059355-7a1e-6a11-67ef-2a9bdc716fe5",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -3281,7 +3258,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "551c7242-ce15-eae6-8ce5-156c7a0c95b2",
+				uuid = "7757a202-5236-439e-cf75-02842f587dd2",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -3289,6 +3266,17 @@ local tbl =
 	},
 	[68] =
 	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "b4170248-c352-c69c-289c-1196c178c1d8",
+			},
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			objectType = "folder",
+		},
 
 		{
 			data =
@@ -3314,17 +3302,6 @@ local tbl =
 				name = "[Draw] Orb Cutouts",
 			},
 		},
-
-		{
-			data =
-			{
-				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "4d1cfc88-1860-7354-993e-83ee70197c38",
-			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
-			objectType = "folder",
-		},
 	},
 	[70] =
 	{
@@ -3334,7 +3311,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "9d06c1b3-9700-086f-ef5e-b9d993025363",
+				uuid = "a6d14173-4bc2-b1a7-f541-e251a0a46c03",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -3431,6 +3408,17 @@ local tbl =
 			data =
 			{
 				displayPath = "",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "24a505e5-b511-b0d9-3c7c-321f835c9df5",
+			},
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				displayPath = "",
 				name = "Frog\\Ultimates\\DSR\\Draws",
 				uuid = "d740d9da-8e07-9756-4de6-2accb76322ea",
 			},
@@ -3451,17 +3439,6 @@ local tbl =
 				name = "[Draw] Final Tower Guidance",
 			},
 		},
-
-		{
-			data =
-			{
-				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "adb2f325-79d1-e7a1-860f-baa7980cc9d5",
-			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
-			objectType = "folder",
-		},
 	},
 	[73] =
 	{
@@ -3471,7 +3448,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "4fdb5d3c-9799-2d48-8e2c-92462f2661ac",
+				uuid = "6f293cfc-071a-dca0-aca8-d2deabb8b1cc",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -3522,7 +3499,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "fa72c90e-ae9d-c2f2-14b2-7f88120811fe",
+				uuid = "0066a7ce-19a9-be7a-0963-2dd02e63a11e",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -4045,6 +4022,17 @@ local tbl =
 			data =
 			{
 				displayPath = "",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "542599c4-00c6-8f08-1f5c-49c22b2e0294",
+			},
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				displayPath = "",
 				name = "Frog\\Ultimates\\DSR\\Draws",
 				uuid = "d556666b-df3c-5317-2038-3fb1ca44d4bb",
 			},
@@ -4065,17 +4053,6 @@ local tbl =
 				name = "[Draw] Broad Swings",
 			},
 		},
-
-		{
-			data =
-			{
-				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "05352b04-25f6-e300-2d95-aefaec7a8c74",
-			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
-			objectType = "folder",
-		},
 	},
 	[90] =
 	{
@@ -4085,7 +4062,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "2b020ad1-21be-f515-cfbc-148b8bd871c1",
+				uuid = "9e7f5d91-948f-50dd-6746-99337dd77ae1",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -4099,7 +4076,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "fe84ccfd-016f-e949-049e-3f7f1ca259ad",
+				uuid = "69e70fbd-ff38-1831-c6d7-c527cf2df94d",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -4113,7 +4090,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "755ba6aa-09ed-2b76-726c-9f18cffb60da",
+				uuid = "bf239e6a-ff54-753e-822f-f02094e5f6fa",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -4209,7 +4186,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "ad2f1779-9664-ebcd-649c-44b37f3a54a9",
+				uuid = "185c3539-615c-85a5-d266-690b3a38f6c9",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -4217,6 +4194,17 @@ local tbl =
 	},
 	[99] =
 	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "a6f38680-0384-efbc-5195-028a6e092150",
+			},
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			objectType = "folder",
+		},
 
 		{
 			data =
@@ -4400,17 +4388,6 @@ local tbl =
 		{
 			data =
 			{
-				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "48cdbec0-c628-4164-30df-3e1229c681b0",
-			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
-			objectType = "folder",
-		},
-
-		{
-			data =
-			{
 				actions =
 				{
 
@@ -4473,7 +4450,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "5cb8644f-649e-3d3b-d1cd-d66db225f37f",
+				uuid = "3adc088f-e83c-34e3-67fe-d275be10af9f",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -4487,7 +4464,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "2497520e-d8af-2e3a-8b19-f004c0c819be",
+				uuid = "43817a4e-ab98-ba02-905a-e64c2e3d505e",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -4754,7 +4731,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "bcaa2881-6c33-688d-2394-181bc0abbcb1",
+				uuid = "efec0dc1-ed46-ab55-8546-a08376d65fd1",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -4768,7 +4745,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "760d9a6d-a1d4-b721-b878-a04f5602f55d",
+				uuid = "80b5f5ad-b19d-2c89-f532-23f74a5921fd",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -5035,7 +5012,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "f696a2b7-bf80-1763-423f-813571b524a7",
+				uuid = "9bde57f7-8d5a-5abb-da09-c1ad0cab5b47",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -5049,7 +5026,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "8880c316-82dc-9c82-5ab5-f60c79d1fc46",
+				uuid = "a1782a56-016b-4bba-f094-384461eb3866",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -5316,7 +5293,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "79ffe63c-9c97-4038-0d39-f00a788a7f6c",
+				uuid = "b2440f7c-518b-b340-13fa-b25220a5860c",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -5330,7 +5307,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "d7d77c25-0b03-e1d1-8e0b-568ba0bf6e95",
+				uuid = "67bfd865-b5ed-0bf9-433f-dff3082f1135",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -5439,7 +5416,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "26bc76a7-0ea1-752b-d173-4ab1caa44e97",
+				uuid = "bd7e87e7-7745-1953-0731-741918466eb7",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -5496,19 +5473,8 @@ local tbl =
 			data =
 			{
 				displayPath = "",
-				name = "Frog\\Ultimates\\DSR\\Draws",
-				uuid = "80e789db-f327-3447-4a7b-6aa9bdb9702b",
-			},
-			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
-			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "9d64c334-28cf-95c0-ef2e-80124528bae4",
+				uuid = "508e2874-c553-5db8-5899-7f4a51098004",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -5526,6 +5492,45 @@ local tbl =
 			{
 				enabled = false,
 			},
+		},
+
+		{
+			data =
+			{
+				name = "Enum Towers",
+				uuid = "6b5d40e3-1704-d9e1-9dfb-9411c95ab9a4",
+				version = 2,
+			},
+			inheritedObjectUUID = "75ca105c-09bb-644b-bcf8-ccd398ca49dd",
+			inheritedOverwrites =
+			{
+				enabled = false,
+			},
+		},
+
+		{
+			data =
+			{
+				name = "Draw Arrow to Tower",
+				uuid = "bccff1c0-03c3-d1e7-99ca-790ff14b72ec",
+				version = 2,
+			},
+			inheritedObjectUUID = "439a5ab3-aef0-37a8-a1e5-a51da003975e",
+			inheritedOverwrites =
+			{
+				enabled = false,
+			},
+		},
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "80e789db-f327-3447-4a7b-6aa9bdb9702b",
+			},
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
+			objectType = "folder",
 		},
 
 		{
@@ -5666,10 +5671,24 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "0b0a475d-8d30-ee79-22eb-86b31565654d",
+				uuid = "3f08fc9d-33bf-ff51-b5ee-eccb97bd666d",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				name = "TTS Bait",
+				uuid = "b2ea751c-80fa-cc18-9312-c9ab082f744a",
+				version = 2,
+			},
+			inheritedObjectUUID = "dcd51d4b-cf76-2fb6-9be0-e55d9f06c033",
+			inheritedOverwrites =
+			{
+				enabled = false,
+			},
 		},
 	},
 	[120] =
@@ -5680,9 +5699,20 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "3577b4c9-9c5c-9335-54ab-807316600b39",
+				uuid = "c076e709-ed31-5c5d-c029-737bb1bb41d9",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "a3421f86-95d6-7fc2-2b3b-3090fbf93856",
+			},
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
 			objectType = "folder",
 		},
 
@@ -5823,7 +5853,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "7faba097-d037-0243-d27f-44e5e3d24607",
+				uuid = "20c755d7-1472-2f8b-b3d0-2dcd486c42a7",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -5837,7 +5867,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "3df4f6f6-b7d3-0fe2-1d03-7bfc36041426",
+				uuid = "1db09436-93a0-c90a-e393-836450891a46",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -5952,6 +5982,17 @@ local tbl =
 			data =
 			{
 				displayPath = "",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "ba727482-57f6-80be-60a4-fc08b51e1012",
+			},
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				displayPath = "",
 				name = "Frog\\Ultimates\\DSR\\Draws",
 				uuid = "001374f1-c58f-2705-b5d4-9017a18daf81",
 			},
@@ -6027,17 +6068,6 @@ local tbl =
 			{
 				name = "[Draw] Blue Soak",
 			},
-		},
-
-		{
-			data =
-			{
-				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "7f40fb42-3e5e-1116-0e12-ab602d9e3c72",
-			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
-			objectType = "folder",
 		},
 
 		{
@@ -6143,7 +6173,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "791638e1-2bea-e86d-c75a-8d4b9c833391",
+				uuid = "d96a8f21-b9fe-9125-f85f-f2a39762dab1",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -6293,7 +6323,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "77418588-e537-0204-6a05-1fca671e58f8",
+				uuid = "f731d4c8-5c26-fb3c-68a4-71c2f6ab7118",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -6339,7 +6369,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "eb0b6626-494b-9212-7dcf-dc105c612dd6",
+				uuid = "2dae9266-724b-c9fa-0589-21785fa4c2f6",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -6353,7 +6383,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "98d99807-7d08-98b3-2b36-538956c75b77",
+				uuid = "d86eb547-b8ed-11fb-3aed-fc11a15b6c97",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -6367,7 +6397,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "59feae80-2fdd-343c-8870-00b648c32130",
+				uuid = "60656dc0-dc57-21e4-1305-d59e8af7ab50",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -6381,7 +6411,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "cb675d39-8db4-ca25-8b86-c2579e36f429",
+				uuid = "c4c6c679-ac93-cc4d-a90b-31df572780c9",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -6580,7 +6610,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "0b726193-dc99-c4a7-66df-d255e6dbd803",
+				uuid = "861ed3d3-3ff2-0daf-0655-ae3d30ac4823",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -7074,7 +7104,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "aa813c93-3588-ee97-aefe-822985eab303",
+				uuid = "252daed3-a1ce-d05f-c007-aa31cfbb2323",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -7185,7 +7215,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "6a763839-0ba4-0e95-f7a3-66033d45cf29",
+				uuid = "63d5a179-ff19-4cbd-7c9f-b60bf6365bc9",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -7274,7 +7304,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "c1b32eeb-13a8-46af-bb9c-9f41938a5ddb",
+				uuid = "e546282b-7b00-ad07-da60-11599784a3fb",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -7288,7 +7318,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "9cd94e30-c09b-b944-cefb-1e06fd4b1d60",
+				uuid = "e3212470-891e-84cc-843f-db6e1abd5580",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -7568,7 +7598,7 @@ local tbl =
 							inheritedObjectUUID = "f92484f0-85f8-6a5e-b0dd-0f8898161086",
 							inheritedOverwrites =
 							{
-								actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p5_wrath\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_wrath_v1\nlocal ex,ez=-s.nz,s.nx\nlocal drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,frogGuide.flags)\ns.arrow=drawer:addTimedArrow(8000,100+ex*5,0.08,100+ez*5,math.atan2(ex,ez),8,1.5,3,4,0,false,frogGuide.flags)\nself.used=true",
+								actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p5_wrath\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_wrath_v1\nlocal ex,ez=-s.nz,s.nx\nlocal drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,frogGuide.flags)\ns.arrow=drawer:addTimedArrow(8000,100+ex*5,0.08,100+ez*5,math.atan2(ex,ez),8,1.5,3,4,0,false,frogGuide.flags)\nself.used=true",
 							},
 						},
 					},
@@ -7603,7 +7633,7 @@ local tbl =
 							inheritedObjectUUID = "cdd0c157-b2d0-6c08-bbae-1c5eedbf2a79",
 							inheritedOverwrites =
 							{
-								actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p5_wrath\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_wrath_v1\nif not s then return end\nlocal p=TensorCore.mGetPlayer()\nif not p or not p.pos or p.hp.current<=0 then return end\nlocal x,z\nlocal radius=19.5\nif s.phase==1 and s.nx then\n    local kx,kz\n    if p.id==s.vellID then kx,kz=s.vellX,s.vellZ\n    elseif p.id==s.ignID then kx,kz=s.ignX,s.ignZ end\n    if kx then\n        local ex,ez=-s.nz,s.nx\n        local side=(-kx+100)*ex+(-kz+100)*ez\n        local sign=side<0 and -1 or 1\n        local c,t=0.9238795325,0.3826834324\n        x,z=100+radius*(-c*s.nx+sign*t*ex),100+radius*(-c*s.nz+sign*t*ez)\n    elseif p.id==s.defamID then\n        -- WNW: 60 degrees west of dragon-relative north, away from the NW dive lane.\n        local ex,ez=-s.nz,s.nx\n        x,z=100+radius*(0.5*s.nx-0.8660254038*ex),100+radius*(0.5*s.nz-0.8660254038*ez)\n    end\nelseif s.phase==2 and p.id==s.diveID and s.gx then\n    local dx,dz=s.gx-100,s.gz-100\n    local length=math.sqrt(dx*dx+dz*dz)\n    if length>0 then x,z=100-radius*dx/length,100-radius*dz/length end\nend\nif x then\n    -- Moving player endpoint requires a per-frame line.\n    local drawer=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0)\n    frogGuide.draw(\"p5_wrath\",drawer,p.pos.x,p.pos.y,p.pos.z,x,0.08,z,8,2)\nend\nself.used=true",
+								actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p5_wrath\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_wrath_v1\nif not s then return end\nlocal p=TensorCore.mGetPlayer()\nif not p or not p.pos or p.hp.current<=0 then return end\nlocal x,z\nlocal radius=19.5\nif s.phase==1 and s.nx then\n    local kx,kz\n    if p.id==s.vellID then kx,kz=s.vellX,s.vellZ\n    elseif p.id==s.ignID then kx,kz=s.ignX,s.ignZ end\n    if kx then\n        local ex,ez=-s.nz,s.nx\n        local side=(-kx+100)*ex+(-kz+100)*ez\n        local sign=side<0 and -1 or 1\n        local c,t=0.9238795325,0.3826834324\n        x,z=100+radius*(-c*s.nx+sign*t*ex),100+radius*(-c*s.nz+sign*t*ez)\n    elseif p.id==s.defamID then\n\n        local ex,ez=-s.nz,s.nx\n        x,z=100+radius*(0.5*s.nx-0.8660254038*ex),100+radius*(0.5*s.nz-0.8660254038*ez)\n    end\nelseif s.phase==2 and p.id==s.diveID and s.gx then\n    local dx,dz=s.gx-100,s.gz-100\n    local length=math.sqrt(dx*dx+dz*dz)\n    if length>0 then x,z=100-radius*dx/length,100-radius*dz/length end\nend\nif x then\n\n    local drawer=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0)\n    frogGuide.draw(\"p5_wrath\",drawer,p.pos.x,p.pos.y,p.pos.z,x,0.08,z,8,2)\nend\nself.used=true",
 							},
 						},
 					},
@@ -7634,7 +7664,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "1daa36f5-1947-5ac1-b59c-a573c1b7b6e5",
+				uuid = "73014635-3565-5b29-211a-987b446fc505",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -7752,7 +7782,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "c15669a2-6cdc-c74e-7df4-a0fc149ec4d2",
+				uuid = "8e77c2e2-f38f-94d6-4484-a864a3643572",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -7766,7 +7796,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "3af20503-6437-558f-3370-69e543e3f273",
+				uuid = "a6dbb543-edf5-c277-14c1-52cdcc310893",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -7780,7 +7810,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "b6561a8d-b66e-51f1-b98b-34af73a203fd",
+				uuid = "5a7c61cd-fff5-1299-7a1b-21d77345a29d",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -7878,10 +7908,10 @@ local tbl =
 			data =
 			{
 				displayPath = "",
-				name = "Frog\\Ultimates\\DSR\\Draws",
-				uuid = "4c31453b-5553-230f-1f93-a1f9dab5f48b",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "b67c6b14-6527-da10-4d0c-ff1a4a84cb24",
 			},
-			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
 
@@ -7889,10 +7919,10 @@ local tbl =
 			data =
 			{
 				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "8a85f4d4-208d-21c8-3e65-ca727a526204",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "4c31453b-5553-230f-1f93-a1f9dab5f48b",
 			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
 			objectType = "folder",
 		},
 
@@ -7934,7 +7964,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "0c8d845e-39a0-533a-b5be-ea806f90000e",
+				uuid = "b9b2099e-0c89-df02-18be-a7281357952e",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -8039,7 +8069,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "f0ad0bb2-470b-e136-822c-fc944cee6fe2",
+				uuid = "72b538f2-3132-59ae-494a-558ceeaf1a82",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -8320,7 +8350,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "cbbe9fb6-077b-7eb2-9d08-452c26b54be6",
+				uuid = "6985d2f6-8f7a-d3ca-d41a-bfa4d3086406",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -8395,7 +8425,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "aa2e7155-ee22-1379-2a95-9d576778b8c5",
+				uuid = "81579c95-1d48-2571-b46b-4a6f377dafe5",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -8409,7 +8439,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "4148092c-89c0-bac0-277e-dbb6e82561dc",
+				uuid = "5922ad6c-dcfc-4ad8-9ced-89ae8201e6fc",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -8423,7 +8453,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "ce688f04-6d6d-9670-e7ee-7932876c4c34",
+				uuid = "364f4744-8766-f548-4ac5-f02a4b449bd4",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -8504,7 +8534,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "66e2b71b-0d65-15b7-7840-46c51c52a38b",
+				uuid = "d8a15a5b-86cd-d06f-d3ef-167d1982ce2b",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -8517,10 +8547,10 @@ local tbl =
 			data =
 			{
 				displayPath = "",
-				name = "Frog\\Ultimates\\DSR\\Draws",
-				uuid = "352cdfb7-2a5b-970b-ab73-0f655b44a7c7",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "35acdde8-a67d-45a4-b7d3-44dea7789938",
 			},
-			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
 
@@ -8528,10 +8558,10 @@ local tbl =
 			data =
 			{
 				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "6d78e6a8-15c4-2d0c-377c-d9e6bf032e18",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "352cdfb7-2a5b-970b-ab73-0f655b44a7c7",
 			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
 			objectType = "folder",
 		},
 
@@ -8574,7 +8604,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "c3a62d0e-18c4-34e2-6a33-b5405fd6f4be",
+				uuid = "e290554e-a07a-26ba-91ff-b2b8cd4c2b5e",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -8744,7 +8774,7 @@ local tbl =
 						data =
 						{
 							category = "Lua",
-							conditionLua = "local t=TensorReactions_CurrentTimer\nlocal s=data.frog_doth_meteor_clear\nif not s or t<s.lastTime-2 then\n s={seen={},count=0,lastTime=t,cleared=false}\n data.frog_doth_meteor_clear=s\nend\ns.lastTime=t\nif s.cleared then return true end\nlocal meteors=TensorCore.getEntityGroupList(\"ContentID\",{contentid=4386})\nif not meteors then return false end\nlocal living=0\nfor _,meteor in pairs(meteors) do\n living=living+1\n if not s.seen[meteor.id] then s.seen[meteor.id]=true; s.count=s.count+1 end\nend\n-- Never treat the empty arena before meteor spawn as a completed mechanic.\nif s.count>=8 and living==0 then s.cleared=true end\nreturn s.cleared",
+							conditionLua = "local t=TensorReactions_CurrentTimer\nlocal s=data.frog_doth_meteor_clear\nif not s or t<s.lastTime-2 then\n s={seen={},count=0,lastTime=t,cleared=false}\n data.frog_doth_meteor_clear=s\nend\ns.lastTime=t\nif s.cleared then return true end\nlocal meteors=TensorCore.getEntityGroupList(\"ContentID\",{contentid=4386})\nif not meteors then return false end\nlocal living=0\nfor _,meteor in pairs(meteors) do\n living=living+1\n if not s.seen[meteor.id] then s.seen[meteor.id]=true; s.count=s.count+1 end\nend\n\nif s.count>=8 and living==0 then s.cleared=true end\nreturn s.cleared",
 							name = "All 8 meteors cleared",
 							uuid = "5f33dfc9-a982-1dd9-be68-2b91f188b315",
 							version = 3,
@@ -9017,7 +9047,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "4cd66640-b560-359c-0504-c7f27b7beff0",
+				uuid = "c3f27780-e4e0-32a4-1c08-dbba21313410",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -9148,7 +9178,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "b137bef9-9e52-7185-2dd1-9b134dbc67e9",
+				uuid = "355b2639-7261-4e0d-a7f7-eabbce97ab89",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -9161,10 +9191,10 @@ local tbl =
 			data =
 			{
 				displayPath = "",
-				name = "Frog\\Ultimates\\DSR\\Draws",
-				uuid = "4cc7c104-b6aa-8450-ff5f-5b326a76d054",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "02cd6107-6acc-22bb-af8d-160d2ee81a57",
 			},
-			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
 
@@ -9172,10 +9202,10 @@ local tbl =
 			data =
 			{
 				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "c4dfadc7-2613-b513-a610-57851b736f37",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "4cc7c104-b6aa-8450-ff5f-5b326a76d054",
 			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
 			objectType = "folder",
 		},
 
@@ -9296,10 +9326,10 @@ local tbl =
 			data =
 			{
 				displayPath = "",
-				name = "Frog\\Ultimates\\DSR\\Draws",
-				uuid = "bbff07ba-6699-dd2e-a429-e85c2106110a",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "eda4e705-a802-9ca1-025c-856f0a412a55",
 			},
-			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
 
@@ -9307,10 +9337,10 @@ local tbl =
 			data =
 			{
 				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "5ae2f7c5-e608-b0b9-bb38-d1870b5c11b5",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "bbff07ba-6699-dd2e-a429-e85c2106110a",
 			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
 			objectType = "folder",
 		},
 	},
@@ -10069,6 +10099,17 @@ local tbl =
 			data =
 			{
 				displayPath = "",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "75662a93-c530-bd6f-e52e-64a10536b3e3",
+			},
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				displayPath = "",
 				name = "Frog\\Ultimates\\DSR\\Draws",
 				uuid = "d0b483d8-6e09-a05c-9cba-252e8d6e4768",
 			},
@@ -10131,20 +10172,34 @@ local tbl =
 				name = "[Callout] Vow Callout",
 			},
 		},
+	},
+	[208] =
+	{
 
 		{
 			data =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "728fcc53-b37a-eb87-edc6-96b93f3680c3",
+				uuid = "861973f8-61d2-0b2c-c636-4a0205529948",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-	},
-	[208] =
-	{
+
+		{
+			data =
+			{
+				name = "Target hraes",
+				uuid = "80658efe-833c-68fd-8ddd-871c2f9ea03a",
+				version = 2,
+			},
+			inheritedObjectUUID = "7fab58f7-f2d1-a146-98a5-ecb80d086ba2",
+			inheritedOverwrites =
+			{
+				timerOffset = 2,
+			},
+		},
 
 		{
 			data =
@@ -10168,31 +10223,6 @@ local tbl =
 			inheritedOverwrites =
 			{
 				name = "[Callout] HP Callout",
-			},
-		},
-
-		{
-			data =
-			{
-				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "c09e10b8-410e-1414-948d-ffeaf346d828",
-			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
-			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Target hraes",
-				uuid = "80658efe-833c-68fd-8ddd-871c2f9ea03a",
-				version = 2,
-			},
-			inheritedObjectUUID = "7fab58f7-f2d1-a146-98a5-ecb80d086ba2",
-			inheritedOverwrites =
-			{
-				timerOffset = 2,
 			},
 		},
 
@@ -10254,7 +10284,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "2f0ab251-3793-8b3d-4503-8d6be186f501",
+				uuid = "bb7e4e91-cab8-7355-02d9-c4e3e78b53a1",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -10268,7 +10298,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "a6e36d02-548c-936e-4ff1-0aec1589d832",
+				uuid = "e934c442-6c82-8e56-5c51-fdf4c8c7aad2",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -10375,7 +10405,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "e8915e55-93b7-8c61-315b-b5a3a5dba5c5",
+				uuid = "bfba8995-ae58-54a9-685e-f64b75e09ce5",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -10383,6 +10413,31 @@ local tbl =
 	},
 	[213] =
 	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "97859a6c-58e4-81b0-0b09-88cac064d3fc",
+			},
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				name = "Target nidhog",
+				uuid = "e5792e2a-20d4-8a6d-9d8f-92eb5c8d089d",
+				version = 2,
+			},
+			inheritedObjectUUID = "ddbdd4be-660e-bd05-9a20-0a5c0d514451",
+			inheritedOverwrites =
+			{
+				timerOffset = 0,
+			},
+		},
 
 		{
 			data =
@@ -10450,31 +10505,6 @@ local tbl =
 				name = "[Draw] Dragon Arrival",
 			},
 		},
-
-		{
-			data =
-			{
-				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "7faaf62c-91e2-d908-a1a0-34c226884edc",
-			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
-			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Target nidhog",
-				uuid = "e5792e2a-20d4-8a6d-9d8f-92eb5c8d089d",
-				version = 2,
-			},
-			inheritedObjectUUID = "ddbdd4be-660e-bd05-9a20-0a5c0d514451",
-			inheritedOverwrites =
-			{
-				timerOffset = 0,
-			},
-		},
 	},
 	[214] =
 	{
@@ -10484,7 +10514,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "0d384e57-f167-507b-57d6-ee490fd85bc7",
+				uuid = "e99f6997-f6fd-3883-98d6-da71cb9f4c67",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -10708,7 +10738,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "0a218cb6-aac6-087a-8ba7-18d0651838e6",
+				uuid = "a7e8bff6-7d61-9d22-588a-ffd8116b5106",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -10722,7 +10752,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "ace7df89-e50e-0acd-a20a-da17fc306cf9",
+				uuid = "9f6b7dc9-d9b5-6a75-cc78-f73fbbfe6c99",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -10736,7 +10766,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "88a50dbb-9a4c-f417-eccb-f0cd7da0f3ab",
+				uuid = "40b9c5fb-05e6-6c8f-7383-ade56abbe54b",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -10750,7 +10780,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "fcb5feba-5896-4a76-1c8f-4664c45cfc2a",
+				uuid = "fa187dfa-0e8b-de4e-be07-e4fc0d6677ca",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -10764,7 +10794,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "6d967cfa-8ddc-3586-f75a-de989a993c6a",
+				uuid = "edb6ce3a-e0a2-858e-f244-8500b09b480a",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -10778,7 +10808,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "d7a1d4e4-2de4-e7e0-982e-a53e4ed73694",
+				uuid = "f3b9ed24-8a75-3f28-8351-3ca69c865734",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -10786,6 +10816,17 @@ local tbl =
 	},
 	[223] =
 	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "813b088d-78b5-5c01-311f-6e870a2bdb5d",
+			},
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			objectType = "folder",
+		},
 
 		{
 			data =
@@ -10810,17 +10851,6 @@ local tbl =
 			{
 				name = "[Callout] HP Callout",
 			},
-		},
-
-		{
-			data =
-			{
-				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "a7de7f4d-386f-5119-898c-7eff455cadbd",
-			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
-			objectType = "folder",
 		},
 
 		{
@@ -10881,7 +10911,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "ec6e4423-4b46-cabf-b26a-af5933dcd793",
+				uuid = "d487b763-b2a1-d637-e9d0-5c11c64cdeb3",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -10957,7 +10987,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "e87c0f5d-6ddf-99a9-ea33-159bf2d72d4d",
+				uuid = "1c7ac49d-1131-c751-a742-52a3752f2e6d",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -10971,7 +11001,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "0fbce28b-2670-00f7-986c-d3edff3072fb",
+				uuid = "3a0ce8cb-586c-171f-ee0c-9715c6f5701b",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -11247,6 +11277,17 @@ local tbl =
 			data =
 			{
 				displayPath = "",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "dcb77b4a-c898-b7de-c5d7-a7ec01d9f79a",
+			},
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				displayPath = "",
 				name = "Frog\\Ultimates\\DSR\\Draws",
 				uuid = "c17d26a9-23dc-b265-0a3f-6c034857a279",
 			},
@@ -11280,17 +11321,6 @@ local tbl =
 			{
 				name = "[Opti] Pyretic Hold",
 			},
-		},
-
-		{
-			data =
-			{
-				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "8eeb7c0a-2c09-d356-51b8-ed84b88f2afa",
-			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
-			objectType = "folder",
 		},
 
 		{
@@ -11393,6 +11423,17 @@ local tbl =
 			data =
 			{
 				displayPath = "",
+				name = "store\\anyone\\dsw\\universal",
+				uuid = "6a84ccf1-e4b4-897d-17f1-7717bbcbbc81",
+			},
+			inheritanceRoot = "store\\anyone\\dsw\\universal",
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				displayPath = "",
 				name = "Frog\\Ultimates\\DSR\\Draws",
 				uuid = "8d5788fe-5cbe-2ea2-8ff6-6f9401eeab4e",
 			},
@@ -11440,17 +11481,6 @@ local tbl =
 			{
 				name = "[Opti] Hit Tracking",
 			},
-		},
-
-		{
-			data =
-			{
-				displayPath = "",
-				name = "store\\anyone\\dsw\\universal",
-				uuid = "5324d6b1-993c-af75-7f17-9dcfa180aee1",
-			},
-			inheritanceRoot = "store\\anyone\\dsw\\universal",
-			objectType = "folder",
 		},
 
 		{
@@ -11525,7 +11555,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "b26d6d18-c198-c34c-46f6-8b8e9fabfb88",
+				uuid = "2a38f258-4691-2854-d63a-cd76cd8b9fa8",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -11539,7 +11569,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "449f0d7f-b684-7d83-df09-620186356eaf",
+				uuid = "9e26e9bf-14cf-5aab-cdbd-8b495bd9f84f",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -11553,7 +11583,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "534133be-3ce8-e222-f0c9-45286255b5ee",
+				uuid = "538d75fe-5b8b-632a-018d-b5d023b8e60e",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -11567,7 +11597,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "5771ae3c-212f-abe8-2454-fb6255fc476c",
+				uuid = "8fb5d77c-2efd-7b40-286a-8b7afe174e0c",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -11581,7 +11611,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "ffb956a2-4751-1836-51ba-6a285301b1d2",
+				uuid = "ccdaafe2-d0e9-7a3e-627e-dad0e1c72272",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -11962,7 +11992,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "db3c3b30-bcda-81ac-8608-c21a3bae0a60",
+				uuid = "21841170-f87e-d1b4-7877-f6c259204280",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -11976,7 +12006,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "30b00e29-25c0-e9d5-4b24-3a9b46387399",
+				uuid = "f3c48969-6624-55dd-0833-77a3ca88f139",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -12004,7 +12034,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "e4a289c4-20d2-58c8-0bd1-2196e8e8f3f4",
+				uuid = "fa3ea204-3d2e-b020-3322-3b6e258e5494",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -12451,7 +12481,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "ce18132d-030b-1321-79e7-0137d763c81d",
+				uuid = "40f2886d-eb25-8459-5701-f42f1c13cbbd",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -12479,7 +12509,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "0714271e-e447-6a52-6a0a-50b8dbdc45ce",
+				uuid = "d772725e-5dd2-721a-db4b-9d20390cd3ee",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -12808,7 +12838,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "f99772f8-dbe4-937c-8fdd-e2de2ef8ce68",
+				uuid = "b19ee038-8a73-c284-2810-49c676631988",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -12836,7 +12866,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "00161beb-e71f-0be7-abf9-b47dd1ed4adb",
+				uuid = "23a9152b-b7d2-72cf-d10e-77a5d5e790fb",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -13093,7 +13123,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "03de8894-ccf3-c2e0-22d0-8e2a2f9b37c4",
+				uuid = "556ae2d4-2984-1a28-8ca5-3f92f951a0e4",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -13107,7 +13137,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "764b6007-863b-a4cb-5aa3-fef934392377",
+				uuid = "b5e07d47-7573-c2c3-6eea-0a317ecd3497",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -13135,7 +13165,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "6b12b1b6-cc1b-078a-ac25-5da4c6095de6",
+				uuid = "08d9e4f6-3dbf-9cf2-f82c-b58c725c7606",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -13149,7 +13179,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "6e297357-4cec-6e0b-39a6-790d70c980c7",
+				uuid = "4a908e97-668c-7013-dfb6-40b52c907167",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -13658,7 +13688,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "60728d10-b806-16b4-a622-3ebaf8c03940",
+				uuid = "342ccd50-f5d8-f09c-fb2c-bd6212652860",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -13963,7 +13993,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "e09c1b2c-ef9c-f898-74f8-27ae877973dc",
+				uuid = "f876bf6c-b518-bd00-81b7-be962155f8fc",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -13991,7 +14021,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "49828355-9054-6231-8c75-e86f06cccac5",
+				uuid = "20abae95-2681-6bb9-efcd-9e37d6d1c1e5",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -14005,7 +14035,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "fb3fc599-90ae-eded-2e2d-e6f758d1b289",
+				uuid = "5af063d9-b0e0-cf15-9597-df1f525fda29",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -14331,7 +14361,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "f0b55c60-49fb-0784-33c7-b956ab6b3b10",
+				uuid = "acf98fa0-88ab-dfec-05c4-7fdefcec0730",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -14359,7 +14389,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "b521f5e5-d74b-7c01-be42-6383947b3155",
+				uuid = "a2bc6a25-9091-c349-51fb-22ab7dbceff5",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -14774,7 +14804,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "ffa62cfc-e90b-5f28-44a6-c8222b94c92c",
+				uuid = "44e4d43c-c461-edd0-98b7-2b2aa61903cc",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
@@ -14802,7 +14832,7 @@ local tbl =
 			{
 				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
-				uuid = "82b1a848-b3e0-3b64-f614-10caaaa599b8",
+				uuid = "80442988-1ea7-dadc-599c-4022f9f6c9d8",
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
