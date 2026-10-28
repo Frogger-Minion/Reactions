@@ -1,26 +1,26 @@
-local tbl = 
+local tbl =
 {
-	
+
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "if data.frog_draw_settings == nil or data.frog_draw_settings.version~=31 then\n local p={\n  version=31,\n  path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]],\n  default=\"R1 H1 M1 MT OT M2 H2 R2\",\n  styleItems={\"Tether\",\"Arrow\",\"Disabled\"},\n  styleRows={\n   {\"p1_playstation\",\"P1 PlayStation\"},{\"p2_strength\",\"P2 Strength\"},\n   {\"p2_sanctity\",\"P2 Sanctity\"},{\"p3_dfg\",\"P3 Dive from Grace\"},\n   {\"p4_eyes\",\"P4 Eyes\"},{\"p5_wrath\",\"P5 Wrath\"},{\"p5_doth\",\"P5 DOTH\"},{\"p6_vow\",\"P6 Mortal Vow\"},{\"p6_wb1\",\"P6 Wyrmsbreath 1\"},{\"p6_wb2\",\"P6 Wyrmsbreath 2\"},{\"p6_cauterize\",\"P6 Double Cauterize\"},\n   {\"p7_trinity\",\"P7 Trinity\"},{\"p7_akh\",\"P7 Akh Morn\"},{\"p7_giga\",\"P7 Gigaflare\"}\n  },\n  styles={},\n  wb1Anchors={\"H1\",\"M1\",\"H2\"},wb1Flex={\"R1\",\"M2\",\"R2\"},\n  wb2Default=\"H1 R1 M1 M2 H2 R2\",wb2Edit=\"H1 R1 M1 M2 H2 R2\",\n  wb1Roles={\"H1\",\"H2\",\"M1\",\"M2\",\"R1\",\"R2\"},wb2R1North=false,\n  cautMT=\"Nidhogg\",\n  cautItems={\"Nidhogg\",\"Hraesvelgr\",\"Fixed West\",\"Fixed East\"},\n  cautOpposite={\"Hraesvelgr\",\"Nidhogg\",\"Fixed East\",\"Fixed West\"},\n  autoOrderDefault=\"M R H\",\n  autoOrderEdit=\"M R H\",\n  elementDraws=true,\n  akhStrategy=\"6-1-1\",\n  akhStrategyItems={\"6-1-1\",\"3-3-2\"},\n  autoMode=\"Personal\",\n  autoModeItems={\"Personal\",\"Shotcaller\",\"Disabled\"},\n  dothMode=\"Configured conga\",\n  dothModeItems={\"Configured conga\",\"Live positions\"},\n  akhAfahHP=false,\n  vowTTSMode=\"Personal\",\n  vowDefault=\"T T M R\",\n  vowEdit=\"T T M R\",\n  vowGroups={T={\"MT\",\"OT\"},M={\"M1\",\"M2\"},R={\"R1\",\"R2\"}},\n  strategyItems={\"Westhogg\",\"Easthogg\"},\n  strategy=\"NAUR\",\n  holdItems={\"On\",\"Off\"},\n  customHold=false,\n  roles={MT=true,OT=true,H1=true,H2=true,M1=true,M2=true,R1=true,R2=true}\n }\n function p.parse(text)\n  if type(text)~=\"string\" then return nil,\"Enter all eight roles.\" end\n  local order,seen={},{}\n  for role in string.upper(text):gmatch(\"[^%s,]+\") do\n   if not p.roles[role] then return nil,\"Unknown role: \"..role end\n   if seen[role] then return nil,\"Duplicate role: \"..role end\n   seen[role]=true; order[#order+1]=role\n  end\n  if #order~=8 then return nil,\"Enter each of MT OT H1 H2 M1 M2 R1 R2 once.\" end\n  return order,table.concat(order,\" \")\n end\n function p.parseVow(text)\n  local order={}\n  for token in string.upper(text or \"\"):gmatch(\"[^%s,]+\") do\n   if not p.vowGroups[token] then return nil,\"Vow order uses T, M or R. Healers cannot receive.\" end\n   order[#order+1]=token\n  end\n  if #order~=4 then return nil,\"Enter four Vow passes.\" end\n  for _,initial in ipairs({\"M1\",\"M2\",\"R1\",\"R2\"}) do\n   local used={[initial]=true}\n   for _,token in ipairs(order) do\n    local chosen\n    for _,role in ipairs(p.vowGroups[token]) do\n     if not used[role] then chosen=role; break end\n    end\n    if not chosen then return nil,\"Vow order runs out of eligible receivers.\" end\n    used[chosen]=true\n   end\n  end\n  return order,table.concat(order,\" \")\n end\n function p.parseAuto(text)\n  if type(text)~=\"string\" then return nil,\"Auto order uses M, R and H once each.\" end\n  local compact=string.upper(text):gsub(\"[%s,]\",\"\")\n  if #compact~=3 then return nil,\"Enter M, R and H once each.\" end\n  local order,seen={},{}\n  for token in compact:gmatch(\".\") do\n   if token~=\"M\" and token~=\"R\" and token~=\"H\" then return nil,\"Auto order only accepts M, R and H.\" end\n   if seen[token] then return nil,\"Duplicate auto role: \"..token end\n   seen[token]=true; order[#order+1]=token\n  end\n  return order,table.concat(order,\" \")\n end\n function p.validatePairs(text)\n  local roles,seen={},{}\n  for role in (text or \"\"):gmatch(\"%S+\") do\n   if not (role==\"H1\" or role==\"H2\" or role==\"M1\" or role==\"M2\" or role==\"R1\" or role==\"R2\") or seen[role] then return nil,\"Each WB1 role must appear once.\" end\n   seen[role]=true;roles[#roles+1]=role\n  end\n  if #roles~=6 then return nil,\"Assign three anchor/flex pairs.\" end\n  return roles\n end\n function p.lineupPoints(roles)\n  local roster=AnyoneCore and AnyoneCore.Roster\n  if not roster or not roster.isReady() then return nil,\"Set the AnyoneCore roster first.\" end\n  local members=roster.members();local party=AnyoneCore.API.getAgnosticPartyList()\n  if type(members)~=\"table\" or type(party)~=\"table\" then return nil,\"Party roster unavailable.\" end\n  local slots={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"}\n  local points,used={},{}\n  local cx,cz=0,0\n  for _,role in ipairs(roles)do\n   local member=members[slots[role]]\n   if not member then return nil,\"Missing roster role: \"..role end\n   local candidate,count=nil,0\n   for _,a in pairs(party)do\n    if a.name==member.name and a.job==member.job then candidate=a;count=count+1 end\n   end\n   if count==0 then\n    local sameJob=0;for _,m in pairs(members)do if m.job==member.job then sameJob=sameJob+1 end end\n    if sameJob==1 then for _,a in pairs(party)do if a.job==member.job then candidate=a;count=count+1 end end end\n   end\n   if count~=1 or used[candidate.id] then return nil,\"Cannot uniquely match \"..role..\" to the party.\" end\n   local actor=TensorCore.mGetEntity(candidate.id)\n   if not actor or not actor.alive then return nil,\"All lineup players must be present and alive.\" end\n   used[actor.id]=true\n   points[#points+1]={role=role,x=actor.pos.x,z=actor.pos.z};cx=cx+actor.pos.x;cz=cz+actor.pos.z\n  end\n  return points\n end\n function p.captureLineup(roles)\n  local points,message=p.lineupPoints(roles)\n  if not points then return nil,message end\n  local cx,cz=0,0\n  for _,v in ipairs(points)do cx=cx+v.x;cz=cz+v.z end\n  cx=cx/#points;cz=cz/#points\n  local xx,xz,zz=0,0,0\n  for _,v in ipairs(points)do local x,z=v.x-cx,v.z-cz;xx=xx+x*x;xz=xz+x*z;zz=zz+z*z end\n  local h=0.5*math.atan2(2*xz,xx-zz)\n  local ux,uz=math.cos(h),math.sin(h)\n  local eastWest=math.abs(ux)>=math.abs(uz)\n  if (eastWest and ux<0) or (not eastWest and uz<0)then ux=-ux;uz=-uz end\n  local width=0\n  for _,v in ipairs(points)do\n   v.rank=(v.x-cx)*ux+(v.z-cz)*uz\n   width=math.max(width,math.abs((v.x-cx)*uz-(v.z-cz)*ux))\n  end\n  table.sort(points,function(a,b)return a.rank<b.rank end)\n  if width>3 then return nil,\"Form a single lineup before capturing.\" end\n  local order={}\n  for i,v in ipairs(points)do\n   if i>1 and v.rank-points[i-1].rank<0.3 then return nil,\"Lineup overlaps; separate the players or drag the boxes.\" end\n   order[i]=v.role\n  end\n  return order,eastWest and \"Captured W to E. Reverse if needed.\" or \"Captured N to S. Reverse if needed.\"\n end\n function p.captureDOTH()\n  local points,message=p.lineupPoints({\"MT\",\"OT\",\"H1\",\"H2\",\"M1\",\"M2\",\"R1\",\"R2\"})\n  if not points then return nil,message end\n  table.sort(points,function(a,b)return a.x<b.x end)\n  local order={}\n  for i,v in ipairs(points)do\n   if i>1 and v.x-points[i-1].x<0.3 then return nil,\"Separate players west to east before capturing DOTH.\" end\n   order[i]=v.role\n  end\n  return order,\"Captured DOTH west to east.\"\n end\n function p.captureWB1()\n  local points,message=p.lineupPoints(p.wb1Roles)\n  if not points then return nil,message end\n  local marks={}\n  for i=1,8 do\n   local x,y,z,active=Argus.getWaymarkInfo(i)\n   if active then\n    local near={}\n    for _,v in ipairs(points)do near[#near+1]={role=v.role,d=(v.x-x)^2+(v.z-z)^2}end\n    table.sort(near,function(a,b)return a.d<b.d end)\n    if near[2].d<=36 and near[2].d-near[1].d>=0.25 then\n     marks[#marks+1]={x=x,z=z,anchor=near[1].role,flex=near[2].role,cost=near[1].d+near[2].d}\n    end\n   end\n  end\n  local best,second,chosen=math.huge,math.huge,nil\n  for a=1,#marks-2 do for b=a+1,#marks-1 do for c=b+1,#marks do\n   local tri={marks[a],marks[b],marks[c]}\n   local area=math.abs((tri[2].x-tri[1].x)*(tri[3].z-tri[1].z)-(tri[3].x-tri[1].x)*(tri[2].z-tri[1].z))\n   local used,valid,cost={},area>2,0\n   for _,m in ipairs(tri)do\n    if used[m.anchor] or used[m.flex]then valid=false end\n    used[m.anchor]=true;used[m.flex]=true;cost=cost+m.cost\n   end\n   if valid then\n    if cost<best then second=best;best=cost;chosen=tri elseif cost<second then second=cost end\n   end\n  end end end\n  if not chosen or second-best<0.25 then return nil,\"Stand in three clear anchor/flex pairs beside the triangle markers.\" end\n  table.sort(chosen,function(a,b)return a.x<b.x end)\n  if chosen[2].x-chosen[1].x<1 or chosen[3].x-chosen[2].x<1 then return nil,\"The three WB1 markers must define left, middle and right.\" end\n  local order={}\n  for _,m in ipairs(chosen)do order[#order+1]=m.anchor;order[#order+1]=m.flex end\n  return order,\"Captured closest anchor and second-closest flex at each triangle marker.\"\n end\n function p.save(text)\n  local order,normalized=p.parse(text)\n  if not order then p.message=normalized; return false end\n  local vowOrder,vowText=p.parseVow(p.vowEdit)\n  if not vowOrder then p.message=vowText; return false end\n  local autoOrder,autoText=p.parseAuto(p.autoOrderEdit)\n  if not autoOrder then p.message=autoText; return false end\n  local pairText=table.concat({p.wb1Anchors[1],p.wb1Flex[1],p.wb1Anchors[2],p.wb1Flex[2],p.wb1Anchors[3],p.wb1Flex[3]},\" \")\n  local pairsOK,pairError=p.validatePairs(pairText)\n  if not pairsOK then p.message=pairError;return false end\n  local wb2=p.validatePairs(p.wb2Edit)\n  if not wb2 then p.message=\"WB2 requires each non-tank role once.\";return false end\n  local wb2Text=table.concat(wb2,\" \")\n  local nextSettings={}\n  for k,v in pairs(p.settings) do nextSettings[k]=v end\n  nextSettings.p6_wb1_pairs=pairText\n  nextSettings.p6_wb2_r1_north=p.wb2R1North\n  nextSettings.p6_wb2_order=wb2Text\n  nextSettings.doth_conga=normalized\n  nextSettings.doth_order_mode=p.dothMode==\"Live positions\" and \"Live positions\" or \"Configured conga\"\n  nextSettings.vow_pass_order=vowText\n  nextSettings.p6_vow_tts_mode=p.vowTTSMode\n  nextSettings.p6_akh_afah_hp=p.akhAfahHP\n  nextSettings.p3_custom_hold=p.customHold\n  nextSettings.p3_strategy=p.strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\n  nextSettings.p7_element_draws=p.elementDraws\n  nextSettings.p7_akh_strategy=p.akhStrategy==\"3-3-2\" and \"3-3-2\" or \"6-1-1\"\n  nextSettings.p7_auto_order=autoText\n  nextSettings.p7_auto_mode=p.autoMode\n  nextSettings.p6_cauterize_mt=p.cautMT\n  nextSettings.draw_styles={}\n  for _,row in ipairs(p.styleRows) do\n   local choice=p.styles[row[1]]\n   nextSettings.draw_styles[row[1]]=choice==\"Disabled\" and \"Disabled\" or choice==\"Arrow\" and \"Arrow\" or \"Tether\"\n  end\n  local ok,err=pcall(FileSave,p.path,nextSettings)\n  local readOK,saved=pcall(FileLoad,p.path)\n  local stylesOK=readOK and type(saved)==\"table\" and type(saved.draw_styles)==\"table\"\n  if stylesOK then\n   for _,row in ipairs(p.styleRows) do\n    if saved.draw_styles[row[1]]~=nextSettings.draw_styles[row[1]] then stylesOK=false break end\n   end\n  end\n  if not ok or not readOK or (type(saved)==\"table\" and (saved.p6_wb1_pairs~=pairText or saved.p6_wb2_r1_north~=p.wb2R1North)) or type(saved)~=\"table\" or saved.doth_conga~=normalized or saved.p6_wb2_order~=wb2Text or saved.doth_order_mode~=nextSettings.doth_order_mode or saved.p7_element_draws~=nextSettings.p7_element_draws or saved.p7_akh_strategy~=nextSettings.p7_akh_strategy or saved.p7_auto_order~=autoText or saved.p7_auto_mode~=nextSettings.p7_auto_mode or saved.p6_cauterize_mt~=nextSettings.p6_cauterize_mt or not stylesOK or saved.p3_strategy~=nextSettings.p3_strategy or saved.p3_custom_hold~=nextSettings.p3_custom_hold or saved.vow_pass_order~=vowText or saved.p6_vow_tts_mode~=nextSettings.p6_vow_tts_mode or saved.p6_akh_afah_hp~=nextSettings.p6_akh_afah_hp then\n   p.message=\"Save failed: \"..tostring(err or saved); return false\n  end\n  p.settings=nextSettings\n  if not p.elementDraws then\n   local element=data.frog_p7_element\n   if element and element.draw then Argus.deleteTimedShape(element.draw); element.draw=nil end\n  end\n  p.autoOrderEdit=autoText\n  p.vowEdit=vowText\n  p.order,p.saved,p.edit=order,normalized,normalized\n  p.message=\"Saved.\"\n  return true\n end\n p.order,p.saved=p.parse(p.default)\n p.edit=p.saved\n p.settings={}\n if FileExists(p.path) then\n  local ok,settings=pcall(FileLoad,p.path)\n  local order,normalized\n  if ok and type(settings)==\"table\" then\n   p.settings=settings\n   order,normalized=p.parse(settings.doth_conga)\n  end\n  if order then p.order,p.saved,p.edit=order,normalized,normalized\n  else p.message=\"Invalid settings file; using defaults. Apply to repair.\" end\n else\n  local previous=data.frog_draw_settings\n  p.save(previous and previous.saved or p.default)\n end\n for _,row in ipairs(p.styleRows) do\n  local styles=p.settings.draw_styles\n  local choice=type(styles)==\"table\" and styles[row[1]]\n  p.styles[row[1]]=choice==\"Disabled\" and \"Disabled\" or choice==\"Arrow\" and \"Arrow\" or \"Tether\"\n end\n local pairRoles=p.validatePairs(p.settings.p6_wb1_pairs or \"H1 R1 M1 M2 H2 R2\")\n if pairRoles then for lane=1,3 do p.wb1Anchors[lane]=pairRoles[lane*2-1];p.wb1Flex[lane]=pairRoles[lane*2] end end\n p.wb2R1North=p.settings.p6_wb2_r1_north==true\n local wb2=p.validatePairs(p.settings.p6_wb2_order or \"\")\n p.wb2Edit=wb2 and table.concat(wb2,\" \") or (p.wb2R1North and \"H1 R2 M1 M2 H2 R1\" or p.wb2Default)\n local autoOrder,autoText=p.parseAuto(p.settings.p7_auto_order or p.autoOrderDefault)\n p.autoOrderEdit=autoOrder and autoText or p.autoOrderDefault\n if not autoOrder then p.message=\"Invalid auto order; Save to use M R H.\" end\n p.elementDraws=p.settings.p7_element_draws~=false\n p.akhStrategy=p.settings.p7_akh_strategy==\"3-3-2\" and \"3-3-2\" or \"6-1-1\"\n p.autoMode=p.settings.p7_auto_mode==\"Shotcaller\" and \"Shotcaller\" or p.settings.p7_auto_mode==\"Disabled\" and \"Disabled\" or \"Personal\"\n local vowOrder,vowText=p.parseVow(p.settings.vow_pass_order or p.vowDefault)\n p.vowEdit=vowOrder and vowText or p.vowDefault\n p.akhAfahHP=p.settings.p6_akh_afah_hp==true\n p.vowTTSMode=p.settings.p6_vow_tts_mode==\"Shotcaller\" and \"Shotcaller\" or p.settings.p6_vow_tts_mode==\"Disabled\" and \"Disabled\" or \"Personal\"\n if not vowOrder then p.message=\"Invalid Vow order; Save to use T T M R.\" end\n p.strategy=p.settings.p3_strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\n p.customHold=p.settings.p3_custom_hold==true\n p.dothMode=p.settings.doth_order_mode==\"Live positions\" and \"Live positions\" or \"Configured conga\"\n for _,value in ipairs(p.cautItems) do\n  if p.settings.p6_cauterize_mt==value then p.cautMT=value; break end\n end\n -- Preserve any unsaved edits when adding the new P6 settings.\n local previous=data.frog_draw_settings\n if previous then\n  for _,key in ipairs({\"edit\",\"vowEdit\",\"autoOrderEdit\",\"elementDraws\",\"akhStrategy\",\"autoMode\",\"strategy\",\"customHold\",\"dothMode\",\"cautMT\",\"vowTTSMode\",\"akhAfahHP\",\"wb1Anchors\",\"wb1Flex\",\"wb2R1North\",\"wb2Edit\",\"message\"}) do\n   if previous[key]~=nil then p[key]=previous[key] end\n  end\n  for _,row in ipairs(p.styleRows) do\n   if previous.styles and previous.styles[row[1]] then p.styles[row[1]]=previous.styles[row[1]] end\n  end\n end\n data.frog_draw_settings=p\nend\n\nlocal p=data.frog_draw_settings\n-- Keep current edits intact when the menu layout changes.\nif p.strategyItems[1]~=\"Westhogg\" then\n p.strategyItems[1]=\"Westhogg\"; p.strategyItems[2]=\"Easthogg\"\nend\nlocal visible=GUI:Begin(\"Frog Draws\",nil,GUI.WindowFlags_AlwaysAutoResize)\nif visible then\n if GUI:Button(\"Open AnyoneCore roster\") then\n  local popup=AnyoneCore and AnyoneCore.RosterPopup\n  if popup and type(popup.openManual)==\"function\" then\n   local ok,err=pcall(popup.openManual)\n   if not ok then p.message=\"Roster could not open: \"..tostring(err) end\n  else p.message=\"AnyoneCore roster is unavailable\" end\n end\n GUI:Separator()\n local function changed(field,value)\n  if value~=nil and value~=p[field] then p[field]=value; p.message=\"Unsaved changes\" end\n end\n local function choice(id,label,index,items)\n  local selected=GUI:Combo(\"##\"..id,index,items)\n  GUI:SameLine(); GUI:TextUnformatted(label)\n  return selected\n end\n local function style(key,label)\n  local value=p.styles[key]\n  local index=value==\"Disabled\" and 3 or value==\"Arrow\" and 2 or 1\n  local selected=choice(key,label,index,p.styleItems)\n  local valueNew=p.styleItems[selected]\n  if valueNew and valueNew~=value then p.styles[key]=valueNew; p.message=\"Unsaved changes\" end\n end\n local function order(field,id,label,width,default)\n  GUI:PushItemWidth(width)\n  changed(field,GUI:InputText(\"##\"..id,p[field]))\n  GUI:PopItemWidth()\n  GUI:SameLine(); GUI:TextUnformatted(label)\n  if GUI:Button(\"Reset##\"..id) then changed(field,default) end\n end\n local function lineup(id,text,defaults,valid)\n  p.lineupWidgets=p.lineupWidgets or {}\n  local w=p.lineupWidgets[id]\n  if not w or w.text~=text then\n   local values=valid(text)\n   if not values then values=valid(defaults)end\n   w={text=text,values=values};p.lineupWidgets[id]=w\n  end\n  local captured=false;local changedOrder=false;local note\n  if GUI:Button(\"Capture lineup##\"..id)then\n   local expected=valid(defaults)\n   local values,message\n   if id==\"wb1\"then values,message=p.captureWB1()elseif id==\"doth\"then values,message=p.captureDOTH()else values,message=p.captureLineup(expected)end\n   if values then w.values=values;captured=true;changedOrder=true;note=message else p.message=message end\n  end\n  if GUI:IsItemHovered()then GUI:SetTooltip(\"Capture the live lineup. DOTH: west to east. Drag onto a box centre to swap; use its left/right edge to insert before/after.\")end\n  GUI:SameLine()\n  if GUI:Button(\"Reverse##\"..id)then\n   local values=w.values\n   for i=1,math.floor(#values/2)do values[i],values[#values-i+1]=values[#values-i+1],values[i]end\n   changedOrder=true\n  end\n  local drop\n  for i,role in ipairs(w.values)do\n   local label=role\n   local width=36\n   if id==\"wb1\"then\n    if i%2==1 then\n     GUI:Separator()\n     GUI:TextUnformatted(({\"Left pair\",\"Middle pair\",\"Right pair\"})[math.floor((i+1)/2)])\n    else GUI:SameLine()end\n    label=(i%2==1 and \"Anchor: \" or \"Flex: \")..role\n    width=110\n   elseif id==\"wb2\"then\n    if i%2==1 then GUI:Separator()else GUI:SameLine()end\n    label=({\"North wall: \",\"SW outer: \",\"SW inner: \",\"NE inner: \",\"South wall: \",\"NE outer: \"})[i]..role\n    width=145\n   elseif i>1 then GUI:SameLine()end\n   GUI:Button(label..\"##\"..id..\"_\"..role,width,26)\n   if GUI:IsItemClicked(0)then p.lineupDrag={id=id,index=i}end\n   local ax,ay=GUI:GetItemRectMin();local bx,by=GUI:GetItemRectMax()\n   if p.lineupDrag and p.lineupDrag.id==id and GUI:IsMouseHoveringRect(ax,ay,bx,by,true)then\n    drop=i\n    local mx=GUI:GetMousePos()\n    local fraction=(mx-ax)/math.max(1,bx-ax)\n    p.lineupDropMode=fraction<0.25 and \"before\" or fraction>0.75 and \"after\" or \"swap\"\n    GUI:SetTooltip(p.lineupDropMode==\"swap\" and \"Swap with \"..role or (p.lineupDropMode==\"before\" and \"Insert before \" or \"Insert after \")..role)\n   end\n  end\n  if p.lineupDrag and p.lineupDrag.id==id and GUI:IsMouseReleased(0)then\n   local from=p.lineupDrag.index\n   if drop and drop~=from then\n    if p.lineupDropMode==\"swap\"then\n     w.values[from],w.values[drop]=w.values[drop],w.values[from]\n     changedOrder=true\n    else\n     local slot=drop+(p.lineupDropMode==\"after\" and 1 or 0)\n     if from<slot then slot=slot-1 end\n     if slot~=from then table.insert(w.values,slot,table.remove(w.values,from));changedOrder=true end\n    end\n   end\n   p.lineupDrag=nil;p.lineupDropMode=nil\n  end\n  if changedOrder then\n   w.text=table.concat(w.values,\" \")\n   p.message=note or \"Unsaved changes\"\n   return w.text,captured,note\n  end\n  return text,false\n end\n GUI:PushItemWidth(145)\n if GUI:CollapsingHeader(\"P1 - Vault\") then\n  style(\"p1_playstation\",\"PlayStation\")\n end\n if GUI:CollapsingHeader(\"P2 - Thordan\") then\n  style(\"p2_strength\",\"Strength\")\n  style(\"p2_sanctity\",\"Sanctity\")\n end\n if GUI:CollapsingHeader(\"P3 - Nidhogg\") then\n  style(\"p3_dfg\",\"Dive from Grace\")\n  local selected=choice(\"p3_strategy\",\"Strategy\",p.strategy==\"LPDU\" and 2 or 1,p.strategyItems)\n  changed(\"strategy\",selected==2 and \"LPDU\" or \"NAUR\")\n  selected=choice(\"p3_custom_hold\",\"Lock face / stop actions\",p.customHold and 1 or 2,p.holdItems)\n  changed(\"customHold\",selected==1)\n end\n if GUI:CollapsingHeader(\"P4 - Eyes\") then\n  style(\"p4_eyes\",\"Orbs and Mirage Dive\")\n end\n if GUI:CollapsingHeader(\"P5 - Dark Thordan\") then\n  style(\"p5_wrath\",\"Wrath Of The Heavens\")\n  style(\"p5_doth\",\"Death Of The Heavens\")\n  local selected=choice(\"doth_order_mode\",\"DOTH order\",p.dothMode==\"Live positions\" and 2 or 1,p.dothModeItems)\n  changed(\"dothMode\",p.dothModeItems[selected])\n  GUI:TextUnformatted(\"DOTH order - drag to rearrange\")\n  local value,captured,note=lineup(\"doth\",p.edit,p.default,p.parse)\n  if value~=p.edit then p.dothMode=\"Configured conga\" end\n  changed(\"edit\",value)\n  if captured then p.dothMode=\"Configured conga\";if p.save(p.edit)then p.message=note..\" Saved.\"end end\n end\n if GUI:CollapsingHeader(\"P6 - Double Dragons\") then\n  local afahHP=choice(\"p6_akh_afah_hp\",\"Akh Afah HP callout\",p.akhAfahHP and 1 or 2,p.holdItems)\n  changed(\"akhAfahHP\",afahHP==1)\n  style(\"p6_vow\",\"Mortal Vow\")\n  local vowMode=choice(\"p6_vow_tts_mode\",\"Vow callouts\",p.vowTTSMode==\"Personal\" and 1 or p.vowTTSMode==\"Disabled\" and 3 or 2,p.autoModeItems)\n  changed(\"vowTTSMode\",p.autoModeItems[vowMode])\n  if p.styles.p6_vow~=\"Disabled\" then\n   order(\"vowEdit\",\"vow_order\",\"Vow passes (T / M / R)\",145,p.vowDefault)\n  end\n  style(\"p6_wb1\",\"Wyrmsbreath 1\")\n  GUI:TextUnformatted(\"WB1 pairs - anchor stays, flex adjusts\")\n  local pairsText=table.concat({p.wb1Anchors[1],p.wb1Flex[1],p.wb1Anchors[2],p.wb1Flex[2],p.wb1Anchors[3],p.wb1Flex[3]},\" \")\n  local value,captured,note=lineup(\"wb1\",pairsText,\"H1 R1 M1 M2 H2 R2\",p.validatePairs)\n  if value~=pairsText then\n   local roles=p.validatePairs(value)\n   for i=1,3 do p.wb1Anchors[i]=roles[i*2-1];p.wb1Flex[i]=roles[i*2]end\n   p.message=\"Unsaved changes\"\n  end\n  if captured and p.save(p.edit)then p.message=note..\" Saved.\"end\n  GUI:TextUnformatted(\"Anchors hold; flexers match opposite colours.\")\n  style(\"p6_wb2\",\"Wyrmsbreath 2\")\n  GUI:TextUnformatted(\"WB2 fixed spots - drag roles between labelled positions\")\n  local value,captured,note=lineup(\"wb2\",p.wb2Edit,p.wb2Default,p.validatePairs)\n  changed(\"wb2Edit\",value)\n  if captured and p.save(p.edit)then p.message=note..\" Saved.\"end\n  style(\"p6_cauterize\",\"Double Cauterize\")\n  if p.styles.p6_cauterize~=\"Disabled\" then\n   local index=1\n   for i,value in ipairs(p.cautItems) do if value==p.cautMT then index=i; break end end\n   local selected=choice(\"p6_cauterize_mt\",\"MT takes\",index,p.cautItems)\n   changed(\"cautMT\",p.cautItems[selected])\n   GUI:TextUnformatted(\"OT takes: \"..p.cautOpposite[selected])\n  end\n end\n if GUI:CollapsingHeader(\"P7 - Dragon-King\") then\n  style(\"p7_trinity\",\"Trinity\")\n  style(\"p7_akh\",\"Akh Morn\")\n  if p.styles.p7_akh~=\"Disabled\" then\n   local selected=choice(\"p7_akh_strategy\",\"Akh Morn groups\",p.akhStrategy==\"3-3-2\" and 2 or 1,p.akhStrategyItems)\n   changed(\"akhStrategy\",p.akhStrategyItems[selected])\n   if p.akhStrategy==\"3-3-2\" then GUI:TextUnformatted(\"G1 NW / G2 NE / tanks S\") end\n  end\n  style(\"p7_giga\",\"Gigaflare\")\n  local selected=choice(\"p7_element_draws\",\"Flames / ice\",p.elementDraws and 1 or 2,p.holdItems)\n  changed(\"elementDraws\",selected==1)\n  selected=choice(\"p7_auto_mode\",\"Auto callouts\",p.autoMode==\"Shotcaller\" and 2 or p.autoMode==\"Disabled\" and 3 or 1,p.autoModeItems)\n  changed(\"autoMode\",p.autoModeItems[selected])\n  if p.autoMode~=\"Disabled\" then\n   GUI:PushItemWidth(145)\n   changed(\"autoOrderEdit\",GUI:InputText(\"##p7_auto_order\",p.autoOrderEdit))\n   GUI:PopItemWidth()\n   GUI:SameLine(); GUI:TextUnformatted(\"Auto order (M / R / H; G1 first)\")\n   local valid,err=p.parseAuto(p.autoOrderEdit)\n   if not valid then GUI:TextUnformatted(err) end\n  end\n end\n GUI:PopItemWidth()\n GUI:Separator()\n if GUI:Button(\"Save\") then p.save(p.edit) end\n if p.message then GUI:SameLine(); GUI:TextUnformatted(p.message) end\nend\nGUI:End()\nself.used=true\n",
+							actionLua = "if data.frog_draw_settings == nil or data.frog_draw_settings.version~=36 then\n local p={\n  version=36,\n  path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]],\n  default=\"R1 H1 M1 MT OT M2 H2 R2\",\n  styleItems={\"Tether\",\"Arrow\",\"Disabled\"},\n  styleRows={\n   {\"p1_playstation\",\"P1 PlayStation\"},{\"p2_strength\",\"P2 Strength\"},\n   {\"p2_sanctity\",\"P2 Sanctity\"},{\"p3_dfg\",\"P3 Dive from Grace\"},{\"p3_enum\",\"P3 Enumeration\"},\n   {\"p4_eyes\",\"P4 Eyes\"},{\"p5_wrath\",\"P5 Wrath\"},{\"p5_doth\",\"P5 DOTH\"},{\"p6_vow\",\"P6 Mortal Vow\"},{\"p6_wb1\",\"P6 Wyrmsbreath 1\"},{\"p6_wb2\",\"P6 Wyrmsbreath 2\"},{\"p6_cauterize\",\"P6 Double Cauterize\"},\n   {\"p7_trinity\",\"P7 Trinity\"},{\"p7_akh\",\"P7 Akh Morn\"},{\"p7_giga\",\"P7 Gigaflare\"}\n  },\n  styles={},\n  wb1Anchors={\"H1\",\"M1\",\"H2\"},wb1Flex={\"R1\",\"M2\",\"R2\"},\n  wb2Default=\"H1 R1 M1 M2 H2 R2\",wb2Edit=\"H1 R1 M1 M2 H2 R2\",\n  wb1Roles={\"H1\",\"H2\",\"M1\",\"M2\",\"R1\",\"R2\"},wb2R1North=false,\n  cautMT=\"Nidhogg\",\n  cautItems={\"Nidhogg\",\"Hraesvelgr\",\"Fixed West\",\"Fixed East\"},\n  cautOpposite={\"Hraesvelgr\",\"Nidhogg\",\"Fixed East\",\"Fixed West\"},\n  autoOrderDefault=\"M R H\",\n  autoOrderEdit=\"M R H\",\n  elementDraws=true,\n  akhStrategy=\"6-1-1\",\n  akhStrategyItems={\"6-1-1\",\"3-3-2\"},\n  autoMode=\"Personal\",\n  autoModeItems={\"Personal\",\"Shotcaller\",\"Disabled\"},\n  dothMode=\"Configured conga\",\n  dothModeItems={\"Configured conga\",\"Live positions\"},\n  akhAfahHP=false,\n  vowTTSMode=\"Personal\",\n  vowDefault=\"T T M R\",\n  vowEdit=\"T T M R\",\n  vowGroups={T={\"MT\",\"OT\"},M={\"M1\",\"M2\"},R={\"R1\",\"R2\"}},\n  strategyItems={\"Westhogg\",\"Easthogg\"},\n  strategy=\"NAUR\",\n  eyesStrategy=\"Square\",\n  holdItems={\"On\",\"Off\"},\n  customHold=false,\n  roles={MT=true,OT=true,H1=true,H2=true,M1=true,M2=true,R1=true,R2=true}\n }\n function p.parse(text)\n  if type(text)~=\"string\" then return nil,\"Enter all eight roles.\" end\n  local order,seen={},{}\n  for role in string.upper(text):gmatch(\"[^%s,]+\") do\n   if not p.roles[role] then return nil,\"Unknown role: \"..role end\n   if seen[role] then return nil,\"Duplicate role: \"..role end\n   seen[role]=true; order[#order+1]=role\n  end\n  if #order~=8 then return nil,\"Enter each of MT OT H1 H2 M1 M2 R1 R2 once.\" end\n  return order,table.concat(order,\" \")\n end\n function p.parseVow(text)\n  local order={}\n  for token in string.upper(text or \"\"):gmatch(\"[^%s,]+\") do\n   if not p.vowGroups[token] then return nil,\"Vow order uses T, M or R. Healers cannot receive.\" end\n   order[#order+1]=token\n  end\n  if #order~=4 then return nil,\"Enter four Vow passes.\" end\n  for _,initial in ipairs({\"M1\",\"M2\",\"R1\",\"R2\"}) do\n   local used={[initial]=true}\n   for _,token in ipairs(order) do\n    local chosen\n    for _,role in ipairs(p.vowGroups[token]) do\n     if not used[role] then chosen=role; break end\n    end\n    if not chosen then return nil,\"Vow order runs out of eligible receivers.\" end\n    used[chosen]=true\n   end\n  end\n  return order,table.concat(order,\" \")\n end\n function p.parseAuto(text)\n  if type(text)~=\"string\" then return nil,\"Auto order uses M, R and H once each.\" end\n  local compact=string.upper(text):gsub(\"[%s,]\",\"\")\n  if #compact~=3 then return nil,\"Enter M, R and H once each.\" end\n  local order,seen={},{}\n  for token in compact:gmatch(\".\") do\n   if token~=\"M\" and token~=\"R\" and token~=\"H\" then return nil,\"Auto order only accepts M, R and H.\" end\n   if seen[token] then return nil,\"Duplicate auto role: \"..token end\n   seen[token]=true; order[#order+1]=token\n  end\n  return order,table.concat(order,\" \")\n end\n function p.validatePairs(text)\n  local roles,seen={},{}\n  for role in (text or \"\"):gmatch(\"%S+\") do\n   if not (role==\"H1\" or role==\"H2\" or role==\"M1\" or role==\"M2\" or role==\"R1\" or role==\"R2\") or seen[role] then return nil,\"Each WB1 role must appear once.\" end\n   seen[role]=true;roles[#roles+1]=role\n  end\n  if #roles~=6 then return nil,\"Assign three anchor/flex pairs.\" end\n  return roles\n end\n function p.lineupPoints(roles)\n  local roster=AnyoneCore and AnyoneCore.Roster\n  if not roster or not roster.isReady() then return nil,\"Set the AnyoneCore roster first.\" end\n  local members=roster.members();local party=AnyoneCore.API.getAgnosticPartyList()\n  if type(members)~=\"table\" or type(party)~=\"table\" then return nil,\"Party roster unavailable.\" end\n  local slots={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"}\n  local points,used={},{}\n  local cx,cz=0,0\n  for _,role in ipairs(roles)do\n   local member=members[slots[role]]\n   if not member then return nil,\"Missing roster role: \"..role end\n   local candidate,count=nil,0\n   for _,a in pairs(party)do\n    if a.name==member.name and a.job==member.job then candidate=a;count=count+1 end\n   end\n   if count==0 then\n    local sameJob=0;for _,m in pairs(members)do if m.job==member.job then sameJob=sameJob+1 end end\n    if sameJob==1 then for _,a in pairs(party)do if a.job==member.job then candidate=a;count=count+1 end end end\n   end\n   if count~=1 or used[candidate.id] then return nil,\"Cannot uniquely match \"..role..\" to the party.\" end\n   local actor=TensorCore.mGetEntity(candidate.id)\n   if not actor or not actor.alive then return nil,\"All lineup players must be present and alive.\" end\n   used[actor.id]=true\n   points[#points+1]={role=role,x=actor.pos.x,z=actor.pos.z};cx=cx+actor.pos.x;cz=cz+actor.pos.z\n  end\n  return points\n end\n function p.captureLineup(roles)\n  local points,message=p.lineupPoints(roles)\n  if not points then return nil,message end\n  local cx,cz=0,0\n  for _,v in ipairs(points)do cx=cx+v.x;cz=cz+v.z end\n  cx=cx/#points;cz=cz/#points\n  local xx,xz,zz=0,0,0\n  for _,v in ipairs(points)do local x,z=v.x-cx,v.z-cz;xx=xx+x*x;xz=xz+x*z;zz=zz+z*z end\n  local h=0.5*math.atan2(2*xz,xx-zz)\n  local ux,uz=math.cos(h),math.sin(h)\n  local eastWest=math.abs(ux)>=math.abs(uz)\n  if (eastWest and ux<0) or (not eastWest and uz<0)then ux=-ux;uz=-uz end\n  local width=0\n  for _,v in ipairs(points)do\n   v.rank=(v.x-cx)*ux+(v.z-cz)*uz\n   width=math.max(width,math.abs((v.x-cx)*uz-(v.z-cz)*ux))\n  end\n  table.sort(points,function(a,b)return a.rank<b.rank end)\n  if width>3 then return nil,\"Form a single lineup before capturing.\" end\n  local order={}\n  for i,v in ipairs(points)do\n   if i>1 and v.rank-points[i-1].rank<0.3 then return nil,\"Lineup overlaps; separate the players or drag the boxes.\" end\n   order[i]=v.role\n  end\n  return order,eastWest and \"Captured W to E. Reverse if needed.\" or \"Captured N to S. Reverse if needed.\"\n end\n function p.captureDOTH()\n  local points,message=p.lineupPoints({\"MT\",\"OT\",\"H1\",\"H2\",\"M1\",\"M2\",\"R1\",\"R2\"})\n  if not points then return nil,message end\n  table.sort(points,function(a,b)return a.x<b.x end)\n  local order={}\n  for i,v in ipairs(points)do\n   if i>1 and v.x-points[i-1].x<0.3 then return nil,\"Separate players west to east before capturing DOTH.\" end\n   order[i]=v.role\n  end\n  return order,\"Captured DOTH west to east.\"\n end\n function p.captureWB1()\n  local points,message=p.lineupPoints(p.wb1Roles)\n  if not points then return nil,message end\n  local marks={}\n  for i=1,8 do\n   local x,y,z,active=Argus.getWaymarkInfo(i)\n   if active then\n    local near={}\n    for _,v in ipairs(points)do near[#near+1]={role=v.role,d=(v.x-x)^2+(v.z-z)^2}end\n    table.sort(near,function(a,b)return a.d<b.d end)\n    if near[2].d<=36 and near[2].d-near[1].d>=0.25 then\n     marks[#marks+1]={x=x,z=z,anchor=near[1].role,flex=near[2].role,cost=near[1].d+near[2].d}\n    end\n   end\n  end\n  local best,second,chosen=math.huge,math.huge,nil\n  for a=1,#marks-2 do for b=a+1,#marks-1 do for c=b+1,#marks do\n   local tri={marks[a],marks[b],marks[c]}\n   local area=math.abs((tri[2].x-tri[1].x)*(tri[3].z-tri[1].z)-(tri[3].x-tri[1].x)*(tri[2].z-tri[1].z))\n   local used,valid,cost={},area>2,0\n   for _,m in ipairs(tri)do\n    if used[m.anchor] or used[m.flex]then valid=false end\n    used[m.anchor]=true;used[m.flex]=true;cost=cost+m.cost\n   end\n   if valid then\n    if cost<best then second=best;best=cost;chosen=tri elseif cost<second then second=cost end\n   end\n  end end end\n  if not chosen or second-best<0.25 then return nil,\"Stand in three clear anchor/flex pairs beside the triangle markers.\" end\n  table.sort(chosen,function(a,b)return a.x<b.x end)\n  if chosen[2].x-chosen[1].x<1 or chosen[3].x-chosen[2].x<1 then return nil,\"The three WB1 markers must define left, middle and right.\" end\n  local order={}\n  for _,m in ipairs(chosen)do order[#order+1]=m.anchor;order[#order+1]=m.flex end\n  return order,\"Captured closest anchor and second-closest flex at each triangle marker.\"\n end\n function p.save(text)\n  local order,normalized=p.parse(text)\n  if not order then p.message=normalized; return false end\n  local vowOrder,vowText=p.parseVow(p.vowEdit)\n  if not vowOrder then p.message=vowText; return false end\n  local autoOrder,autoText=p.parseAuto(p.autoOrderEdit)\n  if not autoOrder then p.message=autoText; return false end\n  local pairText=table.concat({p.wb1Anchors[1],p.wb1Flex[1],p.wb1Anchors[2],p.wb1Flex[2],p.wb1Anchors[3],p.wb1Flex[3]},\" \")\n  local pairsOK,pairError=p.validatePairs(pairText)\n  if not pairsOK then p.message=pairError;return false end\n  local wb2=p.validatePairs(p.wb2Edit)\n  if not wb2 then p.message=\"WB2 requires each non-tank role once.\";return false end\n  local wb2Text=table.concat(wb2,\" \")\n  local nextSettings={}\n  for k,v in pairs(p.settings) do nextSettings[k]=v end\n  nextSettings.p6_wb1_pairs=pairText\n  nextSettings.p6_wb2_r1_north=p.wb2R1North\n  nextSettings.p6_wb2_order=wb2Text\n  nextSettings.doth_conga=normalized\n  nextSettings.doth_order_mode=p.dothMode==\"Live positions\" and \"Live positions\" or \"Configured conga\"\n  nextSettings.vow_pass_order=vowText\n  nextSettings.p6_vow_tts_mode=p.vowTTSMode\n  nextSettings.p6_akh_afah_hp=p.akhAfahHP\n  nextSettings.p4_eyes_strategy=p.eyesStrategy==\"Trapezoid\" and \"Trapezoid\" or \"Square\"\n  nextSettings.p3_custom_hold=p.customHold\n  nextSettings.p3_strategy=p.strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\n  nextSettings.p7_element_draws=p.elementDraws\n  nextSettings.p7_akh_strategy=p.akhStrategy==\"3-3-2\" and \"3-3-2\" or \"6-1-1\"\n  nextSettings.p7_auto_order=autoText\n  nextSettings.p7_auto_mode=p.autoMode\n  nextSettings.p6_cauterize_mt=p.cautMT\n  nextSettings.draw_styles={}\n  for _,row in ipairs(p.styleRows) do\n   local choice=p.styles[row[1]]\n   nextSettings.draw_styles[row[1]]=choice==\"Disabled\" and \"Disabled\" or choice==\"Arrow\" and \"Arrow\" or \"Tether\"\n  end\n  local ok,err=pcall(FileSave,p.path,nextSettings)\n  local readOK,saved=pcall(FileLoad,p.path)\n  local stylesOK=readOK and type(saved)==\"table\" and type(saved.draw_styles)==\"table\"\n  if stylesOK then\n   for _,row in ipairs(p.styleRows) do\n    if saved.draw_styles[row[1]]~=nextSettings.draw_styles[row[1]] then stylesOK=false break end\n   end\n  end\n  if not ok or not readOK or (type(saved)==\"table\" and (saved.p6_wb1_pairs~=pairText or saved.p6_wb2_r1_north~=p.wb2R1North)) or type(saved)~=\"table\" or saved.doth_conga~=normalized or saved.p6_wb2_order~=wb2Text or saved.doth_order_mode~=nextSettings.doth_order_mode or saved.p7_element_draws~=nextSettings.p7_element_draws or saved.p7_akh_strategy~=nextSettings.p7_akh_strategy or saved.p7_auto_order~=autoText or saved.p7_auto_mode~=nextSettings.p7_auto_mode or saved.p6_cauterize_mt~=nextSettings.p6_cauterize_mt or not stylesOK or saved.p3_strategy~=nextSettings.p3_strategy or saved.p3_custom_hold~=nextSettings.p3_custom_hold or saved.p4_eyes_strategy~=nextSettings.p4_eyes_strategy or saved.vow_pass_order~=vowText or saved.p6_vow_tts_mode~=nextSettings.p6_vow_tts_mode or saved.p6_akh_afah_hp~=nextSettings.p6_akh_afah_hp then\n   p.message=\"Save failed: \"..tostring(err or saved); return false\n  end\n  p.settings=nextSettings\n  if not p.elementDraws then\n   local element=data.frog_p7_element\n   if element and element.draw then Argus.deleteTimedShape(element.draw); element.draw=nil end\n  end\n  p.autoOrderEdit=autoText\n  p.vowEdit=vowText\n  p.order,p.saved,p.edit=order,normalized,normalized\n  p.message=\"Saved.\"\n  return true\n end\n p.order,p.saved=p.parse(p.default)\n p.edit=p.saved\n p.settings={}\n if FileExists(p.path) then\n  local ok,settings=pcall(FileLoad,p.path)\n  local order,normalized\n  if ok and type(settings)==\"table\" then\n   p.settings=settings\n   order,normalized=p.parse(settings.doth_conga)\n  end\n  if order then p.order,p.saved,p.edit=order,normalized,normalized\n  else p.message=\"Invalid settings file; using defaults. Apply to repair.\" end\n else\n  local previous=data.frog_draw_settings\n  p.save(previous and previous.saved or p.default)\n end\n for _,row in ipairs(p.styleRows) do\n  local styles=p.settings.draw_styles\n  local choice=type(styles)==\"table\" and styles[row[1]]\n  p.styles[row[1]]=choice==\"Disabled\" and \"Disabled\" or choice==\"Arrow\" and \"Arrow\" or \"Tether\"\n end\n local pairRoles=p.validatePairs(p.settings.p6_wb1_pairs or \"H1 R1 M1 M2 H2 R2\")\n if pairRoles then for lane=1,3 do p.wb1Anchors[lane]=pairRoles[lane*2-1];p.wb1Flex[lane]=pairRoles[lane*2] end end\n p.wb2R1North=p.settings.p6_wb2_r1_north==true\n local wb2=p.validatePairs(p.settings.p6_wb2_order or \"\")\n p.wb2Edit=wb2 and table.concat(wb2,\" \") or (p.wb2R1North and \"H1 R2 M1 M2 H2 R1\" or p.wb2Default)\n local autoOrder,autoText=p.parseAuto(p.settings.p7_auto_order or p.autoOrderDefault)\n p.autoOrderEdit=autoOrder and autoText or p.autoOrderDefault\n if not autoOrder then p.message=\"Invalid auto order; Save to use M R H.\" end\n p.elementDraws=p.settings.p7_element_draws~=false\n p.akhStrategy=p.settings.p7_akh_strategy==\"3-3-2\" and \"3-3-2\" or \"6-1-1\"\n p.autoMode=p.settings.p7_auto_mode==\"Shotcaller\" and \"Shotcaller\" or p.settings.p7_auto_mode==\"Disabled\" and \"Disabled\" or \"Personal\"\n local vowOrder,vowText=p.parseVow(p.settings.vow_pass_order or p.vowDefault)\n p.vowEdit=vowOrder and vowText or p.vowDefault\n p.akhAfahHP=p.settings.p6_akh_afah_hp==true\n p.vowTTSMode=p.settings.p6_vow_tts_mode==\"Shotcaller\" and \"Shotcaller\" or p.settings.p6_vow_tts_mode==\"Disabled\" and \"Disabled\" or \"Personal\"\n if not vowOrder then p.message=\"Invalid Vow order; Save to use T T M R.\" end\n p.strategy=p.settings.p3_strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\n p.eyesStrategy=p.settings.p4_eyes_strategy==\"Trapezoid\" and \"Trapezoid\" or \"Square\"\n p.customHold=p.settings.p3_custom_hold==true\n p.dothMode=p.settings.doth_order_mode==\"Live positions\" and \"Live positions\" or \"Configured conga\"\n for _,value in ipairs(p.cautItems) do\n  if p.settings.p6_cauterize_mt==value then p.cautMT=value; break end\n end\n local previous=data.frog_draw_settings\n if previous then\n  for _,key in ipairs({\"edit\",\"vowEdit\",\"autoOrderEdit\",\"elementDraws\",\"akhStrategy\",\"autoMode\",\"strategy\",\"eyesStrategy\",\"customHold\",\"dothMode\",\"cautMT\",\"vowTTSMode\",\"akhAfahHP\",\"wb1Anchors\",\"wb1Flex\",\"wb2R1North\",\"wb2Edit\",\"message\"}) do\n   if previous[key]~=nil then p[key]=previous[key] end\n  end\n  for _,row in ipairs(p.styleRows) do\n   if previous.styles and previous.styles[row[1]] then p.styles[row[1]]=previous.styles[row[1]] end\n  end\n end\n data.frog_draw_settings=p\nend\n\nlocal p=data.frog_draw_settings\nif p.strategyItems[1]~=\"Westhogg\" then\n p.strategyItems[1]=\"Westhogg\"; p.strategyItems[2]=\"Easthogg\"\nend\nlocal visible=GUI:Begin(\"Frog Draws\",nil,GUI.WindowFlags_AlwaysAutoResize)\nif visible then\n GUI:TextUnformatted(\"Preset\")\n for i,region in ipairs({\"NA\",\"EU\",\"JP\"}) do\n  GUI:SameLine()\n  if GUI:Button(region..\"##region_preset\") then\n   if region==\"JP\" then\n    p.message=\"JP preset is a placeholder; no settings changed.\"\n   else\n    p.strategy=region==\"NA\" and \"NAUR\" or \"LPDU\"\n    p.eyesStrategy=region==\"NA\" and \"Square\" or \"Trapezoid\"\n    p.message=region..\" preset: \"..(region==\"NA\" and \"Westhogg / square Eyes\" or \"Easthogg / trapezoid Eyes\")..\". Unsaved changes\"\n   end\n  end\n  if GUI:IsItemHovered() then GUI:SetTooltip(region==\"JP\" and \"Placeholder; no settings will change.\" or \"Apply \"..region..\" defaults. Save to apply.\") end\n end\n GUI:Separator()\n if GUI:Button(\"Open AnyoneCore roster\") then\n  local popup=AnyoneCore and AnyoneCore.RosterPopup\n  if popup and type(popup.openManual)==\"function\" then\n   local ok,err=pcall(popup.openManual)\n   if not ok then p.message=\"Roster could not open: \"..tostring(err) end\n  else p.message=\"AnyoneCore roster is unavailable\" end\n end\n GUI:Separator()\n local function changed(field,value)\n  if value~=nil and value~=p[field] then p[field]=value; p.message=\"Unsaved changes\" end\n end\n local function choice(id,label,index,items)\n  local selected=GUI:Combo(\"##\"..id,index,items)\n  GUI:SameLine(); GUI:TextUnformatted(label)\n  return selected\n end\n local function style(key,label)\n  local value=p.styles[key]\n  local index=value==\"Disabled\" and 3 or value==\"Arrow\" and 2 or 1\n  local selected=choice(key,label,index,p.styleItems)\n  local valueNew=p.styleItems[selected]\n  if valueNew and valueNew~=value then p.styles[key]=valueNew; p.message=\"Unsaved changes\" end\n end\n local function order(field,id,label,width,default)\n  GUI:PushItemWidth(width)\n  changed(field,GUI:InputText(\"##\"..id,p[field]))\n  GUI:PopItemWidth()\n  GUI:SameLine(); GUI:TextUnformatted(label)\n  if GUI:Button(\"Reset##\"..id) then changed(field,default) end\n end\n local function lineup(id,text,defaults,valid)\n  p.lineupWidgets=p.lineupWidgets or {}\n  local w=p.lineupWidgets[id]\n  if not w or w.text~=text then\n   local values=valid(text)\n   if not values then values=valid(defaults)end\n   w={text=text,values=values};p.lineupWidgets[id]=w\n  end\n  local captured=false;local changedOrder=false;local note\n  if GUI:Button(\"Capture lineup##\"..id)then\n   local expected=valid(defaults)\n   local values,message\n   if id==\"wb1\"then values,message=p.captureWB1()elseif id==\"doth\"then values,message=p.captureDOTH()else values,message=p.captureLineup(expected)end\n   if values then w.values=values;captured=true;changedOrder=true;note=message else p.message=message end\n  end\n  if GUI:IsItemHovered()then GUI:SetTooltip(\"Capture the live lineup. DOTH: west to east. Drag onto a box centre to swap; use its left/right edge to insert before/after.\")end\n  GUI:SameLine()\n  if GUI:Button(\"Reverse##\"..id)then\n   local values=w.values\n   for i=1,math.floor(#values/2)do values[i],values[#values-i+1]=values[#values-i+1],values[i]end\n   changedOrder=true\n  end\n  local drop\n  for i,role in ipairs(w.values)do\n   local label=role\n   local width=36\n   if id==\"wb1\"then\n    if i%2==1 then\n     GUI:Separator()\n     GUI:TextUnformatted(({\"Left pair\",\"Middle pair\",\"Right pair\"})[math.floor((i+1)/2)])\n    else GUI:SameLine()end\n    label=(i%2==1 and \"Anchor: \" or \"Flex: \")..role\n    width=110\n   elseif id==\"wb2\"then\n    if i%2==1 then GUI:Separator()else GUI:SameLine()end\n    label=({\"North wall: \",\"SW outer: \",\"SW inner: \",\"NE inner: \",\"South wall: \",\"NE outer: \"})[i]..role\n    width=145\n   elseif i>1 then GUI:SameLine()end\n   GUI:Button(label..\"##\"..id..\"_\"..role,width,26)\n   if GUI:IsItemClicked(0)then p.lineupDrag={id=id,index=i}end\n   local ax,ay=GUI:GetItemRectMin();local bx,by=GUI:GetItemRectMax()\n   if p.lineupDrag and p.lineupDrag.id==id and GUI:IsMouseHoveringRect(ax,ay,bx,by,true)then\n    drop=i\n    local mx=GUI:GetMousePos()\n    local fraction=(mx-ax)/math.max(1,bx-ax)\n    p.lineupDropMode=fraction<0.25 and \"before\" or fraction>0.75 and \"after\" or \"swap\"\n    GUI:SetTooltip(p.lineupDropMode==\"swap\" and \"Swap with \"..role or (p.lineupDropMode==\"before\" and \"Insert before \" or \"Insert after \")..role)\n   end\n  end\n  if p.lineupDrag and p.lineupDrag.id==id and GUI:IsMouseReleased(0)then\n   local from=p.lineupDrag.index\n   if drop and drop~=from then\n    if p.lineupDropMode==\"swap\"then\n     w.values[from],w.values[drop]=w.values[drop],w.values[from]\n     changedOrder=true\n    else\n     local slot=drop+(p.lineupDropMode==\"after\" and 1 or 0)\n     if from<slot then slot=slot-1 end\n     if slot~=from then table.insert(w.values,slot,table.remove(w.values,from));changedOrder=true end\n    end\n   end\n   p.lineupDrag=nil;p.lineupDropMode=nil\n  end\n  if changedOrder then\n   w.text=table.concat(w.values,\" \")\n   p.message=note or \"Unsaved changes\"\n   return w.text,captured,note\n  end\n  return text,false\n end\n GUI:PushItemWidth(145)\n if GUI:CollapsingHeader(\"P1 - Vault\") then\n  style(\"p1_playstation\",\"PlayStation\")\n end\n if GUI:CollapsingHeader(\"P2 - Thordan\") then\n  style(\"p2_strength\",\"Strength\")\n  style(\"p2_sanctity\",\"Sanctity\")\n end\n if GUI:CollapsingHeader(\"P3 - Nidhogg\") then\n  style(\"p3_dfg\",\"Dive from Grace\")\n   style(\"p3_enum\",\"Enumeration towers\")\n  local selected=choice(\"p3_strategy\",\"Strategy\",p.strategy==\"LPDU\" and 2 or 1,p.strategyItems)\n  changed(\"strategy\",selected==2 and \"LPDU\" or \"NAUR\")\n  selected=choice(\"p3_custom_hold\",\"Lock face / stop actions\",p.customHold and 1 or 2,p.holdItems)\n  changed(\"customHold\",selected==1)\n end\n if GUI:CollapsingHeader(\"P4 - Eyes\") then\n  style(\"p4_eyes\",\"Orbs and Mirage Dive\")\n   local selected=choice(\"p4_eyes_strategy\",\"Mirage priority\",p.eyesStrategy==\"Trapezoid\" and 2 or 1,{\"Square\",\"Trapezoid\"})\n   changed(\"eyesStrategy\",selected==2 and \"Trapezoid\" or \"Square\")\n   if p.eyesStrategy==\"Trapezoid\" then GUI:TextUnformatted(\"North to south / G1 north / G2 south\") end\n end\n if GUI:CollapsingHeader(\"P5 - Dark Thordan\") then\n  style(\"p5_wrath\",\"Wrath Of The Heavens\")\n  style(\"p5_doth\",\"Death Of The Heavens\")\n  local selected=choice(\"doth_order_mode\",\"DOTH order\",p.dothMode==\"Live positions\" and 2 or 1,p.dothModeItems)\n  changed(\"dothMode\",p.dothModeItems[selected])\n  GUI:TextUnformatted(\"DOTH order - drag to rearrange\")\n  local value,captured,note=lineup(\"doth\",p.edit,p.default,p.parse)\n  if value~=p.edit then p.dothMode=\"Configured conga\" end\n  changed(\"edit\",value)\n  if captured then p.dothMode=\"Configured conga\";if p.save(p.edit)then p.message=note..\" Saved.\"end end\n end\n if GUI:CollapsingHeader(\"P6 - Double Dragons\") then\n  local afahHP=choice(\"p6_akh_afah_hp\",\"Akh Afah HP callout\",p.akhAfahHP and 1 or 2,p.holdItems)\n  changed(\"akhAfahHP\",afahHP==1)\n  style(\"p6_vow\",\"Mortal Vow\")\n  local vowMode=choice(\"p6_vow_tts_mode\",\"Vow callouts\",p.vowTTSMode==\"Personal\" and 1 or p.vowTTSMode==\"Disabled\" and 3 or 2,p.autoModeItems)\n  changed(\"vowTTSMode\",p.autoModeItems[vowMode])\n  if p.styles.p6_vow~=\"Disabled\" then\n   order(\"vowEdit\",\"vow_order\",\"Vow passes (T / M / R)\",145,p.vowDefault)\n  end\n  style(\"p6_wb1\",\"Wyrmsbreath 1\")\n  GUI:TextUnformatted(\"WB1 pairs - anchor stays, flex adjusts\")\n  local pairsText=table.concat({p.wb1Anchors[1],p.wb1Flex[1],p.wb1Anchors[2],p.wb1Flex[2],p.wb1Anchors[3],p.wb1Flex[3]},\" \")\n  local value,captured,note=lineup(\"wb1\",pairsText,\"H1 R1 M1 M2 H2 R2\",p.validatePairs)\n  if value~=pairsText then\n   local roles=p.validatePairs(value)\n   for i=1,3 do p.wb1Anchors[i]=roles[i*2-1];p.wb1Flex[i]=roles[i*2]end\n   p.message=\"Unsaved changes\"\n  end\n  if captured and p.save(p.edit)then p.message=note..\" Saved.\"end\n  GUI:TextUnformatted(\"Anchors hold; flexers match opposite colours.\")\n  style(\"p6_wb2\",\"Wyrmsbreath 2\")\n  GUI:TextUnformatted(\"WB2 fixed spots - drag roles between labelled positions\")\n  local value,captured,note=lineup(\"wb2\",p.wb2Edit,p.wb2Default,p.validatePairs)\n  changed(\"wb2Edit\",value)\n  if captured and p.save(p.edit)then p.message=note..\" Saved.\"end\n  style(\"p6_cauterize\",\"Double Cauterize\")\n  if p.styles.p6_cauterize~=\"Disabled\" then\n   local index=1\n   for i,value in ipairs(p.cautItems) do if value==p.cautMT then index=i; break end end\n   local selected=choice(\"p6_cauterize_mt\",\"MT takes\",index,p.cautItems)\n   changed(\"cautMT\",p.cautItems[selected])\n   GUI:TextUnformatted(\"OT takes: \"..p.cautOpposite[selected])\n  end\n end\n if GUI:CollapsingHeader(\"P7 - Dragon-King\") then\n  style(\"p7_trinity\",\"Trinity\")\n  style(\"p7_akh\",\"Akh Morn\")\n  if p.styles.p7_akh~=\"Disabled\" then\n   local selected=choice(\"p7_akh_strategy\",\"Akh Morn groups\",p.akhStrategy==\"3-3-2\" and 2 or 1,p.akhStrategyItems)\n   changed(\"akhStrategy\",p.akhStrategyItems[selected])\n   if p.akhStrategy==\"3-3-2\" then GUI:TextUnformatted(\"G1 NW / G2 NE / tanks S\") end\n  end\n  style(\"p7_giga\",\"Gigaflare\")\n  local selected=choice(\"p7_element_draws\",\"Flames / ice\",p.elementDraws and 1 or 2,p.holdItems)\n  changed(\"elementDraws\",selected==1)\n  selected=choice(\"p7_auto_mode\",\"Auto callouts\",p.autoMode==\"Shotcaller\" and 2 or p.autoMode==\"Disabled\" and 3 or 1,p.autoModeItems)\n  changed(\"autoMode\",p.autoModeItems[selected])\n  if p.autoMode~=\"Disabled\" then\n   GUI:PushItemWidth(145)\n   changed(\"autoOrderEdit\",GUI:InputText(\"##p7_auto_order\",p.autoOrderEdit))\n   GUI:PopItemWidth()\n   GUI:SameLine(); GUI:TextUnformatted(\"Auto order (M / R / H; G1 first)\")\n   local valid,err=p.parseAuto(p.autoOrderEdit)\n   if not valid then GUI:TextUnformatted(err) end\n  end\n end\n GUI:PopItemWidth()\n GUI:Separator()\n if GUI:Button(\"Save\") then p.save(p.edit) end\n if p.message then GUI:SameLine(); GUI:TextUnformatted(p.message) end\nend\nGUI:End()\nself.used=true",
 							name = "Persistent Draw Priorities Menu",
 							uuid = "037d4e2f-1842-5c02-8610-55c301569a25",
 							version = 2.1,
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 13,
@@ -34,15 +34,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "for i=1,8 do\n    TensorCore.sendParsedChatMessage(\"/mk clear <\"..i..\">\")\nend\nself.used=true",
@@ -52,7 +52,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 9,
@@ -65,21 +65,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "MoogleTelegraphs.Settings.aoeIDUserBlacklist[26381] = {label = \"Dive from Grace\", source = \"Frog DSR Draws\"}\nMoogleTelegraphs.Settings.aoeIDUserBlacklist[25316] = {label = \"Pure of Heart\", source = \"Frog DSR Draws\"}\nMoogleTelegraphs.Settings.aoeIDUserBlacklist[27966] = {label = \"Nidhogg Cauterize\", source = \"Frog DSR Draws\"}\nMoogleTelegraphs.Settings.aoeIDUserBlacklist[27967] = {label = \"Hraesvelgr Cauterize\", source = \"Frog DSR Draws\"}\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"48ef1c90-d8bc-938e-ae26-c649c6101609",
 									true,
@@ -91,11 +91,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "return MoogleTelegraphs~=nil and MoogleTelegraphs.Settings~=nil and MoogleTelegraphs.Settings.aoeIDUserBlacklist~=nil",
@@ -114,25 +114,25 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "local old=eventArgs.oldData\nlocal s=old and old.frog_p7_guidance\nif s and s.draw then Argus.deleteTimedShape(s.draw) end\nlocal element=old and old.frog_p7_element\nif element and element.draw then Argus.deleteTimedShape(element.draw) end\nself.used=true",
+							actionLua = "local old=eventArgs.oldData\nlocal s=old and old.frog_p7_guidance\nif s and s.draw then Argus.deleteTimedShape(s.draw) end\nlocal element=old and old.frog_p7_element\nif element and element.draw then Argus.deleteTimedShape(element.draw) end\nlocal e=old and old.frog_enum_v1\nif e and e.arrow then Argus.deleteTimedShape(e.arrow) end\nself.used=true",
 							name = "P7 Draw Cleanup",
 							uuid = "5b0d291d-4a92-a3fc-9b0f-6098e06be23f",
 							version = 2.1,
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 9,
@@ -145,9 +145,9 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
 				displayPath = "",
 				name = "Local fixes",
@@ -155,21 +155,21 @@ local tbl =
 			},
 			objectType = "folder",
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "ACR_TensorMagnum3_Hotbar_Potion=false\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"8937d431-b31a-b954-ab58-1c4775287f14",
 									true,
@@ -181,11 +181,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Self",
 							conditionType = 13,
@@ -208,21 +208,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "local release=eventArgs.timeQueued+eventArgs.time*1000+13000\nTensorCore.API.TensorACR.holdActionUntil(2878,release,3)\nTensorCore.API.TensorACR.holdActionUntil(17209,release,3)\ndata.frog_mch_p2_burst_delay=true\nself.used=true\n",
-							conditions = 
+							actionLua = "local release=eventArgs.timeQueued+eventArgs.time*1000+13000\nTensorCore.API.TensorACR.holdActionUntil(2878,release,3)\nTensorCore.API.TensorACR.holdActionUntil(17209,release,3)\ndata.frog_mch_p2_burst_delay=true\nself.used=true",
+							conditions =
 							{
-								
+
 								{
 									"7eb03be4-5158-011b-ab41-25624d08d479",
 									true,
@@ -245,11 +245,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "for _,e in pairs(TensorCore.entityList(\"contentid=3632\"))do if e.targetable then return true end end return false",
@@ -303,9 +303,9 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
 				displayPath = "Local fixes",
 				name = "Monk downtime",
@@ -313,21 +313,21 @@ local tbl =
 			},
 			objectType = "folder",
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local p=TensorCore.mGetPlayer()\nif not p or eventArgs.entityID~=p.id then self.used=true return end\ndata.frog_mnk_downtime=data.frog_mnk_downtime or {known=false,solar=false,lunar=false,remaining=0,chakra=0}\nlocal s=data.frog_mnk_downtime\nlocal t=Now()\nlocal id=eventArgs.spellID\nif id==69 then\n s.remaining=3;s.pbUntil=t+20000;s.chakra=0;s.chakraUntil=0\nelseif id==25769 then\n s.known=true;s.solar=false;s.lunar=false;s.remaining=0;s.chakra=0\nelseif id==25768 or id==3545 then\n if id==25768 then s.solar=true else s.lunar=true end\n s.remaining=0;s.chakra=0\nelse\n if s.remaining>0 and t<=(s.pbUntil or 0) then\n  s.remaining=s.remaining-1;s.chakra=s.chakra+1;s.chakraUntil=t+20000\n else s.remaining=0 end\nend\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"dccac2be-8ebd-60e7-8f6f-1c57556bee41",
 									true,
@@ -344,9 +344,9 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
 						data =
 						{
@@ -360,7 +360,7 @@ local tbl =
 					},
 
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "return FFXIV_Common_BotRunning == true",
@@ -418,21 +418,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_mnk_downtime=nil\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"665ddbeb-02b4-58c8-8a9d-227267a1b1a3",
 									true,
@@ -444,9 +444,9 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
 						data =
 						{
@@ -460,7 +460,7 @@ local tbl =
 					},
 
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "return FFXIV_Common_BotRunning == true",
@@ -491,21 +491,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local release=Now()+13000\nTensorCore.API.TensorACR.holdActionUntil(2878,release)\nTensorCore.API.TensorACR.holdActionUntil(17209,release)\ndata.frog_mch_p2_burst_delay=true\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"e470a783-97d4-9527-ab8b-65b0be85e7ae",
 									true,
@@ -528,11 +528,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Self",
 							conditionType = 13,
@@ -598,14 +598,14 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "\nlocal centerX = 100.0\nlocal centerY = 0.0\nlocal centerZ = 100.0\nlocal arenaSize = 44.0\nlocal bladeWidth = 8.0\nlocal brightRadius = 9.0\nlocal now = TensorReactions_CurrentTimer or 0.0\nlocal state = TensorReactions_AdelphelBladeDrawState\n\nif state == nil or now < (state.lastTimer or now) then\n    state = {lastTimer = now, completedDashes = 0}\n    TensorReactions_AdelphelBladeDrawState = state\nend\nstate.lastTimer = now\nlocal completedDashes = math.min(state.completedDashes or 0, 4)\n\nlocal channel = 1\nlocal drawHeight = 0.05\nlocal baseFlags =\n    Argus2.RenderFlags.FLAG_OCCLUSION_BASE |\n    Argus2.RenderFlags.FLAG_RENDER_OVERLAY\nlocal occludeFlags =\n    Argus2.RenderFlags.FLAG_OCCLUDE |\n    Argus2.RenderFlags.FLAG_RENDER_OVERLAY\n\nlocal base = TensorCore.getStaticFlatDrawer(0x5500FF00, 1.0, channel, baseFlags)\nbase:setHeightOffset(drawHeight)\nif now >= 52.9 then\n    base:addCenteredRect(centerX, centerY, centerZ, arenaSize, arenaSize, 0.0, false, baseFlags)\nend\n\nlocal cut = TensorCore.getStaticFlatDrawer(0xFFFFFFFF, 0.0, channel, occludeFlags)\ncut:setHeightOffset(drawHeight)\n\nlocal cardinals = {\n    [0] = {x = 0.0, z = 1.0},\n    [1] = {x = 1.0, z = 0.0},\n    [2] = {x = 0.0, z = -1.0},\n    [3] = {x = -1.0, z = 0.0}\n}\n\nif state.startIndex ~= nil and state.firstDashCaptured == true then\n    local function point(index)\n        return {\n            x = centerX + cardinals[index].x * 22.0,\n            y = centerY,\n            z = centerZ + cardinals[index].z * 22.0\n        }\n    end\n\n    local startIndex = state.startIndex\n    local firstIndex = state.firstIndex\n    local secondIndex = (firstIndex + 2) % 4\n    local thirdIndex = (startIndex + 2) % 4\n    local path = {\n        point(startIndex),\n        point(firstIndex),\n        point(secondIndex),\n        point(thirdIndex),\n        point(startIndex)\n    }\n\n    local function drawBlade(fromPoint, toPoint)\n        local dx = toPoint.x - fromPoint.x\n        local dz = toPoint.z - fromPoint.z\n        local length = math.sqrt(dx * dx + dz * dz)\n        local heading = TensorCore.getHeadingToTarget(fromPoint, toPoint)\n        local midX = (fromPoint.x + toPoint.x) * 0.5\n        local midZ = (fromPoint.z + toPoint.z) * 0.5\n        cut:addCenteredRect(midX, centerY, midZ, length, bladeWidth, heading, false, occludeFlags)\n    end\n\n    for i = completedDashes + 1, #path - 1 do\n        drawBlade(path[i], path[i + 1])\n    end\n\n    local predictedBrightspheres = {\n        {x = 0.0, z = 22.0},\n        {x = -11.0, z = 11.0},\n        {x = -22.0, z = 0.0},\n        {x = -7.48, z = 0.0},\n        {x = 7.48, z = 0.0},\n        {x = 22.0, z = 0.0},\n        {x = 11.0, z = -11.0},\n        {x = 0.0, z = -22.0},\n        {x = 0.0, z = -7.48},\n        {x = 0.0, z = 7.48},\n        {x = 0.0, z = 22.0}\n    }\n\n    for _, orb in ipairs(predictedBrightspheres) do\n        local worldX = centerX + orb.x * state.eastX + orb.z * state.northX\n        local worldZ = centerZ + orb.x * state.eastZ + orb.z * state.northZ\n        cut:addCircle(worldX, centerY, worldZ, brightRadius, false, occludeFlags)\n    end\nend\n\nlocal liveBrightspheres = TensorCore.getEntityByGroup(\"ContentID\", {\n    contentid = 4385,\n    subgroup = \"Number\",\n    noAliveCheck = true\n})\n\nif state.firstDashCaptured == true and liveBrightspheres then\n    if liveBrightspheres.id ~= nil then\n        cut:addCircle(liveBrightspheres.pos.x, liveBrightspheres.pos.y, liveBrightspheres.pos.z, brightRadius, false, occludeFlags)\n    else\n        for _, orb in pairs(liveBrightspheres) do\n            if orb and orb.pos then\n                cut:addCircle(orb.pos.x, orb.pos.y, orb.pos.z, brightRadius, false, occludeFlags)\n            end\n        end\n    end\nend\n\nself.used = true\n",
+							actionLua = "\nlocal centerX = 100.0\nlocal centerY = 0.0\nlocal centerZ = 100.0\nlocal arenaSize = 44.0\nlocal bladeWidth = 8.0\nlocal brightRadius = 9.0\nlocal now = TensorReactions_CurrentTimer or 0.0\nlocal state = TensorReactions_AdelphelBladeDrawState\n\nif state == nil or now < (state.lastTimer or now) then\n    state = {lastTimer = now, completedDashes = 0}\n    TensorReactions_AdelphelBladeDrawState = state\nend\nstate.lastTimer = now\nlocal completedDashes = math.min(state.completedDashes or 0, 4)\n\nlocal channel = 1\nlocal drawHeight = 0.05\nlocal baseFlags =\n    Argus2.RenderFlags.FLAG_OCCLUSION_BASE |\n    Argus2.RenderFlags.FLAG_RENDER_OVERLAY\nlocal occludeFlags =\n    Argus2.RenderFlags.FLAG_OCCLUDE |\n    Argus2.RenderFlags.FLAG_RENDER_OVERLAY\n\nlocal base = TensorCore.getStaticFlatDrawer(0x5500FF00, 1.0, channel, baseFlags)\nbase:setHeightOffset(drawHeight)\nif now >= 52.9 then\n    base:addCenteredRect(centerX, centerY, centerZ, arenaSize, arenaSize, 0.0, false, baseFlags)\nend\n\nlocal cut = TensorCore.getStaticFlatDrawer(0xFFFFFFFF, 0.0, channel, occludeFlags)\ncut:setHeightOffset(drawHeight)\n\nlocal cardinals = {\n    [0] = {x = 0.0, z = 1.0},\n    [1] = {x = 1.0, z = 0.0},\n    [2] = {x = 0.0, z = -1.0},\n    [3] = {x = -1.0, z = 0.0}\n}\n\nif state.startIndex ~= nil and state.firstDashCaptured == true then\n    local function point(index)\n        return {\n            x = centerX + cardinals[index].x * 22.0,\n            y = centerY,\n            z = centerZ + cardinals[index].z * 22.0\n        }\n    end\n\n    local startIndex = state.startIndex\n    local firstIndex = state.firstIndex\n    local secondIndex = (firstIndex + 2) % 4\n    local thirdIndex = (startIndex + 2) % 4\n    local path = {\n        point(startIndex),\n        point(firstIndex),\n        point(secondIndex),\n        point(thirdIndex),\n        point(startIndex)\n    }\n\n    local function drawBlade(fromPoint, toPoint)\n        local dx = toPoint.x - fromPoint.x\n        local dz = toPoint.z - fromPoint.z\n        local length = math.sqrt(dx * dx + dz * dz)\n        local heading = TensorCore.getHeadingToTarget(fromPoint, toPoint)\n        local midX = (fromPoint.x + toPoint.x) * 0.5\n        local midZ = (fromPoint.z + toPoint.z) * 0.5\n        cut:addCenteredRect(midX, centerY, midZ, length, bladeWidth, heading, false, occludeFlags)\n    end\n\n    for i = completedDashes + 1, #path - 1 do\n        drawBlade(path[i], path[i + 1])\n    end\n\n    local predictedBrightspheres = {\n        {x = 0.0, z = 22.0},\n        {x = -11.0, z = 11.0},\n        {x = -22.0, z = 0.0},\n        {x = -7.48, z = 0.0},\n        {x = 7.48, z = 0.0},\n        {x = 22.0, z = 0.0},\n        {x = 11.0, z = -11.0},\n        {x = 0.0, z = -22.0},\n        {x = 0.0, z = -7.48},\n        {x = 0.0, z = 7.48},\n        {x = 0.0, z = 22.0}\n    }\n\n    for _, orb in ipairs(predictedBrightspheres) do\n        local worldX = centerX + orb.x * state.eastX + orb.z * state.northX\n        local worldZ = centerZ + orb.x * state.eastZ + orb.z * state.northZ\n        cut:addCircle(worldX, centerY, worldZ, brightRadius, false, occludeFlags)\n    end\nend\n\nlocal liveBrightspheres = TensorCore.getEntityByGroup(\"ContentID\", {\n    contentid = 4385,\n    subgroup = \"Number\",\n    noAliveCheck = true\n})\n\nif state.firstDashCaptured == true and liveBrightspheres then\n    if liveBrightspheres.id ~= nil then\n        cut:addCircle(liveBrightspheres.pos.x, liveBrightspheres.pos.y, liveBrightspheres.pos.z, brightRadius, false, occludeFlags)\n    else\n        for _, orb in pairs(liveBrightspheres) do\n            if orb and orb.pos then\n                cut:addCircle(orb.pos.x, orb.pos.y, orb.pos.z, brightRadius, false, occludeFlags)\n            end\n        end\n    end\nend\n\nself.used = true",
 							name = "Draw Adelphel Blades",
 							uuid = "4cf89cc3-9394-259b-bfd6-a4c1b82697b4",
 							version = 2.1,
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 12,
@@ -619,21 +619,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "\nlocal centerX = 100.0\nlocal centerZ = 100.0\nlocal now = TensorReactions_CurrentTimer or 0.0\nlocal state = TensorReactions_AdelphelBladeDrawState\n\nif state == nil or now < (state.lastTimer or now) then\n    state = {lastTimer = now, completedDashes = 0}\n    TensorReactions_AdelphelBladeDrawState = state\nend\nstate.lastTimer = now\n\nlocal event = eventArgs\nlocal entity = event and TensorCore.mGetEntity(event.entityID)\nlocal castX = event and event.castPosX\nlocal castZ = event and event.castPosZ\n\nif state.firstDashCaptured ~= true\n    and event\n    and event.entityContentID == 3634\n    and entity\n    and entity.pos\n    and castX ~= nil\n    and castZ ~= nil\nthen\n    local startDX = entity.pos.x - centerX\n    local startDZ = entity.pos.z - centerZ\n    local castDX = castX - centerX\n    local castDZ = castZ - centerZ\n    local startIndex\n    local firstIndex\n\n    if math.abs(startDX) >= math.abs(startDZ) then\n        startIndex = (startDX >= 0.0) and 1 or 3\n    else\n        startIndex = (startDZ >= 0.0) and 0 or 2\n    end\n\n    if math.abs(castDX) >= math.abs(castDZ) then\n        firstIndex = (castDX >= 0.0) and 1 or 3\n    else\n        firstIndex = (castDZ >= 0.0) and 0 or 2\n    end\n\n    local adjacentA = (startIndex + 1) % 4\n    local adjacentB = (startIndex + 3) % 4\n    if firstIndex == adjacentA or firstIndex == adjacentB then\n        local cardinals = {\n            [0] = {x = 0.0, z = 1.0},\n            [1] = {x = 1.0, z = 0.0},\n            [2] = {x = 0.0, z = -1.0},\n            [3] = {x = -1.0, z = 0.0}\n        }\n\n        state.startIndex = startIndex\n        state.firstIndex = firstIndex\n        state.eastX = -cardinals[firstIndex].x\n        state.eastZ = -cardinals[firstIndex].z\n        state.northX = cardinals[startIndex].x\n        state.northZ = cardinals[startIndex].z\n        state.firstDashCaptured = true\n    end\nend\n\nstate.completedDashes = math.min((state.completedDashes or 0) + 1, 4)\nTensorReactions_AdelphelBladeDrawState = state\nself.used = true\n",
-							conditions = 
+							actionLua = "\nlocal centerX = 100.0\nlocal centerZ = 100.0\nlocal now = TensorReactions_CurrentTimer or 0.0\nlocal state = TensorReactions_AdelphelBladeDrawState\n\nif state == nil or now < (state.lastTimer or now) then\n    state = {lastTimer = now, completedDashes = 0}\n    TensorReactions_AdelphelBladeDrawState = state\nend\nstate.lastTimer = now\n\nlocal event = eventArgs\nlocal entity = event and TensorCore.mGetEntity(event.entityID)\nlocal castX = event and event.castPosX\nlocal castZ = event and event.castPosZ\n\nif state.firstDashCaptured ~= true\n    and event\n    and event.entityContentID == 3634\n    and entity\n    and entity.pos\n    and castX ~= nil\n    and castZ ~= nil\nthen\n    local startDX = entity.pos.x - centerX\n    local startDZ = entity.pos.z - centerZ\n    local castDX = castX - centerX\n    local castDZ = castZ - centerZ\n    local startIndex\n    local firstIndex\n\n    if math.abs(startDX) >= math.abs(startDZ) then\n        startIndex = (startDX >= 0.0) and 1 or 3\n    else\n        startIndex = (startDZ >= 0.0) and 0 or 2\n    end\n\n    if math.abs(castDX) >= math.abs(castDZ) then\n        firstIndex = (castDX >= 0.0) and 1 or 3\n    else\n        firstIndex = (castDZ >= 0.0) and 0 or 2\n    end\n\n    local adjacentA = (startIndex + 1) % 4\n    local adjacentB = (startIndex + 3) % 4\n    if firstIndex == adjacentA or firstIndex == adjacentB then\n        local cardinals = {\n            [0] = {x = 0.0, z = 1.0},\n            [1] = {x = 1.0, z = 0.0},\n            [2] = {x = 0.0, z = -1.0},\n            [3] = {x = -1.0, z = 0.0}\n        }\n\n        state.startIndex = startIndex\n        state.firstIndex = firstIndex\n        state.eastX = -cardinals[firstIndex].x\n        state.eastZ = -cardinals[firstIndex].z\n        state.northX = cardinals[startIndex].x\n        state.northZ = cardinals[startIndex].z\n        state.firstDashCaptured = true\n    end\nend\n\nstate.completedDashes = math.min((state.completedDashes or 0) + 1, 4)\nTensorReactions_AdelphelBladeDrawState = state\nself.used = true",
+							conditions =
 							{
-								
+
 								{
 									"83213c31-9d0f-965b-9158-f000a09e801d",
 									true,
@@ -645,11 +645,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -672,21 +672,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "\nlocal now = TensorReactions_CurrentTimer or 0.0\nlocal timeout = math.max(0.0, (69.1 - now) * 1000.0)\nlocal occludeFlags =\n    Argus2.RenderFlags.FLAG_OCCLUDE |\n    Argus2.RenderFlags.FLAG_RENDER_OVERLAY\nlocal drawer = TensorCore.getStaticFlatDrawer(0x00000000, 0.0, 1, occludeFlags)\ndrawer:setHeightOffset(0.05)\n\nif timeout > 0.0 and eventArgs.entityID ~= nil then\n    drawer:addTimedCircleOnEnt(\n        timeout,\n        eventArgs.entityID,\n        9.0,\n        0,\n        false,\n        true,\n        occludeFlags\n    )\nend\n\nself.used = true\n",
-							conditions = 
+							actionLua = "\nlocal now = TensorReactions_CurrentTimer or 0.0\nlocal timeout = math.max(0.0, (69.1 - now) * 1000.0)\nlocal occludeFlags =\n    Argus2.RenderFlags.FLAG_OCCLUDE |\n    Argus2.RenderFlags.FLAG_RENDER_OVERLAY\nlocal drawer = TensorCore.getStaticFlatDrawer(0x00000000, 0.0, 1, occludeFlags)\ndrawer:setHeightOffset(0.05)\n\nif timeout > 0.0 and eventArgs.entityID ~= nil then\n    drawer:addTimedCircleOnEnt(\n        timeout,\n        eventArgs.entityID,\n        9.0,\n        0,\n        false,\n        true,\n        occludeFlags\n    )\nend\n\nself.used = true",
+							conditions =
 							{
-								
+
 								{
 									"7c31b38e-ca90-e402-887a-f4cc5f3e01a1",
 									true,
@@ -698,11 +698,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -728,15 +728,15 @@ local tbl =
 	},
 	[14] =
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local remaining = 69.1 - (TensorReactions_CurrentTimer or 0)\nif remaining <= 0 or remaining > 4.01 then return end\n\nlocal adelphel = TensorCore.getEntityByGroup(\"ContentID\", {\n    contentid = 3634,\n    subgroup = \"Nearest\",\n    noAliveCheck = true\n})\nlocal target = adelphel and TensorCore.mGetEntity(adelphel.targetid)\nif not target then return end\n\nlocal drawer = TensorCore.getStaticFlatDrawer(\n    0x330000FF, 2.0, 0, Argus2.RenderFlags.FLAG_RENDER_OVERLAY\n)\ndrawer:setHeightOffset(0.1)\nlocal uuid = drawer:addTimedCircleOnEnt(remaining * 1000, target.id, 3.0, 0, false, true)\nif uuid then self.used = true end",
@@ -746,7 +746,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				mechanicTime = 69.1,
@@ -761,21 +761,21 @@ local tbl =
 	},
 	[15] =
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local event = eventArgs\nlocal entityID = event and event.entityID\nlocal marker = event and event.markerID\nif entityID == nil\n    or (marker ~= 281 and marker ~= 282 and marker ~= 283 and marker ~= 284) then\n    self.used = true\n    return\nend\n\nlocal now = TensorReactions_CurrentTimer or 0.0\nlocal state = data.playstation_symbol_tether\nif state == nil or now < (state.lastTimer or now) then\n    state = {lastTimer = now, symbols = {}}\n    data.playstation_symbol_tether = state\nend\n\nstate.lastTimer = now\nstate.symbols[entityID] = marker\n\nself.used = true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"66611d33-283d-b826-ba31-6fdaf107159e",
 									true,
@@ -787,11 +787,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local event = eventArgs\nlocal marker = event and event.markerID\nreturn marker == 281 or marker == 282 or marker == 283 or marker == 284",
@@ -814,18 +814,18 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p1_playstation\")==\"Disabled\" then self.used=true return end\n\nlocal player = TensorCore.mGetPlayer()\nlocal state = data.playstation_symbol_tether\nif not player or not player.pos or not state or not state.symbols then\n    self.used = true\n    return\nend\n\nlocal marker = state.symbols[player.id]\nif marker ~= 281 and marker ~= 282 and marker ~= 283 and marker ~= 284 then\n    self.used = true\n    return\nend\n\n-- Resolve the local player directly from Anyone's logical roster and\n-- live agnostic party list. This avoids role-partner entOf() lookups.\nif state.rosterResolved ~= true then\n    local rosterMembers = AnyoneCore.Roster.members()\n    local agnosticParty = AnyoneCore.API.getAgnosticPartyList()\n    if type(rosterMembers) ~= \"table\" or type(agnosticParty) ~= \"table\" then\n        self.used = true\n        return\n    end\n\n    local actorByJob, actorJobCount, rosterJobCount = {}, {}, {}\n    for _, actor in pairs(agnosticParty) do\n        if actor ~= nil and actor.id ~= nil and actor.job ~= nil then\n            actorByJob[actor.job] = actor\n            actorJobCount[actor.job] = (actorJobCount[actor.job] or 0) + 1\n        end\n    end\n    for _, member in pairs(rosterMembers) do\n        if member ~= nil and member.job ~= nil then\n            rosterJobCount[member.job] = (rosterJobCount[member.job] or 0) + 1\n        end\n    end\n    local actorByNameJob = {}\n    for _, actor in pairs(agnosticParty) do\n        if actor ~= nil and actor.id ~= nil and actor.name ~= nil and actor.job ~= nil then\n            local key = tostring(actor.name) .. \"\\31\" .. tostring(actor.job)\n            actorByNameJob[key] = actor\n        end\n    end\n\n    local definitions = {\n        {name = \"MT\", rosterSlot = \"T1\"},\n        {name = \"OT\", rosterSlot = \"T2\"},\n        {name = \"H1\", rosterSlot = \"H1\"},\n        {name = \"H2\", rosterSlot = \"H2\"},\n        {name = \"M1\", rosterSlot = \"M1\"},\n        {name = \"M2\", rosterSlot = \"M2\"},\n        {name = \"R1\", rosterSlot = \"R1\"},\n        {name = \"R2\", rosterSlot = \"R2\"}\n    }\n\n    state.roleByID = {}\n    for _, definition in ipairs(definitions) do\n        local member = rosterMembers[definition.rosterSlot]\n        if member == nil or member.name == nil or member.job == nil then\n            state.roleByID = nil\n            self.used = true\n            return\n        end\n\n        local key = tostring(member.name) .. \"\\31\" .. tostring(member.job)\n        local actor = actorByNameJob[key]\n        if actor == nil and actorJobCount[member.job] == 1 and rosterJobCount[member.job] == 1 then\n            actor = actorByJob[member.job]\n        end\n        if actor == nil or actor.id == nil then\n            state.roleByID = nil\n            self.used = true\n            return\n        end\n\n        state.roleByID[actor.id] = definition.name\n    end\n\n    state.rosterResolved = true\nend\n\nlocal role = state.roleByID and state.roleByID[player.id]\nif role == nil then\n    self.used = true\n    return\nend\n\nlocal targetX = nil\nlocal targetZ = nil\n\n-- Marker IDs: circle=281, triangle=282, square=283, cross=284.\n-- Fixed waymark-side destinations use the same 22-yalm arena layout.\nlocal isTank = role == \"MT\" or role == \"OT\"\nlocal isHealer = role == \"H1\" or role == \"H2\"\nlocal isDPS = role == \"M1\" or role == \"M2\"\n    or role == \"R1\" or role == \"R2\"\n\nif isTank then\n    if marker == 284 then\n        targetX = 100.0\n        targetZ = 78.0\n    elseif marker == 283 then\n        targetX = 122.0\n        targetZ = 78.0\n    end\nelseif isHealer then\n    if marker == 284 then\n        targetX = 100.0\n        targetZ = 122.0\n    elseif marker == 282 then\n        targetX = 122.0\n        targetZ = 122.0\n    end\nelseif isDPS then\n    if marker == 282 then\n        targetX = 78.0\n        targetZ = 78.0\n    elseif marker == 283 then\n        targetX = 78.0\n        targetZ = 122.0\n    elseif marker == 281 then\n        local otherCircleX = nil\n        for entityID, otherMarker in pairs(state.symbols) do\n            if entityID ~= player.id and otherMarker == 281 then\n                local other = TensorCore.mGetEntity(entityID)\n                if other ~= nil and other.pos ~= nil then\n                    otherCircleX = other.pos.x\n                    break\n                end\n            end\n        end\n\n        if otherCircleX ~= nil then\n            local myWest = math.abs(player.pos.x - 78.0)\n            local myEast = math.abs(player.pos.x - 122.0)\n            local otherWest = math.abs(otherCircleX - 78.0)\n            local otherEast = math.abs(otherCircleX - 122.0)\n\n            -- Choose the globally consistent west/east split.\n            if (myWest + otherEast) <= (myEast + otherWest) then\n                targetX = 78.0\n            else\n                targetX = 122.0\n            end\n            targetZ = 100.0\n        end\n    end\nend\n\nif targetX ~= nil and targetZ ~= nil then\n    local drawer = TensorCore.getMoogleDrawer()\n    frogGuide.draw(\"p1_playstation\",drawer,\n        player.pos.x, player.pos.y, player.pos.z,\n        targetX, player.pos.y, targetZ,\n        8.0, 3.0\n    )\nend\n\nself.used = true",
+							actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p1_playstation\")==\"Disabled\" then self.used=true return end\n\nlocal player = TensorCore.mGetPlayer()\nlocal state = data.playstation_symbol_tether\nif not player or not player.pos or not state or not state.symbols then\n    self.used = true\n    return\nend\n\nlocal marker = state.symbols[player.id]\nif marker ~= 281 and marker ~= 282 and marker ~= 283 and marker ~= 284 then\n    self.used = true\n    return\nend\n\n\n\nif state.rosterResolved ~= true then\n    local rosterMembers = AnyoneCore.Roster.members()\n    local agnosticParty = AnyoneCore.API.getAgnosticPartyList()\n    if type(rosterMembers) ~= \"table\" or type(agnosticParty) ~= \"table\" then\n        self.used = true\n        return\n    end\n\n    local actorByJob, actorJobCount, rosterJobCount = {}, {}, {}\n    for _, actor in pairs(agnosticParty) do\n        if actor ~= nil and actor.id ~= nil and actor.job ~= nil then\n            actorByJob[actor.job] = actor\n            actorJobCount[actor.job] = (actorJobCount[actor.job] or 0) + 1\n        end\n    end\n    for _, member in pairs(rosterMembers) do\n        if member ~= nil and member.job ~= nil then\n            rosterJobCount[member.job] = (rosterJobCount[member.job] or 0) + 1\n        end\n    end\n    local actorByNameJob = {}\n    for _, actor in pairs(agnosticParty) do\n        if actor ~= nil and actor.id ~= nil and actor.name ~= nil and actor.job ~= nil then\n            local key = tostring(actor.name) .. \"\\31\" .. tostring(actor.job)\n            actorByNameJob[key] = actor\n        end\n    end\n\n    local definitions = {\n        {name = \"MT\", rosterSlot = \"T1\"},\n        {name = \"OT\", rosterSlot = \"T2\"},\n        {name = \"H1\", rosterSlot = \"H1\"},\n        {name = \"H2\", rosterSlot = \"H2\"},\n        {name = \"M1\", rosterSlot = \"M1\"},\n        {name = \"M2\", rosterSlot = \"M2\"},\n        {name = \"R1\", rosterSlot = \"R1\"},\n        {name = \"R2\", rosterSlot = \"R2\"}\n    }\n\n    state.roleByID = {}\n    for _, definition in ipairs(definitions) do\n        local member = rosterMembers[definition.rosterSlot]\n        if member == nil or member.name == nil or member.job == nil then\n            state.roleByID = nil\n            self.used = true\n            return\n        end\n\n        local key = tostring(member.name) .. \"\\31\" .. tostring(member.job)\n        local actor = actorByNameJob[key]\n        if actor == nil and actorJobCount[member.job] == 1 and rosterJobCount[member.job] == 1 then\n            actor = actorByJob[member.job]\n        end\n        if actor == nil or actor.id == nil then\n            state.roleByID = nil\n            self.used = true\n            return\n        end\n\n        state.roleByID[actor.id] = definition.name\n    end\n\n    state.rosterResolved = true\nend\n\nlocal role = state.roleByID and state.roleByID[player.id]\nif role == nil then\n    self.used = true\n    return\nend\n\nlocal targetX = nil\nlocal targetZ = nil\n\n\n\nlocal isTank = role == \"MT\" or role == \"OT\"\nlocal isHealer = role == \"H1\" or role == \"H2\"\nlocal isDPS = role == \"M1\" or role == \"M2\"\n    or role == \"R1\" or role == \"R2\"\n\nif isTank then\n    if marker == 284 then\n        targetX = 100.0\n        targetZ = 78.0\n    elseif marker == 283 then\n        targetX = 122.0\n        targetZ = 78.0\n    end\nelseif isHealer then\n    if marker == 284 then\n        targetX = 100.0\n        targetZ = 122.0\n    elseif marker == 282 then\n        targetX = 122.0\n        targetZ = 122.0\n    end\nelseif isDPS then\n    if marker == 282 then\n        targetX = 78.0\n        targetZ = 78.0\n    elseif marker == 283 then\n        targetX = 78.0\n        targetZ = 122.0\n    elseif marker == 281 then\n        local otherCircleX = nil\n        for entityID, otherMarker in pairs(state.symbols) do\n            if entityID ~= player.id and otherMarker == 281 then\n                local other = TensorCore.mGetEntity(entityID)\n                if other ~= nil and other.pos ~= nil then\n                    otherCircleX = other.pos.x\n                    break\n                end\n            end\n        end\n\n        if otherCircleX ~= nil then\n            local myWest = math.abs(player.pos.x - 78.0)\n            local myEast = math.abs(player.pos.x - 122.0)\n            local otherWest = math.abs(otherCircleX - 78.0)\n            local otherEast = math.abs(otherCircleX - 122.0)\n\n\n            if (myWest + otherEast) <= (myEast + otherWest) then\n                targetX = 78.0\n            else\n                targetX = 122.0\n            end\n            targetZ = 100.0\n        end\n    end\nend\n\nif targetX ~= nil and targetZ ~= nil then\n    local drawer = TensorCore.getMoogleDrawer()\n    frogGuide.draw(\"p1_playstation\",drawer,\n        player.pos.x, player.pos.y, player.pos.z,\n        targetX, player.pos.y, targetZ,\n        8.0, 3.0\n    )\nend\n\nself.used = true",
 							conditions =
 							{
 
@@ -840,11 +840,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local player = TensorCore.mGetPlayer()\nlocal state = data.playstation_symbol_tether\nlocal marker = state and player and state.symbols[player.id]\nreturn marker == 281 or marker == 282 or marker == 283 or marker == 284",
@@ -869,7 +869,7 @@ local tbl =
 	},
 	[38] =
 	{
-		
+
 		{
 			data =
 			{
@@ -881,19 +881,19 @@ local tbl =
 		},
 
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							actionID = 16501,
 							atomicPriority = true,
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"f8b6b454-9b42-b26e-8ce7-cd5e6b457d9c",
 									true,
@@ -1012,18 +1012,18 @@ local tbl =
 			},
 			objectType = "folder",
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "local s=data.frog_strength_spreads\nif s then\n if not s.resolved then s.resolved={}end\n for _,id in ipairs(eventArgs.hitTargets)do s.resolved[id]=true end\nend\nself.used=true\n",
+							actionLua = "local s=data.frog_strength_spreads\nif s then\n if not s.resolved then s.resolved={}end\n for _,id in ipairs(eventArgs.hitTargets)do s.resolved[id]=true end\nend\nself.used=true",
 							conditions =
 							{
 
@@ -1038,7 +1038,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 
 					{
@@ -1070,18 +1070,18 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "local e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e then self.used=true return end\nlocal s=data.frog_strength_spreads\nlocal t=TensorReactions_CurrentTimer\nif not s or (s.lastTime and t<s.lastTime-1)then s={axes={},count=0};data.frog_strength_spreads=s end\ns.lastTime=t\nlocal dx,dz=e.pos.x-100,e.pos.z-100\nif dx*dx+dz*dz<300 then self.used=true return end\nlocal axis=math.floor(math.atan2(dx,-dz)/(math.pi/4)+0.5)%4\nif not s.axes[axis]then s.axes[axis]=true;s.count=s.count+1 end\nif s.count==3 then for i=0,3 do if not s.axes[i]then s.safeAxis=i;break end end end\nself.used=true\n",
+							actionLua = "local e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e then self.used=true return end\nlocal s=data.frog_strength_spreads\nlocal t=TensorReactions_CurrentTimer\nif not s or (s.lastTime and t<s.lastTime-1)then s={axes={},count=0};data.frog_strength_spreads=s end\ns.lastTime=t\nlocal dx,dz=e.pos.x-100,e.pos.z-100\nif dx*dx+dz*dz<300 then self.used=true return end\nlocal axis=math.floor(math.atan2(dx,-dz)/(math.pi/4)+0.5)%4\nif not s.axes[axis]then s.axes[axis]=true;s.count=s.count+1 end\nif s.count==3 then for i=0,3 do if not s.axes[i]then s.safeAxis=i;break end end end\nself.used=true",
 							conditions =
 							{
 
@@ -1096,7 +1096,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 
 					{
@@ -1128,25 +1128,25 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\n\nlocal s=data.frog_strength_spreads\nif not s or s.finished or s.safeAxis==nil then self.used=true return end\nlocal guide=data.frog_draw_style_v5\nif guide.mode(\"p2_strength\")==\"Disabled\"then self.used=true return end\nlocal player=TensorCore.mGetPlayer()\nif not player or player.hp.current<=0 or (s.resolved and s.resolved[player.id]) then self.used=true return end\nlocal role=AnyoneCore.Roster.mySlot()\nif role==\"MT\"then role=\"T1\"elseif role==\"OT\"then role=\"T2\"end\nlocal group,radial,lateral\nif role==\"T1\"or role==\"H1\"or role==\"M1\"or role==\"R1\"then group=1\nelseif role==\"T2\"or role==\"H2\"or role==\"M2\"or role==\"R2\"then group=2\nelse self.used=true return end\nif role==\"T1\"or role==\"T2\"then radial=12;lateral=0\nelseif role==\"H1\"or role==\"H2\"then radial=19;lateral=0\nelseif role==\"M1\"or role==\"M2\"then radial=19.15;lateral=6.5\nelse radial=19.15;lateral=-6.5 end\nlocal angle=(s.safeAxis+(group==1 and 4 or 0))*math.pi/4\nlocal dx,dz=math.sin(angle),-math.cos(angle)\n-- Left/right are viewed facing the arena centre.\nlocal x=100+radial*dx-lateral*dz\nlocal z=100+radial*dz+lateral*dx\nlocal d=TensorCore.getStaticDrawer(0xFFFF6626,1,0,guide.flags)\nd:addCircle(x,player.pos.y+0.05,z,0.6,false,guide.flags)\nif (player.pos.x-x)^2+(player.pos.z-z)^2>1 then\n guide.draw(\"p2_strength\",d,player.pos.x,player.pos.y,player.pos.z,x,player.pos.y+0.05,z,8,2)\nend\nself.used=true\n\n",
+							actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\n\nlocal s=data.frog_strength_spreads\nif not s or s.finished or s.safeAxis==nil then self.used=true return end\nlocal guide=data.frog_draw_style_v5\nif guide.mode(\"p2_strength\")==\"Disabled\"then self.used=true return end\nlocal player=TensorCore.mGetPlayer()\nif not player or player.hp.current<=0 or (s.resolved and s.resolved[player.id]) then self.used=true return end\nlocal role=AnyoneCore.Roster.mySlot()\nif role==\"MT\"then role=\"T1\"elseif role==\"OT\"then role=\"T2\"end\nlocal group,radial,lateral\nif role==\"T1\"or role==\"H1\"or role==\"M1\"or role==\"R1\"then group=1\nelseif role==\"T2\"or role==\"H2\"or role==\"M2\"or role==\"R2\"then group=2\nelse self.used=true return end\nif role==\"T1\"or role==\"T2\"then radial=12;lateral=0\nelseif role==\"H1\"or role==\"H2\"then radial=19;lateral=0\nelseif role==\"M1\"or role==\"M2\"then radial=19.15;lateral=6.5\nelse radial=19.15;lateral=-6.5 end\nlocal angle=(s.safeAxis+(group==1 and 4 or 0))*math.pi/4\nlocal dx,dz=math.sin(angle),-math.cos(angle)\n\nlocal x=100+radial*dx-lateral*dz\nlocal z=100+radial*dz+lateral*dx\nlocal d=TensorCore.getStaticDrawer(0xFFFF6626,1,0,guide.flags)\nd:addCircle(x,player.pos.y+0.05,z,0.6,false,guide.flags)\nif (player.pos.x-x)^2+(player.pos.z-z)^2>1 then\n guide.draw(\"p2_strength\",d,player.pos.x,player.pos.y,player.pos.z,x,player.pos.y+0.05,z,8,2)\nend\nself.used=true\n",
 							name = "[Strength] Initial triangle spread tether",
 							uuid = "637beb4e-91d0-a8e3-936e-433d5b62ea65",
 							version = 2.1,
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				displayPath = "P2 Strength",
@@ -1163,15 +1163,15 @@ local tbl =
 	},
 	[50] =
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_bash=data.frog_bash or {}\nlocal s=data.frog_bash\ns.holders=s.holders or {}\ns.holders[eventArgs.sourceEntityID]=eventArgs.newTetherID==84 and eventArgs.newTargetID or nil\nself.used=true",
@@ -1189,7 +1189,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 
 					{
@@ -1215,25 +1215,25 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p2_strength\")==\"Disabled\" then self.used=true return end\n\nlocal player = TensorCore.mGetPlayer()\nif player == nil or player.pos == nil then\n    return\nend\n\ndata.frog_bash_guide = data.frog_bash_guide or {}\nlocal state = data.frog_bash_guide\n\nif state.role == nil then\n    local mySlot = AnyoneCore.Roster.mySlot()\n    if mySlot == \"MT\" then\n        state.role = \"T1\"\n    elseif mySlot == \"OT\" then\n        state.role = \"T2\"\n    elseif mySlot ~= nil then\n        state.role = mySlot\n    end\nend\n\nif state.role == nil then\n    local roster = AnyoneCore.Roster.members()\n    local party = AnyoneCore.API.getAgnosticPartyList()\n    if type(roster) ~= \"table\" or type(party) ~= \"table\" then\n        return\n    end\n\n    for slot, member in pairs(roster) do\n        if member ~= nil then\n            local exact\n            local unique\n            local partyCount = 0\n            local rosterCount = 0\n\n            for _, rosterMember in pairs(roster) do\n                if rosterMember ~= nil and rosterMember.job == member.job then\n                    rosterCount = rosterCount + 1\n                end\n            end\n\n            for _, partyMember in pairs(party) do\n                if partyMember ~= nil and partyMember.job == member.job then\n                    partyCount = partyCount + 1\n                    unique = partyMember\n                    if partyMember.name == member.name then\n                        exact = partyMember\n                    end\n                end\n            end\n\n            local resolved = exact or\n                (partyCount == 1 and rosterCount == 1 and unique)\n            if resolved ~= nil and resolved.id == player.id then\n                if slot == \"MT\" then\n                    state.role = \"T1\"\n                elseif slot == \"OT\" then\n                    state.role = \"T2\"\n                else\n                    state.role = slot\n                end\n                break\n            end\n        end\n    end\n\n    if state.role == nil then\n        self.used = true\n        return\n    end\nend\n\n\nif state.findActor == nil then\n    function state.findActor(id, cid, filter)\n        local entity = id and TensorCore.mGetEntity(id)\n        if entity and entity.contentid == cid and entity.pos and Argus.isEntityVisible(entity.id) then\n            return entity\n        end\n        for _, candidate in pairs(TensorCore.entityList(filter) or {}) do\n            if candidate.pos and Argus.isEntityVisible(candidate.id) then\n                return candidate\n            end\n        end\n    end\nend\n\nlocal isMT = state.role == \"T1\" or state.role == \"MT\"\nlocal isOT = state.role == \"T2\" or state.role == \"OT\"\nlocal flags = (Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)\n\nif not isMT and not isOT then\n    local thordan\n    local best = 100\n    for _, entity in pairs(TensorCore.entityList(\"contentid=3632\") or {}) do\n        if entity.pos and Argus.isEntityVisible(entity.id) then\n            local distance2 = (entity.pos.x-100)^2 + (entity.pos.z-100)^2\n            if distance2 > best then\n                best = distance2\n                thordan = entity\n            end\n        end\n    end\n    if not thordan then return end\n    local dx = thordan.pos.x-player.pos.x\n    local dz = thordan.pos.z-player.pos.z\n    local capture = data.frog_bash\n    if not capture or not capture.defams or (capture.defamCount or 0)<3 then self.used=true return end\n    local isDefamation = capture.defams[player.id]==true\n    -- Dragon's Rage resolves at 345.4; stop stack guidance before towers.\n    if not isDefamation and TensorReactions_CurrentTimer >= 345.4 then\n        self.used = true\n        return\n    end\n    if isDefamation then\n        if not state.defamPoints or state.defamBossID~=thordan.id then\n            local nx,nz=thordan.pos.x-100,thordan.pos.z-100\n            local length=math.sqrt(nx*nx+nz*nz)\n            if length<10 then self.used=true return end\n            nx,nz=nx/length,nz/length\n            local ex,ez=-nz,nx\n            -- Relative E/W, shifted 1.5y towards relative south; S stays opposite Thordan.\n            state.defamPoints={\n                {x=100+20*ex-1.5*nx,z=100+20*ez-1.5*nz},\n                {x=100-20*ex-1.5*nx,z=100-20*ez-1.5*nz},\n                {x=100-20*nx,z=100-20*nz}}\n            state.defamBossID=thordan.id\n        end\n        capture.defamAssignments=capture.defamAssignments or {}\n        local destination=capture.defamAssignments[player.id]\n        local bestDistance\n        if not destination then\n        for _,point in ipairs(state.defamPoints)do\n            local distance=(player.pos.x-point.x)^2+(player.pos.z-point.z)^2\n            local closest=true\n            for id in pairs(capture.defams)do\n                if id~=player.id then\n                    local other=TensorCore.mGetEntity(id)\n                    if not other then self.used=true return end\n                    local otherDistance=(other.pos.x-point.x)^2+(other.pos.z-point.z)^2\n                    if otherDistance<distance-0.0001 or (math.abs(otherDistance-distance)<=0.0001 and id<player.id)then closest=false;break end\n                end\n            end\n            if closest and (not point.ownerID or point.ownerID==player.id) and (not bestDistance or distance<bestDistance)then destination=point;bestDistance=distance end\n        end\n        if destination then\n            capture.defamAssignments[player.id]=destination\n            destination.ownerID=player.id\n        end\n        end\n        -- Wait until an eligible spot exists, then keep the assignment for this mechanic.\n        if not destination then self.used=true return end\n        dx,dz=destination.x-player.pos.x,destination.z-player.pos.z\n    end\n    local directionLength=math.sqrt(dx*dx+dz*dz)\n    if directionLength>0.1 then\n        -- Both modes end at their actual world destination.\n        local guideLength=directionLength\n        local tipLength=math.min(2,guideLength*0.35)\n        local drawer=TensorCore.getCachedDrawer(nil,nil,0xFF00FF00,nil,1.5,0,flags)\n        if frogGuide.mode(\"p2_strength\")==\"Arrow\" then\n            local arrowDrawer=TensorCore.getStaticDrawer(0xFFFF6626,1.5,0,flags)\n            arrowDrawer:addArrow(player.pos.x,player.pos.y,player.pos.z,math.atan2(dx,dz),\n                guideLength-tipLength,0.75,tipLength,1.5,false,flags)\n        else\n            drawer:addLine(player.pos.x,player.pos.y,player.pos.z,\n                player.pos.x+dx/directionLength*guideLength,player.pos.y,\n                player.pos.z+dz/directionLength*guideLength,8,2)\n        end\n    end\n    self.used = true\n    return\nend\n\nlocal adelphel = state.findActor(state.adelphelID,3634,\"contentid=3634\")\nlocal janlenoux = state.findActor(state.janlenouxID,3635,\"contentid=3635\")\nif not adelphel or not janlenoux then return end\nstate.adelphelID,state.janlenouxID = adelphel.id,janlenoux.id\n\n-- Thordan lands opposite the knight pair. Their midpoint establishes the\n-- relative frame immediately, before Thordan leaves the arena center.\nlocal nx = 100-(adelphel.pos.x+janlenoux.pos.x)/2\nlocal nz = 100-(adelphel.pos.z+janlenoux.pos.z)/2\nlocal radius = math.sqrt(nx*nx+nz*nz)\nif radius < 1 then return end\nnx,nz=nx/radius,nz/radius\nlocal ex,ez=-nz,nx\nlocal aSide=(adelphel.pos.x-100)*ex+(adelphel.pos.z-100)*ez\nlocal jSide=(janlenoux.pos.x-100)*ex+(janlenoux.pos.z-100)*ez\nif math.abs(aSide-jSide)<1 then return end\nlocal west = aSide<jSide and adelphel or janlenoux\nlocal east = aSide<jSide and janlenoux or adelphel\nlocal knight = isMT and west or east\nstate.knightID = knight.id\n\n-- Read current tethers too, so a replay seek need not replay the capture event.\nlocal tethers = Argus.getTethersOnEnt(knight.id)\nfor _, tether in pairs(tethers or {}) do\n    if tether.type == 84 and tether.partnerid == player.id then\n        self.used = true\n        return\n    end\nend\nlocal capture = data.frog_bash\nif capture and capture.holders and capture.holders[knight.id] == player.id then\n    self.used = true\n    return\nend\n\nfrogGuide.draw(\"p2_strength\",TensorCore.getCachedDrawer(nil,nil,0xFFFF8000,nil,1.5,0,flags),\n    player.pos.x,player.pos.y,player.pos.z,\n    knight.pos.x,knight.pos.y,knight.pos.z,8,2)\nself.used = true\n",
+							actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p2_strength\")==\"Disabled\" then self.used=true return end\n\nlocal player = TensorCore.mGetPlayer()\nif player == nil or player.pos == nil then\n    return\nend\n\ndata.frog_bash_guide = data.frog_bash_guide or {}\nlocal state = data.frog_bash_guide\n\nif state.role == nil then\n    local mySlot = AnyoneCore.Roster.mySlot()\n    if mySlot == \"MT\" then\n        state.role = \"T1\"\n    elseif mySlot == \"OT\" then\n        state.role = \"T2\"\n    elseif mySlot ~= nil then\n        state.role = mySlot\n    end\nend\n\nif state.role == nil then\n    local roster = AnyoneCore.Roster.members()\n    local party = AnyoneCore.API.getAgnosticPartyList()\n    if type(roster) ~= \"table\" or type(party) ~= \"table\" then\n        return\n    end\n\n    for slot, member in pairs(roster) do\n        if member ~= nil then\n            local exact\n            local unique\n            local partyCount = 0\n            local rosterCount = 0\n\n            for _, rosterMember in pairs(roster) do\n                if rosterMember ~= nil and rosterMember.job == member.job then\n                    rosterCount = rosterCount + 1\n                end\n            end\n\n            for _, partyMember in pairs(party) do\n                if partyMember ~= nil and partyMember.job == member.job then\n                    partyCount = partyCount + 1\n                    unique = partyMember\n                    if partyMember.name == member.name then\n                        exact = partyMember\n                    end\n                end\n            end\n\n            local resolved = exact or\n                (partyCount == 1 and rosterCount == 1 and unique)\n            if resolved ~= nil and resolved.id == player.id then\n                if slot == \"MT\" then\n                    state.role = \"T1\"\n                elseif slot == \"OT\" then\n                    state.role = \"T2\"\n                else\n                    state.role = slot\n                end\n                break\n            end\n        end\n    end\n\n    if state.role == nil then\n        self.used = true\n        return\n    end\nend\n\n\nif state.findActor == nil then\n    function state.findActor(id, cid, filter)\n        local entity = id and TensorCore.mGetEntity(id)\n        if entity and entity.contentid == cid and entity.pos and Argus.isEntityVisible(entity.id) then\n            return entity\n        end\n        for _, candidate in pairs(TensorCore.entityList(filter) or {}) do\n            if candidate.pos and Argus.isEntityVisible(candidate.id) then\n                return candidate\n            end\n        end\n    end\nend\n\nlocal isMT = state.role == \"T1\" or state.role == \"MT\"\nlocal isOT = state.role == \"T2\" or state.role == \"OT\"\nlocal flags = (Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)\n\nif not isMT and not isOT then\n    local thordan\n    local best = 100\n    for _, entity in pairs(TensorCore.entityList(\"contentid=3632\") or {}) do\n        if entity.pos and Argus.isEntityVisible(entity.id) then\n            local distance2 = (entity.pos.x-100)^2 + (entity.pos.z-100)^2\n            if distance2 > best then\n                best = distance2\n                thordan = entity\n            end\n        end\n    end\n    if not thordan then return end\n    local dx = thordan.pos.x-player.pos.x\n    local dz = thordan.pos.z-player.pos.z\n    local capture = data.frog_bash\n    if not capture or not capture.defams or (capture.defamCount or 0)<3 then self.used=true return end\n    local isDefamation = capture.defams[player.id]==true\n\n    if not isDefamation and TensorReactions_CurrentTimer >= 345.4 then\n        self.used = true\n        return\n    end\n    if isDefamation then\n        if not state.defamPoints or state.defamBossID~=thordan.id then\n            local nx,nz=thordan.pos.x-100,thordan.pos.z-100\n            local length=math.sqrt(nx*nx+nz*nz)\n            if length<10 then self.used=true return end\n            nx,nz=nx/length,nz/length\n            local ex,ez=-nz,nx\n\n            state.defamPoints={\n                {x=100+20*ex-1.5*nx,z=100+20*ez-1.5*nz},\n                {x=100-20*ex-1.5*nx,z=100-20*ez-1.5*nz},\n                {x=100-20*nx,z=100-20*nz}}\n            state.defamBossID=thordan.id\n        end\n        capture.defamAssignments=capture.defamAssignments or {}\n        local destination=capture.defamAssignments[player.id]\n        local bestDistance\n        if not destination then\n        for _,point in ipairs(state.defamPoints)do\n            local distance=(player.pos.x-point.x)^2+(player.pos.z-point.z)^2\n            local closest=true\n            for id in pairs(capture.defams)do\n                if id~=player.id then\n                    local other=TensorCore.mGetEntity(id)\n                    if not other then self.used=true return end\n                    local otherDistance=(other.pos.x-point.x)^2+(other.pos.z-point.z)^2\n                    if otherDistance<distance-0.0001 or (math.abs(otherDistance-distance)<=0.0001 and id<player.id)then closest=false;break end\n                end\n            end\n            if closest and (not point.ownerID or point.ownerID==player.id) and (not bestDistance or distance<bestDistance)then destination=point;bestDistance=distance end\n        end\n        if destination then\n            capture.defamAssignments[player.id]=destination\n            destination.ownerID=player.id\n        end\n        end\n\n        if not destination then self.used=true return end\n        dx,dz=destination.x-player.pos.x,destination.z-player.pos.z\n    end\n    local directionLength=math.sqrt(dx*dx+dz*dz)\n    if directionLength>0.1 then\n\n        local guideLength=directionLength\n        local tipLength=math.min(2,guideLength*0.35)\n        local drawer=TensorCore.getCachedDrawer(nil,nil,0xFF00FF00,nil,1.5,0,flags)\n        if frogGuide.mode(\"p2_strength\")==\"Arrow\" then\n            local arrowDrawer=TensorCore.getStaticDrawer(0xFFFF6626,1.5,0,flags)\n            arrowDrawer:addArrow(player.pos.x,player.pos.y,player.pos.z,math.atan2(dx,dz),\n                guideLength-tipLength,0.75,tipLength,1.5,false,flags)\n        else\n            drawer:addLine(player.pos.x,player.pos.y,player.pos.z,\n                player.pos.x+dx/directionLength*guideLength,player.pos.y,\n                player.pos.z+dz/directionLength*guideLength,8,2)\n        end\n    end\n    self.used = true\n    return\nend\n\nlocal adelphel = state.findActor(state.adelphelID,3634,\"contentid=3634\")\nlocal janlenoux = state.findActor(state.janlenouxID,3635,\"contentid=3635\")\nif not adelphel or not janlenoux then return end\nstate.adelphelID,state.janlenouxID = adelphel.id,janlenoux.id\n\n\n\nlocal nx = 100-(adelphel.pos.x+janlenoux.pos.x)/2\nlocal nz = 100-(adelphel.pos.z+janlenoux.pos.z)/2\nlocal radius = math.sqrt(nx*nx+nz*nz)\nif radius < 1 then return end\nnx,nz=nx/radius,nz/radius\nlocal ex,ez=-nz,nx\nlocal aSide=(adelphel.pos.x-100)*ex+(adelphel.pos.z-100)*ez\nlocal jSide=(janlenoux.pos.x-100)*ex+(janlenoux.pos.z-100)*ez\nif math.abs(aSide-jSide)<1 then return end\nlocal west = aSide<jSide and adelphel or janlenoux\nlocal east = aSide<jSide and janlenoux or adelphel\nlocal knight = isMT and west or east\nstate.knightID = knight.id\n\n\nlocal tethers = Argus.getTethersOnEnt(knight.id)\nfor _, tether in pairs(tethers or {}) do\n    if tether.type == 84 and tether.partnerid == player.id then\n        self.used = true\n        return\n    end\nend\nlocal capture = data.frog_bash\nif capture and capture.holders and capture.holders[knight.id] == player.id then\n    self.used = true\n    return\nend\n\nfrogGuide.draw(\"p2_strength\",TensorCore.getCachedDrawer(nil,nil,0xFFFF8000,nil,1.5,0,flags),\n    player.pos.x,player.pos.y,player.pos.z,\n    knight.pos.x,knight.pos.y,knight.pos.z,8,2)\nself.used = true",
 							name = "Shield Bash role guidance",
 							uuid = "4018cefd-a34c-2b01-8d77-83359b2e16fe",
 							version = 2.1,
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 12,
@@ -1248,21 +1248,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "data.frog_bash=data.frog_bash or {}\nlocal s=data.frog_bash\nif not s.defams then s.defams={};s.defamCount=0 end\nif not s.defams[eventArgs.entityID]then s.defams[eventArgs.entityID]=true;s.defamCount=s.defamCount+1 end\nself.used=true\n",
-							conditions = 
+							actionLua = "data.frog_bash=data.frog_bash or {}\nlocal s=data.frog_bash\nif not s.defams then s.defams={};s.defamCount=0 end\nif not s.defams[eventArgs.entityID]then s.defams[eventArgs.entityID]=true;s.defamCount=s.defamCount+1 end\nself.used=true",
+							conditions =
 							{
-								
+
 								{
 									"fc3ff382-6e26-86b6-9abc-80a1863de952",
 									true,
@@ -1274,11 +1274,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -1307,21 +1307,21 @@ local tbl =
 	},
 	[64] =
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "local cid = eventArgs.entityContentID\nif cid ~= 3633 and cid ~= 3634 and cid ~= 3635 then\n    self.used = true\n    return\nend\n\nlocal state = data.sam_sanctity_flex\nif state == nil then\n    state = {}\n    data.sam_sanctity_flex = state\nend\n\n-- All Sanctity knights become visible in the same frame. Preserve knight IDs\n-- already captured earlier in that queued visibility batch when Zephirin\n-- initializes the fresh set, while clearing pull-specific marker/geometry data.\nif cid == 3633 then\n    state = {\n        captureInitialized = true,\n        markers = {},\n        zephirinLocked = false,\n        knightBias = nil,\n        zephirinID = eventArgs.entityID,\n        adelphelID = state.adelphelID,\n        janlenouxID = state.janlenouxID\n    }\n    data.sam_sanctity_flex = state\nelseif state.captureInitialized ~= true then\n    state.captureInitialized = true\n    state.markers = {}\n    state.zephirinLocked = false\n    state.knightBias = nil\nend\n\nif cid == 3634 then\n    state.adelphelID = eventArgs.entityID\nelseif cid == 3635 then\n    state.janlenouxID = eventArgs.entityID\nend\n\nself.used = true",
-							conditions = 
+							actionLua = "local cid = eventArgs.entityContentID\nif cid ~= 3633 and cid ~= 3634 and cid ~= 3635 then\n    self.used = true\n    return\nend\n\nlocal state = data.sam_sanctity_flex\nif state == nil then\n    state = {}\n    data.sam_sanctity_flex = state\nend\n\n\n\n\nif cid == 3633 then\n    state = {\n        captureInitialized = true,\n        markers = {},\n        zephirinLocked = false,\n        knightBias = nil,\n        zephirinID = eventArgs.entityID,\n        adelphelID = state.adelphelID,\n        janlenouxID = state.janlenouxID\n    }\n    data.sam_sanctity_flex = state\nelseif state.captureInitialized ~= true then\n    state.captureInitialized = true\n    state.markers = {}\n    state.zephirinLocked = false\n    state.knightBias = nil\nend\n\nif cid == 3634 then\n    state.adelphelID = eventArgs.entityID\nelseif cid == 3635 then\n    state.janlenouxID = eventArgs.entityID\nend\n\nself.used = true",
+							conditions =
 							{
-								
+
 								{
 									"9f13be59-871a-234a-b494-04088120b99c",
 									true,
@@ -1333,11 +1333,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -1360,25 +1360,25 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p2_sanctity\")==\"Disabled\" then self.used=true return end\n\nlocal state = data.sam_sanctity_flex\nif state == nil or state.markers == nil or\n   state.zephirinID == nil or state.adelphelID == nil or state.janlenouxID == nil then\n    return\nend\n\nlocal player = TensorCore.mGetPlayer()\nlocal zephirin = TensorCore.mGetEntity(state.zephirinID)\nlocal adelphel = TensorCore.mGetEntity(state.adelphelID)\nlocal janlenoux = TensorCore.mGetEntity(state.janlenouxID)\nif player == nil or player.pos == nil or\n   zephirin == nil or zephirin.pos == nil or\n   adelphel == nil or adelphel.pos == nil or\n   janlenoux == nil or janlenoux.pos == nil then\n    return\nend\n\nlocal mySlot = AnyoneCore.Roster.mySlot()\nif mySlot == nil then\n    return\nend\n\nlocal groupOneSlots = {\n    T1 = true,\n    H1 = true,\n    M1 = true,\n    R1 = true\n}\nlocal partnerSlots = {\n    T1 = \"T2\",\n    T2 = \"T1\",\n    H1 = \"H2\",\n    H2 = \"H1\",\n    M1 = \"M2\",\n    M2 = \"M1\",\n    R1 = \"R2\",\n    R2 = \"R1\"\n}\n\nlocal baseGroup\nif groupOneSlots[mySlot] == true then\n    baseGroup = 1\nelseif partnerSlots[mySlot] ~= nil then\n    baseGroup = 2\nelse\n    return\nend\n\nlocal otherSlot = partnerSlots[mySlot]\nlocal otherID = nil\n\n-- Replay-safe partner lookup:\n-- Roster.members() supplies the logical role slot and human identity;\n-- getAgnosticPartyList() supplies the current live entity ID.\nlocal rosterMembers = AnyoneCore.Roster.members()\nlocal agnosticParty = AnyoneCore.API.getAgnosticPartyList()\nif type(rosterMembers) == \"table\" and type(agnosticParty) == \"table\" then\n    local partner = rosterMembers[otherSlot]\n    if partner ~= nil and partner.name ~= nil and partner.job ~= nil then\n        local actorByJob = {}\n        local actorJobCount = {}\n        local rosterJobCount = {}\n\n        for _, actor in pairs(agnosticParty) do\n            if actor ~= nil and actor.id ~= nil and actor.job ~= nil then\n                actorJobCount[actor.job] = (actorJobCount[actor.job] or 0) + 1\n                actorByJob[actor.job] = actor\n            end\n        end\n\n        for _, member in pairs(rosterMembers) do\n            if member ~= nil and member.job ~= nil then\n                rosterJobCount[member.job] = (rosterJobCount[member.job] or 0) + 1\n            end\n        end\n\n        local partnerKey = tostring(partner.name) .. \"\\31\" .. tostring(partner.job)\n        for _, actor in pairs(agnosticParty) do\n            if actor ~= nil and actor.id ~= nil\n                and actor.name ~= nil and actor.job ~= nil\n                and tostring(actor.name) .. \"\\31\" .. tostring(actor.job) == partnerKey then\n                otherID = actor.id\n                break\n            end\n        end\n\n        if otherID == nil and actorJobCount[partner.job] == 1 and\n           rosterJobCount[partner.job] == 1 then\n            local uniqueActor = actorByJob[partner.job]\n            if uniqueActor ~= nil then\n                otherID = uniqueActor.id\n            end\n        end\n    end\nend\n\nlocal playerMarker = state.markers[player.id]\nlocal otherMarker = nil\nif otherID ~= nil then\n    otherMarker = state.markers[otherID]\nend\n\nlocal finalGroup = baseGroup\nif playerMarker == 50 then\n    finalGroup = 1\nelseif playerMarker == 51 then\n    finalGroup = 2\nelseif otherMarker == 50 then\n    finalGroup = 2\nelseif otherMarker == 51 then\n    finalGroup = 1\nend\n\nif state.zephirinLocked ~= true then\n    local zx = zephirin.pos.x - 100.0\n    local zz = zephirin.pos.z - 100.0\n    if math.abs(zx) < 8.0 or math.abs(zz) < 8.0 then\n        return\n    end\n    state.zephirinX = zephirin.pos.x\n    state.zephirinZ = zephirin.pos.z\n    state.zephirinLocked = true\nend\n\nif state.knightBias == nil then\n    local west, east\n    if math.abs(adelphel.pos.x - 95.0) <= 0.75 and\n       math.abs(janlenoux.pos.x - 105.0) <= 0.75 then\n        west, east = adelphel, janlenoux\n    elseif math.abs(janlenoux.pos.x - 95.0) <= 0.75 and\n           math.abs(adelphel.pos.x - 105.0) <= 0.75 then\n        west, east = janlenoux, adelphel\n    else\n        return\n    end\n\n    if math.abs(west.pos.z - 100.0) > 0.75 or\n       math.abs(east.pos.z - 100.0) > 0.75 or\n       west.pos.h == nil or east.pos.h == nil then\n        return\n    end\n\n    if math.abs(west.pos.h) > 1.5 and math.abs(east.pos.h) < 1.5 then\n        state.knightBias = 1\n    elseif math.abs(west.pos.h) < 1.5 and math.abs(east.pos.h) > 1.5 then\n        state.knightBias = -1\n    else\n        return\n    end\nend\n\nlocal dx = state.zephirinX - 100.0\nlocal dz = state.zephirinZ - 100.0\nlocal radius = math.sqrt(dx * dx + dz * dz)\nif radius <= 0.0 then\n    return\nend\n\nlocal directionX = dx / radius\nlocal directionZ = dz / radius\nif finalGroup == 1 then\n    directionX = -directionX\n    directionZ = -directionZ\nend\n\nlocal biasRadians = state.knightBias * 0.2094395102\nlocal cosine = math.cos(biasRadians)\nlocal sine = math.sin(biasRadians)\nlocal adjustedX = directionX * cosine - directionZ * sine\nlocal adjustedZ = directionX * sine + directionZ * cosine\nlocal targetX = 100.0 + adjustedX * 20.25\nlocal targetZ = 100.0 + adjustedZ * 20.25\n\nif state.drawer == nil then\n    state.drawer = TensorCore.getCachedFlatDrawer(\n        nil, nil, 0xFF0000FF, nil, 1.0, 0, 0\n    )\nend\n\nfrogGuide.draw(\"p2_sanctity\",state.drawer,\n    player.pos.x, player.pos.y, player.pos.z,\n    targetX, 0.05, targetZ,\n    8.0, 2.0\n)\n\nself.used = true\n",
+							actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p2_sanctity\")==\"Disabled\" then self.used=true return end\n\nlocal state = data.sam_sanctity_flex\nif state == nil or state.markers == nil or\n   state.zephirinID == nil or state.adelphelID == nil or state.janlenouxID == nil then\n    return\nend\n\nlocal player = TensorCore.mGetPlayer()\nlocal zephirin = TensorCore.mGetEntity(state.zephirinID)\nlocal adelphel = TensorCore.mGetEntity(state.adelphelID)\nlocal janlenoux = TensorCore.mGetEntity(state.janlenouxID)\nif player == nil or player.pos == nil or\n   zephirin == nil or zephirin.pos == nil or\n   adelphel == nil or adelphel.pos == nil or\n   janlenoux == nil or janlenoux.pos == nil then\n    return\nend\n\nlocal mySlot = AnyoneCore.Roster.mySlot()\nif mySlot == nil then\n    return\nend\n\nlocal groupOneSlots = {\n    T1 = true,\n    H1 = true,\n    M1 = true,\n    R1 = true\n}\nlocal partnerSlots = {\n    T1 = \"T2\",\n    T2 = \"T1\",\n    H1 = \"H2\",\n    H2 = \"H1\",\n    M1 = \"M2\",\n    M2 = \"M1\",\n    R1 = \"R2\",\n    R2 = \"R1\"\n}\n\nlocal baseGroup\nif groupOneSlots[mySlot] == true then\n    baseGroup = 1\nelseif partnerSlots[mySlot] ~= nil then\n    baseGroup = 2\nelse\n    return\nend\n\nlocal otherSlot = partnerSlots[mySlot]\nlocal otherID = nil\n\n\n\n\nlocal rosterMembers = AnyoneCore.Roster.members()\nlocal agnosticParty = AnyoneCore.API.getAgnosticPartyList()\nif type(rosterMembers) == \"table\" and type(agnosticParty) == \"table\" then\n    local partner = rosterMembers[otherSlot]\n    if partner ~= nil and partner.name ~= nil and partner.job ~= nil then\n        local actorByJob = {}\n        local actorJobCount = {}\n        local rosterJobCount = {}\n\n        for _, actor in pairs(agnosticParty) do\n            if actor ~= nil and actor.id ~= nil and actor.job ~= nil then\n                actorJobCount[actor.job] = (actorJobCount[actor.job] or 0) + 1\n                actorByJob[actor.job] = actor\n            end\n        end\n\n        for _, member in pairs(rosterMembers) do\n            if member ~= nil and member.job ~= nil then\n                rosterJobCount[member.job] = (rosterJobCount[member.job] or 0) + 1\n            end\n        end\n\n        local partnerKey = tostring(partner.name) .. \"\\31\" .. tostring(partner.job)\n        for _, actor in pairs(agnosticParty) do\n            if actor ~= nil and actor.id ~= nil\n                and actor.name ~= nil and actor.job ~= nil\n                and tostring(actor.name) .. \"\\31\" .. tostring(actor.job) == partnerKey then\n                otherID = actor.id\n                break\n            end\n        end\n\n        if otherID == nil and actorJobCount[partner.job] == 1 and\n           rosterJobCount[partner.job] == 1 then\n            local uniqueActor = actorByJob[partner.job]\n            if uniqueActor ~= nil then\n                otherID = uniqueActor.id\n            end\n        end\n    end\nend\n\nlocal playerMarker = state.markers[player.id]\nlocal otherMarker = nil\nif otherID ~= nil then\n    otherMarker = state.markers[otherID]\nend\n\nlocal finalGroup = baseGroup\nif playerMarker == 50 then\n    finalGroup = 1\nelseif playerMarker == 51 then\n    finalGroup = 2\nelseif otherMarker == 50 then\n    finalGroup = 2\nelseif otherMarker == 51 then\n    finalGroup = 1\nend\n\nif state.zephirinLocked ~= true then\n    local zx = zephirin.pos.x - 100.0\n    local zz = zephirin.pos.z - 100.0\n    if math.abs(zx) < 8.0 or math.abs(zz) < 8.0 then\n        return\n    end\n    state.zephirinX = zephirin.pos.x\n    state.zephirinZ = zephirin.pos.z\n    state.zephirinLocked = true\nend\n\nif state.knightBias == nil then\n    local west, east\n    if math.abs(adelphel.pos.x - 95.0) <= 0.75 and\n       math.abs(janlenoux.pos.x - 105.0) <= 0.75 then\n        west, east = adelphel, janlenoux\n    elseif math.abs(janlenoux.pos.x - 95.0) <= 0.75 and\n           math.abs(adelphel.pos.x - 105.0) <= 0.75 then\n        west, east = janlenoux, adelphel\n    else\n        return\n    end\n\n    if math.abs(west.pos.z - 100.0) > 0.75 or\n       math.abs(east.pos.z - 100.0) > 0.75 or\n       west.pos.h == nil or east.pos.h == nil then\n        return\n    end\n\n    if math.abs(west.pos.h) > 1.5 and math.abs(east.pos.h) < 1.5 then\n        state.knightBias = 1\n    elseif math.abs(west.pos.h) < 1.5 and math.abs(east.pos.h) > 1.5 then\n        state.knightBias = -1\n    else\n        return\n    end\nend\n\nlocal dx = state.zephirinX - 100.0\nlocal dz = state.zephirinZ - 100.0\nlocal radius = math.sqrt(dx * dx + dz * dz)\nif radius <= 0.0 then\n    return\nend\n\nlocal directionX = dx / radius\nlocal directionZ = dz / radius\nif finalGroup == 1 then\n    directionX = -directionX\n    directionZ = -directionZ\nend\n\nlocal biasRadians = state.knightBias * 0.2094395102\nlocal cosine = math.cos(biasRadians)\nlocal sine = math.sin(biasRadians)\nlocal adjustedX = directionX * cosine - directionZ * sine\nlocal adjustedZ = directionX * sine + directionZ * cosine\nlocal targetX = 100.0 + adjustedX * 20.25\nlocal targetZ = 100.0 + adjustedZ * 20.25\n\nif state.drawer == nil then\n    state.drawer = TensorCore.getCachedFlatDrawer(\n        nil, nil, 0xFF0000FF, nil, 1.0, 0, 0\n    )\nend\n\nfrogGuide.draw(\"p2_sanctity\",state.drawer,\n    player.pos.x, player.pos.y, player.pos.z,\n    targetX, 0.05, targetZ,\n    8.0, 2.0\n)\n\nself.used = true",
 							name = "Draw Sanctity flex tether",
 							uuid = "53d18b17-56fd-d820-b631-f77d09b7e1f8",
 							version = 2.1,
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 12,
@@ -1393,21 +1393,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "local cid = eventArgs.entityContentID\nif cid ~= 3634 and cid ~= 3635 then\n    self.used = true\n    return\nend\n\nlocal state = data.sam_sanctity_draw\nif state == nil then\n    state = {}\n    data.sam_sanctity_draw = state\nend\n\nstate.entityIDs = state.entityIDs or {}\nstate.entityIDs[cid] = eventArgs.entityID\nstate.armed = true\nself.used = true\n",
-							conditions = 
+							actionLua = "local cid = eventArgs.entityContentID\nif cid ~= 3634 and cid ~= 3635 then\n    self.used = true\n    return\nend\n\nlocal state = data.sam_sanctity_draw\nif state == nil then\n    state = {}\n    data.sam_sanctity_draw = state\nend\n\nstate.entityIDs = state.entityIDs or {}\nstate.entityIDs[cid] = eventArgs.entityID\nstate.armed = true\nself.used = true",
+							conditions =
 							{
-								
+
 								{
 									"3c6fb205-2153-af21-b8f7-220298ddbc64",
 									true,
@@ -1419,11 +1419,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -1446,25 +1446,25 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "\nlocal state = data.sam_sanctity_draw\nif state == nil then\n    state = {}\n    data.sam_sanctity_draw = state\nend\n\nif state.predictionDrawn == true then\n    self.used = true\n    return\nend\n\nlocal now = TensorReactions_CurrentTimer or 0.0\nlocal predictionEnd = 399.3\nlocal arenaEnd = 404.9\nlocal predictionTimeout = math.floor((predictionEnd - now) * 1000.0)\nlocal arenaTimeout = math.floor((arenaEnd - now) * 1000.0)\nif arenaTimeout <= 0 then\n    self.used = true\n    return\nend\n\nlocal centerX, centerY, centerZ = 100.0, 0.0, 100.0\nlocal arenaRadius, orbRadius, laneWidth = 21.0, 9.0, 8.0\nlocal channel, drawHeight = 1, 0.05\nlocal baseFlags =\n    Argus2.RenderFlags.FLAG_OCCLUSION_BASE |\n    Argus2.RenderFlags.FLAG_RENDER_OVERLAY\nlocal occludeFlags =\n    Argus2.RenderFlags.FLAG_OCCLUDE |\n    Argus2.RenderFlags.FLAG_RENDER_OVERLAY\n\nif state.baseDrawn ~= true then\n    local base = TensorCore.getStaticFlatDrawer(0x5500FF00, 1.0, channel, baseFlags)\n    base:setHeightOffset(drawHeight)\n    base:addTimedCircle(arenaTimeout, centerX, centerY, centerZ, arenaRadius, 0, false, true, baseFlags)\n    state.baseDrawn = true\nend\n\nif predictionTimeout <= 0 then\n    self.used = true\n    return\nend\n\nif state.entityIDs == nil or\n   state.entityIDs[3634] == nil or state.entityIDs[3635] == nil then\n    self.used = true\n    return\nend\n\nlocal adelphel = TensorCore.mGetEntity(state.entityIDs[3634])\nlocal janlenoux = TensorCore.mGetEntity(state.entityIDs[3635])\nif adelphel == nil or janlenoux == nil or\n   adelphel.pos == nil or janlenoux.pos == nil or\n   adelphel.pos.x == nil or janlenoux.pos.x == nil or\n   adelphel.pos.z == nil or janlenoux.pos.z == nil or\n   adelphel.pos.h == nil or janlenoux.pos.h == nil then\n    self.used = true\n    return\nend\n\nlocal west, east\nif adelphel.pos.x < 100.0 and janlenoux.pos.x > 100.0 then\n    west, east = adelphel, janlenoux\nelseif janlenoux.pos.x < 100.0 and adelphel.pos.x > 100.0 then\n    west, east = janlenoux, adelphel\nelse\n    self.used = true\n    return\nend\n\nif math.abs(west.pos.x - 95.0) > 0.5 or math.abs(west.pos.z - 100.0) > 0.5 or\n   math.abs(east.pos.x - 105.0) > 0.5 or math.abs(east.pos.z - 100.0) > 0.5 then\n    self.used = true\n    return\nend\n\n-- Arm from the verified starting snapshot, even if visibility fired\n-- before this reaction was loaded into an already-running replay.\nstate.armed = true\n\nlocal westFacingPi = math.abs(west.pos.h) > 1.5\nlocal eastFacingZero = math.abs(east.pos.h) < 1.5\nlocal pattern\n\nif westFacingPi and eastFacingZero then\n    pattern = {\n        {\n            start = {x = 95.0, z = 100.0},\n            finish = {x = 100.0, z = 79.0},\n            orbs = {\n                {x = 95.000, z = 100.000},\n                {x = 97.502, z = 89.494},\n                {x = 100.000, z = 79.000}\n            }\n        },\n        {\n            start = {x = 105.0, z = 100.0},\n            finish = {x = 100.0, z = 121.0},\n            orbs = {\n                {x = 105.000, z = 100.000},\n                {x = 102.498, z = 110.506},\n                {x = 100.000, z = 121.000}\n            }\n        }\n    }\nelseif (not westFacingPi) and (not eastFacingZero) then\n    pattern = {\n        {\n            start = {x = 95.0, z = 100.0},\n            finish = {x = 100.0, z = 121.0},\n            orbs = {\n                {x = 95.000, z = 100.000},\n                {x = 97.502, z = 110.506},\n                {x = 100.000, z = 121.000}\n            }\n        },\n        {\n            start = {x = 105.0, z = 100.0},\n            finish = {x = 100.0, z = 79.0},\n            orbs = {\n                {x = 105.000, z = 100.000},\n                {x = 102.498, z = 89.494},\n                {x = 100.000, z = 79.000}\n            }\n        }\n    }\nelse\n    self.used = true\n    return\nend\n\nlocal cut = TensorCore.getStaticFlatDrawer(0x00000000, 0.0, channel, occludeFlags)\ncut:setHeightOffset(drawHeight)\n\nfor _, dash in ipairs(pattern) do\n    local dx = dash.finish.x - dash.start.x\n    local dz = dash.finish.z - dash.start.z\n    local length = math.sqrt(dx * dx + dz * dz)\n    local heading = TensorCore.getHeadingToTarget(dash.start, dash.finish)\n    cut:addTimedCenteredRect(\n        predictionTimeout,\n        (dash.start.x + dash.finish.x) * 0.5,\n        centerY,\n        (dash.start.z + dash.finish.z) * 0.5,\n        length,\n        laneWidth,\n        heading,\n        0,\n        false,\n        true,\n        occludeFlags\n    )\n\n    for _, orb in ipairs(dash.orbs) do\n        cut:addTimedCircle(\n            predictionTimeout,\n            orb.x,\n            centerY,\n            orb.z,\n            orbRadius,\n            0,\n            false,\n            true,\n            occludeFlags\n        )\n    end\nend\n\nstate.predictionDrawn = true\nself.used = true\n",
+							actionLua = "\nlocal state = data.sam_sanctity_draw\nif state == nil then\n    state = {}\n    data.sam_sanctity_draw = state\nend\n\nif state.predictionDrawn == true then\n    self.used = true\n    return\nend\n\nlocal now = TensorReactions_CurrentTimer or 0.0\nlocal predictionEnd = 399.3\nlocal arenaEnd = 404.9\nlocal predictionTimeout = math.floor((predictionEnd - now) * 1000.0)\nlocal arenaTimeout = math.floor((arenaEnd - now) * 1000.0)\nif arenaTimeout <= 0 then\n    self.used = true\n    return\nend\n\nlocal centerX, centerY, centerZ = 100.0, 0.0, 100.0\nlocal arenaRadius, orbRadius, laneWidth = 21.0, 9.0, 8.0\nlocal channel, drawHeight = 1, 0.05\nlocal baseFlags =\n    Argus2.RenderFlags.FLAG_OCCLUSION_BASE |\n    Argus2.RenderFlags.FLAG_RENDER_OVERLAY\nlocal occludeFlags =\n    Argus2.RenderFlags.FLAG_OCCLUDE |\n    Argus2.RenderFlags.FLAG_RENDER_OVERLAY\n\nif state.baseDrawn ~= true then\n    local base = TensorCore.getStaticFlatDrawer(0x5500FF00, 1.0, channel, baseFlags)\n    base:setHeightOffset(drawHeight)\n    base:addTimedCircle(arenaTimeout, centerX, centerY, centerZ, arenaRadius, 0, false, true, baseFlags)\n    state.baseDrawn = true\nend\n\nif predictionTimeout <= 0 then\n    self.used = true\n    return\nend\n\nif state.entityIDs == nil or\n   state.entityIDs[3634] == nil or state.entityIDs[3635] == nil then\n    self.used = true\n    return\nend\n\nlocal adelphel = TensorCore.mGetEntity(state.entityIDs[3634])\nlocal janlenoux = TensorCore.mGetEntity(state.entityIDs[3635])\nif adelphel == nil or janlenoux == nil or\n   adelphel.pos == nil or janlenoux.pos == nil or\n   adelphel.pos.x == nil or janlenoux.pos.x == nil or\n   adelphel.pos.z == nil or janlenoux.pos.z == nil or\n   adelphel.pos.h == nil or janlenoux.pos.h == nil then\n    self.used = true\n    return\nend\n\nlocal west, east\nif adelphel.pos.x < 100.0 and janlenoux.pos.x > 100.0 then\n    west, east = adelphel, janlenoux\nelseif janlenoux.pos.x < 100.0 and adelphel.pos.x > 100.0 then\n    west, east = janlenoux, adelphel\nelse\n    self.used = true\n    return\nend\n\nif math.abs(west.pos.x - 95.0) > 0.5 or math.abs(west.pos.z - 100.0) > 0.5 or\n   math.abs(east.pos.x - 105.0) > 0.5 or math.abs(east.pos.z - 100.0) > 0.5 then\n    self.used = true\n    return\nend\n\n\n\nstate.armed = true\n\nlocal westFacingPi = math.abs(west.pos.h) > 1.5\nlocal eastFacingZero = math.abs(east.pos.h) < 1.5\nlocal pattern\n\nif westFacingPi and eastFacingZero then\n    pattern = {\n        {\n            start = {x = 95.0, z = 100.0},\n            finish = {x = 100.0, z = 79.0},\n            orbs = {\n                {x = 95.000, z = 100.000},\n                {x = 97.502, z = 89.494},\n                {x = 100.000, z = 79.000}\n            }\n        },\n        {\n            start = {x = 105.0, z = 100.0},\n            finish = {x = 100.0, z = 121.0},\n            orbs = {\n                {x = 105.000, z = 100.000},\n                {x = 102.498, z = 110.506},\n                {x = 100.000, z = 121.000}\n            }\n        }\n    }\nelseif (not westFacingPi) and (not eastFacingZero) then\n    pattern = {\n        {\n            start = {x = 95.0, z = 100.0},\n            finish = {x = 100.0, z = 121.0},\n            orbs = {\n                {x = 95.000, z = 100.000},\n                {x = 97.502, z = 110.506},\n                {x = 100.000, z = 121.000}\n            }\n        },\n        {\n            start = {x = 105.0, z = 100.0},\n            finish = {x = 100.0, z = 79.0},\n            orbs = {\n                {x = 105.000, z = 100.000},\n                {x = 102.498, z = 89.494},\n                {x = 100.000, z = 79.000}\n            }\n        }\n    }\nelse\n    self.used = true\n    return\nend\n\nlocal cut = TensorCore.getStaticFlatDrawer(0x00000000, 0.0, channel, occludeFlags)\ncut:setHeightOffset(drawHeight)\n\nfor _, dash in ipairs(pattern) do\n    local dx = dash.finish.x - dash.start.x\n    local dz = dash.finish.z - dash.start.z\n    local length = math.sqrt(dx * dx + dz * dz)\n    local heading = TensorCore.getHeadingToTarget(dash.start, dash.finish)\n    cut:addTimedCenteredRect(\n        predictionTimeout,\n        (dash.start.x + dash.finish.x) * 0.5,\n        centerY,\n        (dash.start.z + dash.finish.z) * 0.5,\n        length,\n        laneWidth,\n        heading,\n        0,\n        false,\n        true,\n        occludeFlags\n    )\n\n    for _, orb in ipairs(dash.orbs) do\n        cut:addTimedCircle(\n            predictionTimeout,\n            orb.x,\n            centerY,\n            orb.z,\n            orbRadius,\n            0,\n            false,\n            true,\n            occludeFlags\n        )\n    end\nend\n\nstate.predictionDrawn = true\nself.used = true",
 							name = "Draw Sanctity Predictive Occlusion",
 							uuid = "a0629032-1124-5240-a10b-df9accf9fc8b",
 							version = 2.1,
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				loop = true,
@@ -1478,18 +1478,18 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "local marker = eventArgs.markerID\nif marker ~= 50 and marker ~= 51 then\n    self.used = true\n    return\nend\n\nlocal state = data.sam_sanctity_flex\nif state == nil then\n    state = {}\n    data.sam_sanctity_flex = state\nend\n\nstate.markers = state.markers or {}\nstate.markers[eventArgs.entityID] = marker\nself.used = true\n",
+							actionLua = "local marker = eventArgs.markerID\nif marker ~= 50 and marker ~= 51 then\n    self.used = true\n    return\nend\n\nlocal state = data.sam_sanctity_flex\nif state == nil then\n    state = {}\n    data.sam_sanctity_flex = state\nend\n\nstate.markers = state.markers or {}\nstate.markers[eventArgs.entityID] = marker\nself.used = true",
 							name = "Capture Sanctity sword marker",
 							uuid = "627dd271-34ff-1d10-b376-17e2d2bb70ba",
 							version = 2.1,
@@ -1520,15 +1520,15 @@ local tbl =
 			{
 				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "\nlocal timeout = 2000.0\nlocal occludeFlags =\n    Argus2.RenderFlags.FLAG_OCCLUDE |\n    Argus2.RenderFlags.FLAG_RENDER_OVERLAY\nlocal drawer = TensorCore.getStaticFlatDrawer(0x00000000, 0.0, 1, occludeFlags)\ndrawer:setHeightOffset(0.05)\n\nif eventArgs.entityID ~= nil then\n    drawer:addTimedCircleOnEnt(\n        timeout,\n        eventArgs.entityID,\n        9.0,\n        0,\n        false,\n        true,\n        occludeFlags\n    )\nend\n\nself.used = true\n",
-							conditions = 
+							actionLua = "\nlocal timeout = 2000.0\nlocal occludeFlags =\n    Argus2.RenderFlags.FLAG_OCCLUDE |\n    Argus2.RenderFlags.FLAG_RENDER_OVERLAY\nlocal drawer = TensorCore.getStaticFlatDrawer(0x00000000, 0.0, 1, occludeFlags)\ndrawer:setHeightOffset(0.05)\n\nif eventArgs.entityID ~= nil then\n    drawer:addTimedCircleOnEnt(\n        timeout,\n        eventArgs.entityID,\n        9.0,\n        0,\n        false,\n        true,\n        occludeFlags\n    )\nend\n\nself.used = true",
+							conditions =
 							{
-								
+
 								{
 									"7186d283-e797-cfb1-aa11-623eeba229ec",
 									true,
@@ -1540,11 +1540,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -1576,12 +1576,12 @@ local tbl =
 			{
 				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p2_sanctity\")==\"Disabled\" then self.used=true return end\n\nlocal state = data.sam_hiemal_meteor\nif state == nil\n    or state.towersResolved ~= true\n    or state.towerByID == nil then\n    return\nend\n\nlocal player = TensorCore.mGetPlayer()\nif player == nil or player.id == nil or player.pos == nil then\n    return\nend\n\nlocal tower = state.towerByID[player.id]\nif tower == nil then\n    return\nend\n\nlocal drawer = TensorCore.getCachedFlatDrawer(\n    nil, nil, 0xFF0000FF, nil, 1.1, 0, 0\n)\n\nfrogGuide.draw(\"p2_sanctity\",drawer,\n    player.pos.x, player.pos.y, player.pos.z,\n    tower.x, tower.y or 0.05, tower.z,\n    8.0, 2.0\n)\n\nself.used=true\n",
+							actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p2_sanctity\")==\"Disabled\" then self.used=true return end\n\nlocal state = data.sam_hiemal_meteor\nif state == nil\n    or state.towersResolved ~= true\n    or state.towerByID == nil then\n    return\nend\n\nlocal player = TensorCore.mGetPlayer()\nif player == nil or player.id == nil or player.pos == nil then\n    return\nend\n\nlocal tower = state.towerByID[player.id]\nif tower == nil then\n    return\nend\n\nlocal drawer = TensorCore.getCachedFlatDrawer(\n    nil, nil, 0xFF0000FF, nil, 1.1, 0, 0\n)\n\nfrogGuide.draw(\"p2_sanctity\",drawer,\n    player.pos.x, player.pos.y, player.pos.z,\n    tower.x, tower.y or 0.05, tower.z,\n    8.0, 2.0\n)\n\nself.used=true",
 							name = "Draw Hiemal First Tower Tether",
 							uuid = "8eb5ed44-df8d-9e57-bd6f-33bfc85beca8",
 							version = 2.1,
@@ -1603,25 +1603,25 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "local function createMeteorState()\n    return {\n        marked = {},\n        markerCount = 0,\n        towers = {},\n        towerCount = 0,\n        assignmentsReady = false,\n        towersResolved = false\n    }\nend\n\nif eventArgs == nil or eventArgs.markerID ~= 285 or eventArgs.entityID == nil then\n    return\nend\n\nlocal state = data.sam_hiemal_meteor\nif state == nil or state.markerCount == nil or state.markerCount >= 2 then\n    state = createMeteorState()\n    data.sam_hiemal_meteor = state\nend\n\nstate.marked[eventArgs.entityID] = true\nlocal count = 0\nfor _ in pairs(state.marked) do\n    count = count + 1\nend\nstate.markerCount = count\nself.used = true\n",
+							actionLua = "local function createMeteorState()\n    return {\n        marked = {},\n        markerCount = 0,\n        towers = {},\n        towerCount = 0,\n        assignmentsReady = false,\n        towersResolved = false\n    }\nend\n\nif eventArgs == nil or eventArgs.markerID ~= 285 or eventArgs.entityID == nil then\n    return\nend\n\nlocal state = data.sam_hiemal_meteor\nif state == nil or state.markerCount == nil or state.markerCount >= 2 then\n    state = createMeteorState()\n    data.sam_hiemal_meteor = state\nend\n\nstate.marked[eventArgs.entityID] = true\nlocal count = 0\nfor _ in pairs(state.marked) do\n    count = count + 1\nend\nstate.markerCount = count\nself.used = true",
 							name = "Capture Hiemal Meteor Markers",
 							uuid = "a36c5c2c-4358-fbc7-b1a5-95cb2de5c2fd",
 							version = 2.1,
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 4,
@@ -1641,12 +1641,12 @@ local tbl =
 			{
 				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\n\nlocal state = data.sam_hiemal_meteor\nif state == nil or state.marked == nil or state.markerCount < 2 then\n    return\nend\n\nlocal player = TensorCore.mGetPlayer()\nif player == nil or player.id == nil or player.pos == nil then\n    return\nend\n\nif state.slotOrder == nil then\n    state.slotOrder = {\"MT\", \"OT\", \"H1\", \"H2\", \"M1\", \"M2\", \"R1\", \"R2\"}\n    state.definitions = {\n        {name = \"MT\", cardinal = \"N\"},\n        {name = \"OT\", cardinal = \"S\"},\n        {name = \"H1\", cardinal = \"W\"},\n        {name = \"H2\", cardinal = \"E\"},\n        {name = \"M1\", cardinal = \"W\"},\n        {name = \"M2\", cardinal = \"E\"},\n        {name = \"R1\", cardinal = \"N\"},\n        {name = \"R2\", cardinal = \"S\"}\n    }\nend\n\nif state.meteorSolverVersion ~= 5 then\n    state.meteorSolverVersion = 5\n    state.assignmentsReady = false\n    state.towersResolved = false\n    state.towerByID = nil\nend\n\nif state.assignmentsReady ~= true then\nlocal rosterSlotByName = {\n    MT = \"T1\",\n    OT = \"T2\",\n    H1 = \"H1\",\n    H2 = \"H2\",\n    M1 = \"M1\",\n    M2 = \"M2\",\n    R1 = \"R1\",\n    R2 = \"R2\"\n}\nlocal refreshedSlots = {}\nlocal refreshedInitialCardinal = {}\nlocal rosterIDs = {}\n\n-- Replay-safe roster join:\n-- Roster.members() contains the logical slots and human names, while\n-- getAgnosticPartyList() contains the current live entity IDs.\nlocal rosterMembers = AnyoneCore.Roster.members()\nlocal agnosticParty = AnyoneCore.API.getAgnosticPartyList()\nif type(rosterMembers) ~= \"table\" or type(agnosticParty) ~= \"table\" then\n    return\nend\n\nlocal actorByJob, actorJobCount, rosterJobCount = {}, {}, {}\nfor _, actor in pairs(agnosticParty) do\n    if actor.id ~= nil and actor.job ~= nil then\n        actorByJob[actor.job] = actor\n        actorJobCount[actor.job] = (actorJobCount[actor.job] or 0) + 1\n    end\nend\nfor _, member in pairs(rosterMembers) do\n    if member.job ~= nil then\n        rosterJobCount[member.job] = (rosterJobCount[member.job] or 0) + 1\n    end\nend\nlocal actorByNameJob = {}\nfor _, actor in pairs(agnosticParty) do\n    if actor ~= nil and actor.id ~= nil and actor.name ~= nil and actor.job ~= nil then\n        local key = tostring(actor.name) .. \"\\31\" .. tostring(actor.job)\n        actorByNameJob[key] = actor\n    end\nend\n\nfor _, definition in ipairs(state.definitions) do\n    local rosterSlot = rosterSlotByName[definition.name]\n    local member = rosterMembers[rosterSlot]\n    if member == nil or member.name == nil or member.job == nil then\n        return\n    end\n\n    local key = tostring(member.name) .. \"\\31\" .. tostring(member.job)\n    local actor = actorByNameJob[key]\n    -- Anonymized replay names can differ; use only an unambiguous job join.\n    if actor == nil and actorJobCount[member.job] == 1 and rosterJobCount[member.job] == 1 then\n        actor = actorByJob[member.job]\n    end\n    if actor == nil or actor.id == nil then\n        return\n    end\n\n    local kind\n    if definition.name == \"MT\" or definition.name == \"OT\"\n        or definition.name == \"H1\" or definition.name == \"H2\" then\n        kind = \"SUPPORT\"\n    else\n        kind = \"DPS\"\n    end\n\n    local id = actor.id\n    refreshedSlots[definition.name] = {\n        id = id,\n        cardinal = definition.cardinal,\n        kind = kind\n    }\n    refreshedInitialCardinal[id] = definition.cardinal\n    rosterIDs[#rosterIDs + 1] = definition.name .. \"=\" .. tostring(id)\nend\n\nlocal rosterSignature = table.concat(rosterIDs, \":\")\nif state.rosterSignature ~= rosterSignature then\n    state.rosterSignature = rosterSignature\n    state.assignmentsReady = false\n    state.towersResolved = false\n    state.finalCardinal = nil\n    state.rotatedFrom = nil\n    state.meteorPlayers = nil\n    state.towerByID = nil\n    state.quadrants = nil\nend\n\nstate.slots = refreshedSlots\nstate.initialCardinal = refreshedInitialCardinal\n\nlocal meteorPlayers = {}\nlocal meteorKind = nil\nfor _, slotName in ipairs(state.slotOrder) do\n    local slot = state.slots[slotName]\n    if slot ~= nil and state.marked[slot.id] == true then\n        meteorPlayers[#meteorPlayers + 1] = slot\n        if meteorKind == nil then\n            meteorKind = slot.kind\n        elseif meteorKind ~= slot.kind then\n            return\n        end\n    end\nend\n\nif #meteorPlayers < 2 or meteorKind == nil then\n    return\nend\n\nif state.assignmentsReady ~= true then\n    state.finalCardinal = {}\n    state.rotatedFrom = {}\n    state.meteorPlayers = meteorPlayers\n\n    local occupied = {N = false, S = false}\n    for _, slot in ipairs(state.slotOrder) do\n        local entry = state.slots[slot]\n        state.finalCardinal[entry.id] = entry.cardinal\n        if state.marked[entry.id] == true\n            and (entry.cardinal == \"N\" or entry.cardinal == \"S\") then\n            occupied[entry.cardinal] = true\n        end\n    end\n\n    -- Meteor players already starting north or south stay fixed.\n    -- West rotates clockwise to north; east rotates clockwise to south.\n    -- If that destination is already occupied by a meteor, use the other\n    -- fixed cardinal instead.\n    for _, slotName in ipairs(state.slotOrder) do\n        local entry = state.slots[slotName]\n        if state.marked[entry.id] == true\n            and (entry.cardinal == \"W\" or entry.cardinal == \"E\") then\n            local target = entry.cardinal == \"W\" and \"N\" or \"S\"\n            if occupied[target] == true then\n                target = target == \"N\" and \"S\" or \"N\"\n            end\n            state.finalCardinal[entry.id] = target\n            state.rotatedFrom[target] = entry.cardinal\n            occupied[target] = true\n        end\n    end\n\n    -- The non-meteor support/DPS player who originally owned the fixed\n    -- cardinal flexes into the quadrant vacated by the rotating meteor.\n    for target, originalCardinal in pairs(state.rotatedFrom) do\n        for _, slotName in ipairs(state.slotOrder) do\n            local entry = state.slots[slotName]\n            if entry.kind == meteorKind\n                and state.marked[entry.id] ~= true\n                and entry.cardinal == target then\n                state.finalCardinal[entry.id] = originalCardinal\n                break\n            end\n        end\n    end\n\n    state.meteorKind = meteorKind\n    state.assignmentsReady = true\nend\n\nend -- roster and flex assignment are captured once per mechanic\n\nlocal fixedSpot = {\n    N = {x = 100.0, z = 89.5},\n    E = {x = 110.5, z = 100.0},\n    S = {x = 100.0, z = 110.5},\n    W = {x = 89.5, z = 100.0}\n}\n\nlocal drawer = TensorCore.getCachedFlatDrawer(\n    nil, nil, 0xFF0000FF, nil, 1.0, 0, 0\n)\n\nif TensorReactions_CurrentTimer < 415.2 then\n    local initialCardinal = state.finalCardinal[player.id]\n    if initialCardinal ~= nil then\n        local destination = fixedSpot[initialCardinal]\n        if destination ~= nil then\n            frogGuide.draw(\"p2_sanctity\",drawer,\n                player.pos.x, player.pos.y, player.pos.z,\n                destination.x, destination.y or 0.05, destination.z,\n                8.0, 2.0\n            )\n        end\n    end\nend\n\nif state.towersResolved ~= true then\n    if state.towerCount ~= 8 then return end\n    local outer = {N = {}, E = {}, S = {}, W = {}}\n    local inner = {}\n    local cardinals = {\"N\", \"E\", \"S\", \"W\"}\n    local axis = {N = {0,-1}, E = {1,0}, S = {0,1}, W = {-1,0}}\n    local function inside(t)\n        local x,z = t.x-100,t.z-100\n        return x*x+z*z < 64\n    end\n    local function lateral(t,c)\n        local a = axis[c]\n        return -(t.x-100)*a[2]+(t.z-100)*a[1]\n    end\n    local function distance(a,b)\n        return (a.x-b.x)^2+(a.z-b.z)^2\n    end\n    for _,t in pairs(state.towers) do\n        if inside(t) then\n            inner[#inner+1] = t\n        else\n            local x,z = t.x-100,t.z-100\n            local c\n            if math.abs(z)>=math.abs(x) then c=z<0 and \"N\" or \"S\"\n            else c=x>0 and \"E\" or \"W\" end\n            outer[c][#outer[c]+1]=t\n        end\n    end\n    -- Stable ordering makes equal geometric choices deterministic.\n    local function order(a,b)\n        if a.x ~= b.x then return a.x < b.x end\n        return a.z < b.z\n    end\n    table.sort(inner,order)\n    for _,c in ipairs(cardinals) do table.sort(outer[c],order) end\n    local assigned,used = {},{}\n    local first,second = state.meteorPlayers[1],state.meteorPlayers[2]\n    local c1,c2 = state.finalCardinal[first.id],state.finalCardinal[second.id]\n    if not ((c1==\"N\" and c2==\"S\") or (c1==\"S\" and c2==\"N\")) then return end\n    local bestA,bestB,bestCenters,bestDistance,bestPreference = nil,nil,-1,-1,-math.huge\n    for _,a in ipairs(outer[c1]) do\n        for _,b in ipairs(outer[c2]) do\n            -- Center means the OUTER cardinal tower, never an inner tower.\n            local centers = (math.abs(lateral(a,c1))<0.5 and 1 or 0)\n                +(math.abs(lateral(b,c2))<0.5 and 1 or 0)\n            local d=math.sqrt(distance(a,b))\n            -- Maximize meteor separation before any cardinal preference.\n            -- Treat sub-0.1-yalm differences as coordinate rounding; only\n            -- then prefer cardinal towers and leave CCW to the other role.\n            local preference=lateral(a,c1)+lateral(b,c2)\n            if d>bestDistance+0.1 or (math.abs(d-bestDistance)<=0.1 and\n                (centers>bestCenters or\n                    (centers==bestCenters and preference>bestPreference))) then\n                bestA,bestB,bestCenters,bestDistance,bestPreference=a,b,centers,d,preference\n            end\n        end\n    end\n    if bestA==nil or bestB==nil then return end\n    assigned[first.id],assigned[second.id]=bestA,bestB\n    used[bestA],used[bestB]=true,true\n    local innerPlayers={}\n    for _,c in ipairs(cardinals) do\n        local other,meteorRole\n        for _,name in ipairs(state.slotOrder) do\n            local entry=state.slots[name]\n            if state.finalCardinal[entry.id]==c then\n                if entry.kind==state.meteorKind then meteorRole=entry else other=entry end\n            end\n        end\n        if other==nil or meteorRole==nil or #outer[c]<1 then return end\n        if #outer[c]==1 then\n            -- Every meteor-role player owns the outer tower in this case.\n            local t=outer[c][1]\n            if assigned[meteorRole.id]~=nil and assigned[meteorRole.id]~=t then return end\n            assigned[meteorRole.id]=t\n            used[t]=true\n            innerPlayers[#innerPlayers+1]={id=other.id,cardinal=c}\n        else\n            -- Reserve the middle OUTER tower for the meteor role, including\n            -- unmarked players who flexed east/west. Marked N/S choices above\n            -- remain authoritative. Without a middle, leave CCW to the other role.\n            if assigned[meteorRole.id]==nil then\n                for _,t in ipairs(outer[c]) do\n                    if not used[t] and math.abs(lateral(t,c))<0.5 then\n                        assigned[meteorRole.id]=t\n                        used[t]=true\n                        break\n                    end\n                end\n            end\n            -- Opposite-role player takes CCW among the unreserved outer towers.\n            local best\n            for _,t in ipairs(outer[c]) do\n                if not used[t] and (best==nil or lateral(t,c)<lateral(best,c)) then best=t end\n            end\n            if best==nil then return end\n            assigned[other.id]=best\n            used[best]=true\n            if assigned[meteorRole.id]==nil then\n                local remaining\n                for _,t in ipairs(outer[c]) do\n                    if not used[t] then remaining=t break end\n                end\n                if remaining==nil then return end\n                assigned[meteorRole.id]=remaining\n                used[remaining]=true\n            end\n        end\n    end\n    if #innerPlayers~=#inner then return end\n    -- Match all inner players together. Maximize fulfilled immediate-CW\n    -- claims before choosing the shortest remaining clockwise rotations.\n    local picks,bestPicks={},nil\n    local bestClaims,bestTravel=-1,math.huge\n    local function search(i,claims,travel)\n        if i>#innerPlayers then\n            if claims>bestClaims or (claims==bestClaims and travel<bestTravel) then\n                bestClaims,bestTravel=claims,travel\n                bestPicks={}\n                for k,t in ipairs(picks) do bestPicks[k]=t end\n            end\n            return\n        end\n        local a=axis[innerPlayers[i].cardinal]\n        for _,t in ipairs(inner) do\n            if not used[t] then\n                local x,z=t.x-100,t.z-100\n                local forward=x*a[1]+z*a[2]\n                local side=-x*a[2]+z*a[1]\n                local angle=math.atan2(side,forward)\n                if angle<0 then angle=angle+2*math.pi end\n                local claim=(forward>0.5 and side>0.5) and 1 or 0\n                picks[i]=t\n                used[t]=true\n                search(i+1,claims+claim,travel+angle)\n                used[t]=nil\n                picks[i]=nil\n            end\n        end\n    end\n    search(1,0,0)\n    if bestPicks==nil then return end\n    for i,entry in ipairs(innerPlayers) do assigned[entry.id]=bestPicks[i] end\n    -- Publish only a complete, unique assignment satisfying role rules.\n    local check={}\n    for _,name in ipairs(state.slotOrder) do\n        local entry=state.slots[name]\n        local t=assigned[entry.id]\n        if t==nil or check[t] then return end\n        check[t]=true\n        if entry.kind==state.meteorKind and inside(t) then return end\n        if entry.kind~=state.meteorKind and #outer[state.finalCardinal[entry.id]]==1\n            and not inside(t) then return end\n    end\n    state.quadrants=outer\n    state.towerByID=assigned\n    state.towersResolved=true\nend\nself.used=true\n",
+							actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\n\nlocal state = data.sam_hiemal_meteor\nif state == nil or state.marked == nil or state.markerCount < 2 then\n    return\nend\n\nlocal player = TensorCore.mGetPlayer()\nif player == nil or player.id == nil or player.pos == nil then\n    return\nend\n\nif state.slotOrder == nil then\n    state.slotOrder = {\"MT\", \"OT\", \"H1\", \"H2\", \"M1\", \"M2\", \"R1\", \"R2\"}\n    state.definitions = {\n        {name = \"MT\", cardinal = \"N\"},\n        {name = \"OT\", cardinal = \"S\"},\n        {name = \"H1\", cardinal = \"W\"},\n        {name = \"H2\", cardinal = \"E\"},\n        {name = \"M1\", cardinal = \"W\"},\n        {name = \"M2\", cardinal = \"E\"},\n        {name = \"R1\", cardinal = \"N\"},\n        {name = \"R2\", cardinal = \"S\"}\n    }\nend\n\nif state.meteorSolverVersion ~= 5 then\n    state.meteorSolverVersion = 5\n    state.assignmentsReady = false\n    state.towersResolved = false\n    state.towerByID = nil\nend\n\nif state.assignmentsReady ~= true then\nlocal rosterSlotByName = {\n    MT = \"T1\",\n    OT = \"T2\",\n    H1 = \"H1\",\n    H2 = \"H2\",\n    M1 = \"M1\",\n    M2 = \"M2\",\n    R1 = \"R1\",\n    R2 = \"R2\"\n}\nlocal refreshedSlots = {}\nlocal refreshedInitialCardinal = {}\nlocal rosterIDs = {}\n\n\n\n\nlocal rosterMembers = AnyoneCore.Roster.members()\nlocal agnosticParty = AnyoneCore.API.getAgnosticPartyList()\nif type(rosterMembers) ~= \"table\" or type(agnosticParty) ~= \"table\" then\n    return\nend\n\nlocal actorByJob, actorJobCount, rosterJobCount = {}, {}, {}\nfor _, actor in pairs(agnosticParty) do\n    if actor.id ~= nil and actor.job ~= nil then\n        actorByJob[actor.job] = actor\n        actorJobCount[actor.job] = (actorJobCount[actor.job] or 0) + 1\n    end\nend\nfor _, member in pairs(rosterMembers) do\n    if member.job ~= nil then\n        rosterJobCount[member.job] = (rosterJobCount[member.job] or 0) + 1\n    end\nend\nlocal actorByNameJob = {}\nfor _, actor in pairs(agnosticParty) do\n    if actor ~= nil and actor.id ~= nil and actor.name ~= nil and actor.job ~= nil then\n        local key = tostring(actor.name) .. \"\\31\" .. tostring(actor.job)\n        actorByNameJob[key] = actor\n    end\nend\n\nfor _, definition in ipairs(state.definitions) do\n    local rosterSlot = rosterSlotByName[definition.name]\n    local member = rosterMembers[rosterSlot]\n    if member == nil or member.name == nil or member.job == nil then\n        return\n    end\n\n    local key = tostring(member.name) .. \"\\31\" .. tostring(member.job)\n    local actor = actorByNameJob[key]\n\n    if actor == nil and actorJobCount[member.job] == 1 and rosterJobCount[member.job] == 1 then\n        actor = actorByJob[member.job]\n    end\n    if actor == nil or actor.id == nil then\n        return\n    end\n\n    local kind\n    if definition.name == \"MT\" or definition.name == \"OT\"\n        or definition.name == \"H1\" or definition.name == \"H2\" then\n        kind = \"SUPPORT\"\n    else\n        kind = \"DPS\"\n    end\n\n    local id = actor.id\n    refreshedSlots[definition.name] = {\n        id = id,\n        cardinal = definition.cardinal,\n        kind = kind\n    }\n    refreshedInitialCardinal[id] = definition.cardinal\n    rosterIDs[#rosterIDs + 1] = definition.name .. \"=\" .. tostring(id)\nend\n\nlocal rosterSignature = table.concat(rosterIDs, \":\")\nif state.rosterSignature ~= rosterSignature then\n    state.rosterSignature = rosterSignature\n    state.assignmentsReady = false\n    state.towersResolved = false\n    state.finalCardinal = nil\n    state.rotatedFrom = nil\n    state.meteorPlayers = nil\n    state.towerByID = nil\n    state.quadrants = nil\nend\n\nstate.slots = refreshedSlots\nstate.initialCardinal = refreshedInitialCardinal\n\nlocal meteorPlayers = {}\nlocal meteorKind = nil\nfor _, slotName in ipairs(state.slotOrder) do\n    local slot = state.slots[slotName]\n    if slot ~= nil and state.marked[slot.id] == true then\n        meteorPlayers[#meteorPlayers + 1] = slot\n        if meteorKind == nil then\n            meteorKind = slot.kind\n        elseif meteorKind ~= slot.kind then\n            return\n        end\n    end\nend\n\nif #meteorPlayers < 2 or meteorKind == nil then\n    return\nend\n\nif state.assignmentsReady ~= true then\n    state.finalCardinal = {}\n    state.rotatedFrom = {}\n    state.meteorPlayers = meteorPlayers\n\n    local occupied = {N = false, S = false}\n    for _, slot in ipairs(state.slotOrder) do\n        local entry = state.slots[slot]\n        state.finalCardinal[entry.id] = entry.cardinal\n        if state.marked[entry.id] == true\n            and (entry.cardinal == \"N\" or entry.cardinal == \"S\") then\n            occupied[entry.cardinal] = true\n        end\n    end\n\n\n\n\n\n    for _, slotName in ipairs(state.slotOrder) do\n        local entry = state.slots[slotName]\n        if state.marked[entry.id] == true\n            and (entry.cardinal == \"W\" or entry.cardinal == \"E\") then\n            local target = entry.cardinal == \"W\" and \"N\" or \"S\"\n            if occupied[target] == true then\n                target = target == \"N\" and \"S\" or \"N\"\n            end\n            state.finalCardinal[entry.id] = target\n            state.rotatedFrom[target] = entry.cardinal\n            occupied[target] = true\n        end\n    end\n\n\n\n    for target, originalCardinal in pairs(state.rotatedFrom) do\n        for _, slotName in ipairs(state.slotOrder) do\n            local entry = state.slots[slotName]\n            if entry.kind == meteorKind\n                and state.marked[entry.id] ~= true\n                and entry.cardinal == target then\n                state.finalCardinal[entry.id] = originalCardinal\n                break\n            end\n        end\n    end\n\n    state.meteorKind = meteorKind\n    state.assignmentsReady = true\nend\n\nend\n\nlocal fixedSpot = {\n    N = {x = 100.0, z = 89.5},\n    E = {x = 110.5, z = 100.0},\n    S = {x = 100.0, z = 110.5},\n    W = {x = 89.5, z = 100.0}\n}\n\nlocal drawer = TensorCore.getCachedFlatDrawer(\n    nil, nil, 0xFF0000FF, nil, 1.0, 0, 0\n)\n\nif TensorReactions_CurrentTimer < 415.2 then\n    local initialCardinal = state.finalCardinal[player.id]\n    if initialCardinal ~= nil then\n        local destination = fixedSpot[initialCardinal]\n        if destination ~= nil then\n            frogGuide.draw(\"p2_sanctity\",drawer,\n                player.pos.x, player.pos.y, player.pos.z,\n                destination.x, destination.y or 0.05, destination.z,\n                8.0, 2.0\n            )\n        end\n    end\nend\n\nif state.towersResolved ~= true then\n    if state.towerCount ~= 8 then return end\n    local outer = {N = {}, E = {}, S = {}, W = {}}\n    local inner = {}\n    local cardinals = {\"N\", \"E\", \"S\", \"W\"}\n    local axis = {N = {0,-1}, E = {1,0}, S = {0,1}, W = {-1,0}}\n    local function inside(t)\n        local x,z = t.x-100,t.z-100\n        return x*x+z*z < 64\n    end\n    local function lateral(t,c)\n        local a = axis[c]\n        return -(t.x-100)*a[2]+(t.z-100)*a[1]\n    end\n    local function distance(a,b)\n        return (a.x-b.x)^2+(a.z-b.z)^2\n    end\n    for _,t in pairs(state.towers) do\n        if inside(t) then\n            inner[#inner+1] = t\n        else\n            local x,z = t.x-100,t.z-100\n            local c\n            if math.abs(z)>=math.abs(x) then c=z<0 and \"N\" or \"S\"\n            else c=x>0 and \"E\" or \"W\" end\n            outer[c][#outer[c]+1]=t\n        end\n    end\n\n    local function order(a,b)\n        if a.x ~= b.x then return a.x < b.x end\n        return a.z < b.z\n    end\n    table.sort(inner,order)\n    for _,c in ipairs(cardinals) do table.sort(outer[c],order) end\n    local assigned,used = {},{}\n    local first,second = state.meteorPlayers[1],state.meteorPlayers[2]\n    local c1,c2 = state.finalCardinal[first.id],state.finalCardinal[second.id]\n    if not ((c1==\"N\" and c2==\"S\") or (c1==\"S\" and c2==\"N\")) then return end\n    local bestA,bestB,bestCenters,bestDistance,bestPreference = nil,nil,-1,-1,-math.huge\n    for _,a in ipairs(outer[c1]) do\n        for _,b in ipairs(outer[c2]) do\n\n            local centers = (math.abs(lateral(a,c1))<0.5 and 1 or 0)\n                +(math.abs(lateral(b,c2))<0.5 and 1 or 0)\n            local d=math.sqrt(distance(a,b))\n\n\n\n            local preference=lateral(a,c1)+lateral(b,c2)\n            if d>bestDistance+0.1 or (math.abs(d-bestDistance)<=0.1 and\n                (centers>bestCenters or\n                    (centers==bestCenters and preference>bestPreference))) then\n                bestA,bestB,bestCenters,bestDistance,bestPreference=a,b,centers,d,preference\n            end\n        end\n    end\n    if bestA==nil or bestB==nil then return end\n    assigned[first.id],assigned[second.id]=bestA,bestB\n    used[bestA],used[bestB]=true,true\n    local innerPlayers={}\n    for _,c in ipairs(cardinals) do\n        local other,meteorRole\n        for _,name in ipairs(state.slotOrder) do\n            local entry=state.slots[name]\n            if state.finalCardinal[entry.id]==c then\n                if entry.kind==state.meteorKind then meteorRole=entry else other=entry end\n            end\n        end\n        if other==nil or meteorRole==nil or #outer[c]<1 then return end\n        if #outer[c]==1 then\n\n            local t=outer[c][1]\n            if assigned[meteorRole.id]~=nil and assigned[meteorRole.id]~=t then return end\n            assigned[meteorRole.id]=t\n            used[t]=true\n            innerPlayers[#innerPlayers+1]={id=other.id,cardinal=c}\n        else\n\n\n\n            if assigned[meteorRole.id]==nil then\n                for _,t in ipairs(outer[c]) do\n                    if not used[t] and math.abs(lateral(t,c))<0.5 then\n                        assigned[meteorRole.id]=t\n                        used[t]=true\n                        break\n                    end\n                end\n            end\n\n            local best\n            for _,t in ipairs(outer[c]) do\n                if not used[t] and (best==nil or lateral(t,c)<lateral(best,c)) then best=t end\n            end\n            if best==nil then return end\n            assigned[other.id]=best\n            used[best]=true\n            if assigned[meteorRole.id]==nil then\n                local remaining\n                for _,t in ipairs(outer[c]) do\n                    if not used[t] then remaining=t break end\n                end\n                if remaining==nil then return end\n                assigned[meteorRole.id]=remaining\n                used[remaining]=true\n            end\n        end\n    end\n    if #innerPlayers~=#inner then return end\n\n\n    local picks,bestPicks={},nil\n    local bestClaims,bestTravel=-1,math.huge\n    local function search(i,claims,travel)\n        if i>#innerPlayers then\n            if claims>bestClaims or (claims==bestClaims and travel<bestTravel) then\n                bestClaims,bestTravel=claims,travel\n                bestPicks={}\n                for k,t in ipairs(picks) do bestPicks[k]=t end\n            end\n            return\n        end\n        local a=axis[innerPlayers[i].cardinal]\n        for _,t in ipairs(inner) do\n            if not used[t] then\n                local x,z=t.x-100,t.z-100\n                local forward=x*a[1]+z*a[2]\n                local side=-x*a[2]+z*a[1]\n                local angle=math.atan2(side,forward)\n                if angle<0 then angle=angle+2*math.pi end\n                local claim=(forward>0.5 and side>0.5) and 1 or 0\n                picks[i]=t\n                used[t]=true\n                search(i+1,claims+claim,travel+angle)\n                used[t]=nil\n                picks[i]=nil\n            end\n        end\n    end\n    search(1,0,0)\n    if bestPicks==nil then return end\n    for i,entry in ipairs(innerPlayers) do assigned[entry.id]=bestPicks[i] end\n\n    local check={}\n    for _,name in ipairs(state.slotOrder) do\n        local entry=state.slots[name]\n        local t=assigned[entry.id]\n        if t==nil or check[t] then return end\n        check[t]=true\n        if entry.kind==state.meteorKind and inside(t) then return end\n        if entry.kind~=state.meteorKind and #outer[state.finalCardinal[entry.id]]==1\n            and not inside(t) then return end\n    end\n    state.quadrants=outer\n    state.towerByID=assigned\n    state.towersResolved=true\nend\nself.used=true",
 							name = "Draw Hiemal Meteor Prey and Tower Tethers",
 							uuid = "39ad4dc3-6862-3c3a-bd6c-d63a1c7af231",
 							version = 2.1,
@@ -1674,12 +1674,12 @@ local tbl =
 			{
 				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "local state = data.sam_hiemal_meteor\nif state == nil then\n    state = {\n        marked = {},\n        markerCount = 0,\n        towers = {},\n        towerCount = 0,\n        assignmentsReady = false,\n        towersResolved = false\n    }\n    data.sam_hiemal_meteor = state\nend\n\nstate.towers = state.towers or {}\nstate.towerCount = state.towerCount or 0\n\nlocal validTower =\n    eventArgs ~= nil and eventArgs.aoeID == 29564 and eventArgs.contentID == 3640\n\nif not validTower\n    or eventArgs.entityID == nil\n    or eventArgs.x == nil\n    or eventArgs.y == nil\n    or eventArgs.z == nil then\n    self.used = true\n    return\nend\n\nif state.towerCount >= 8 then\n    self.used = true\n    return\nend\n\nif state.towers[eventArgs.entityID] == nil then\n    state.towers[eventArgs.entityID] = {\n        x = eventArgs.x,\n        y = eventArgs.y,\n        z = eventArgs.z\n    }\n    state.towerCount = state.towerCount + 1\nend\nself.used = true\n",
+							actionLua = "local state = data.sam_hiemal_meteor\nif state == nil then\n    state = {\n        marked = {},\n        markerCount = 0,\n        towers = {},\n        towerCount = 0,\n        assignmentsReady = false,\n        towersResolved = false\n    }\n    data.sam_hiemal_meteor = state\nend\n\nstate.towers = state.towers or {}\nstate.towerCount = state.towerCount or 0\n\nlocal validTower =\n    eventArgs ~= nil and eventArgs.aoeID == 29564 and eventArgs.contentID == 3640\n\nif not validTower\n    or eventArgs.entityID == nil\n    or eventArgs.x == nil\n    or eventArgs.y == nil\n    or eventArgs.z == nil then\n    self.used = true\n    return\nend\n\nif state.towerCount >= 8 then\n    self.used = true\n    return\nend\n\nif state.towers[eventArgs.entityID] == nil then\n    state.towers[eventArgs.entityID] = {\n        x = eventArgs.x,\n        y = eventArgs.y,\n        z = eventArgs.z\n    }\n    state.towerCount = state.towerCount + 1\nend\nself.used = true",
 							name = "Capture Hiemal Conviction Towers",
 							uuid = "331d74c4-d4cc-0ba3-9c3d-d2521a082be0",
 							version = 2.1,
@@ -1703,25 +1703,25 @@ local tbl =
 	},
 	[72] =
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p2_sanctity\")==\"Disabled\" then self.used=true return end\n\nlocal state = data.sam_hiemal_meteor\nif state == nil\n    or state.marked == nil\n    or state.markerCount < 2\n    or state.slots == nil\n    or state.slotOrder == nil\n    or state.initialCardinal == nil\n    or state.finalCardinal == nil\n    or state.meteorKind == nil then\n    self.used = true\n    return\nend\n\nlocal player = TensorCore.mGetPlayer()\nif player == nil or player.id == nil or player.pos == nil then\n    self.used = true\n    return\nend\n\nlocal playerKind = nil\nfor _, slotName in ipairs(state.slotOrder) do\n    local slot = state.slots[slotName]\n    if slot ~= nil and slot.id == player.id then\n        playerKind = slot.kind\n        break\n    end\nend\n\nlocal target = nil\nlocal isMeteor = state.marked[player.id] == true\nlocal resolvedCardinal = state.finalCardinal[player.id]\nlocal startingCardinal = state.initialCardinal[player.id]\n\n-- Final Conviction tower positions from the live replay.\nlocal finalTower = {\n    N = {x = 100.000, z = 82.000},\n    NE = {x = 112.728, z = 87.272},\n    E = {x = 118.000, z = 100.000},\n    SE = {x = 112.728, z = 112.728},\n    S = {x = 100.000, z = 118.000},\n    SW = {x = 87.272, z = 112.728},\n    W = {x = 82.000, z = 100.000},\n    NW = {x = 87.272, z = 87.272}\n}\n\nif playerKind == state.meteorKind then\n    if isMeteor then\n        -- Marked meteor players finish at the opposite fixed cardinal.\n        if resolvedCardinal == \"N\" then\n            target = finalTower.S\n        elseif resolvedCardinal == \"S\" then\n            target = finalTower.N\n        end\n    else\n        -- Same-role nonmeteors remain on their resolved E/W cardinal.\n        if resolvedCardinal == \"E\" then\n            target = finalTower.E\n        elseif resolvedCardinal == \"W\" then\n            target = finalTower.W\n        end\n    end\nelse\n    -- Nonmeteor role returns to its starting quadrant and moves one tower CW.\n    if startingCardinal == \"N\" then\n        target = finalTower.NE\n    elseif startingCardinal == \"E\" then\n        target = finalTower.SE\n    elseif startingCardinal == \"S\" then\n        target = finalTower.SW\n    elseif startingCardinal == \"W\" then\n        target = finalTower.NW\n    end\nend\n\nif target == nil then\n    self.used = true\n    return\nend\n\nif state.finalDrawer == nil then\n    state.finalDrawer = TensorCore.getCachedFlatDrawer(nil, nil, 0xFF0000FF, nil, 1.0, 0, 0)\nend\n\nfrogGuide.draw(\"p2_sanctity\",state.finalDrawer,\n    player.pos.x, player.pos.y, player.pos.z,\n    target.x, 0.05, target.z,\n    8.0, 2.0\n)\n\nself.used = true\n",
+							actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p2_sanctity\")==\"Disabled\" then self.used=true return end\n\nlocal state = data.sam_hiemal_meteor\nif state == nil\n    or state.marked == nil\n    or state.markerCount < 2\n    or state.slots == nil\n    or state.slotOrder == nil\n    or state.initialCardinal == nil\n    or state.finalCardinal == nil\n    or state.meteorKind == nil then\n    self.used = true\n    return\nend\n\nlocal player = TensorCore.mGetPlayer()\nif player == nil or player.id == nil or player.pos == nil then\n    self.used = true\n    return\nend\n\nlocal playerKind = nil\nfor _, slotName in ipairs(state.slotOrder) do\n    local slot = state.slots[slotName]\n    if slot ~= nil and slot.id == player.id then\n        playerKind = slot.kind\n        break\n    end\nend\n\nlocal target = nil\nlocal isMeteor = state.marked[player.id] == true\nlocal resolvedCardinal = state.finalCardinal[player.id]\nlocal startingCardinal = state.initialCardinal[player.id]\n\n\nlocal finalTower = {\n    N = {x = 100.000, z = 82.000},\n    NE = {x = 112.728, z = 87.272},\n    E = {x = 118.000, z = 100.000},\n    SE = {x = 112.728, z = 112.728},\n    S = {x = 100.000, z = 118.000},\n    SW = {x = 87.272, z = 112.728},\n    W = {x = 82.000, z = 100.000},\n    NW = {x = 87.272, z = 87.272}\n}\n\nif playerKind == state.meteorKind then\n    if isMeteor then\n\n        if resolvedCardinal == \"N\" then\n            target = finalTower.S\n        elseif resolvedCardinal == \"S\" then\n            target = finalTower.N\n        end\n    else\n\n        if resolvedCardinal == \"E\" then\n            target = finalTower.E\n        elseif resolvedCardinal == \"W\" then\n            target = finalTower.W\n        end\n    end\nelse\n\n    if startingCardinal == \"N\" then\n        target = finalTower.NE\n    elseif startingCardinal == \"E\" then\n        target = finalTower.SE\n    elseif startingCardinal == \"S\" then\n        target = finalTower.SW\n    elseif startingCardinal == \"W\" then\n        target = finalTower.NW\n    end\nend\n\nif target == nil then\n    self.used = true\n    return\nend\n\nif state.finalDrawer == nil then\n    state.finalDrawer = TensorCore.getCachedFlatDrawer(nil, nil, 0xFF0000FF, nil, 1.0, 0, 0)\nend\n\nfrogGuide.draw(\"p2_sanctity\",state.finalDrawer,\n    player.pos.x, player.pos.y, player.pos.z,\n    target.x, 0.05, target.z,\n    8.0, 2.0\n)\n\nself.used = true",
 							name = "Draw Hiemal Final Conviction Tower Tether",
 							uuid = "afccbb03-a120-6920-89e8-74c717b33426",
 							version = 2.1,
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 12,
@@ -1758,26 +1758,26 @@ local tbl =
 			},
 			objectType = "folder",
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_mnk_downtime\nif not s then self.used=true return end\nif Now()>(s.pbUntil or 0) then s.remaining=0 end\nif Now()>(s.chakraUntil or 0) then s.chakra=0 end\ns.prep={key=\"Sanctity Blitz preparation\",start=Now(),solar=not s.solar,blitz=(s.solar and s.lunar) and 25769 or ((not s.solar) and 25768 or 3545)}\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"3c282dca-0764-f9fe-8fc6-c3400fe465b0",
 									true,
 								},
-								
+
 								{
 									"e4c06415-72ce-cf30-8e2c-e51e7943c62f",
 									true,
@@ -1808,14 +1808,14 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							actionID = 69,
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"3c282dca-0764-f9fe-8fc6-c3400fe465b0",
 									true,
@@ -1851,14 +1851,14 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							actionID = 25767,
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"3c282dca-0764-f9fe-8fc6-c3400fe465b0",
 									true,
@@ -1893,14 +1893,14 @@ local tbl =
 						data =
 						{
 							actionID = 16473,
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"3c282dca-0764-f9fe-8fc6-c3400fe465b0",
 									true,
 								},
-								
+
 								{
 									"e4c06415-72ce-cf30-8e2c-e51e7943c62f",
 									true,
@@ -2061,7 +2061,7 @@ local tbl =
 				{
 
 					{
-						data = 
+						data =
 						{
 							category = "Self",
 							conditionType = 13,
@@ -2127,9 +2127,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"Sanctity Blitz preparation\" and Now()-s.prep.start<10000 and ((s.remaining==0 or Now()>(s.pbUntil or 0)) and s.chakra==0)",
@@ -2138,9 +2138,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"Sanctity Blitz preparation\" and Now()-s.prep.start<10000 and s.remaining==3 and s.chakra==0 and Now()<=(s.pbUntil or 0)",
@@ -2149,9 +2149,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"Sanctity Blitz preparation\" and Now()-s.prep.start<10000 and s.remaining==2 and s.chakra==1 and Now()<=(s.pbUntil or 0)",
@@ -2160,9 +2160,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"Sanctity Blitz preparation\" and Now()-s.prep.start<10000 and s.remaining==1 and s.chakra==2 and Now()<=(s.pbUntil or 0)",
@@ -2171,9 +2171,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.solar",
@@ -2182,9 +2182,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and not s.prep.solar",
@@ -2205,20 +2205,20 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							actionID = 25768,
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"24979f9a-dc30-179f-838b-cf6dd69ee14e",
 									true,
@@ -2253,14 +2253,14 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							actionID = 3545,
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"24979f9a-dc30-179f-838b-cf6dd69ee14e",
 									true,
@@ -2295,14 +2295,14 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							actionID = 25769,
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"24979f9a-dc30-179f-838b-cf6dd69ee14e",
 									true,
@@ -2341,9 +2341,9 @@ local tbl =
 				},
 				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Self",
 							conditionType = 13,
@@ -2353,9 +2353,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "return FFXIV_Common_BotRunning == true",
@@ -2364,9 +2364,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "return gACRSelectedProfiles[20] == \"RikuMNK3\"",
@@ -2375,9 +2375,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local t=TensorCore.mGetTarget()\nreturn t and t.targetable and t.attackable and t.hp.current>0 and t.distance2d<=5+t.hitradius",
@@ -2386,9 +2386,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.key==\"Sanctity Blitz preparation\" and s.chakra==3 and Now()<=(s.chakraUntil or 0)",
@@ -2397,9 +2397,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.blitz==25768",
@@ -2408,9 +2408,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local s=data.frog_mnk_downtime\nreturn s and s.prep and s.prep.blitz==3545",
@@ -2444,25 +2444,25 @@ local tbl =
 	},
 	[86] =
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Broad Swing: 40y reach (action 25538), 120-degree arc (BossMod).\n-- Resolve all three timed cones once from the visual cast's reported heading.\nif eventArgs.entityContentID~=3632 then self.used=true return end\nlocal id=eventArgs.spellID\nif id~=25536 and id~=25537 then self.used=true return end\nlocal boss=TensorCore.mGetEntity(eventArgs.entityID)\nif not boss then self.used=true return end\nlocal p=boss.pos\nlocal h=eventArgs.heading\nlocal turn=id==25537 and math.pi/3 or -math.pi/3\nlocal color=GUI:ColorConvertFloat4ToU32(1,0,0,0.9)\nlocal flags=Argus2.RenderFlags.FLAG_WARP_TERRAIN\n-- Delays and durations are milliseconds; one sector is visible at a time.\nlocal function cone(duration,delay,heading)\n Argus2.addTimedConeFilled(duration,p.x,p.y,p.z,40,2*math.pi/3,heading,30,\n  color,color,nil,delay,nil,nil,nil,1,1.5,0.5,2,false,true,0,true,flags)\nend\ncone(800,0,h+turn)\ncone(1000,800,h-turn)\ncone(1000,1800,h+math.pi)\nself.used=true",
+							actionLua = "\n\nif eventArgs.entityContentID~=3632 then self.used=true return end\nlocal id=eventArgs.spellID\nif id~=25536 and id~=25537 then self.used=true return end\nlocal boss=TensorCore.mGetEntity(eventArgs.entityID)\nif not boss then self.used=true return end\nlocal p=boss.pos\nlocal h=eventArgs.heading\nlocal turn=id==25537 and math.pi/3 or -math.pi/3\nlocal color=GUI:ColorConvertFloat4ToU32(1,0,0,0.9)\nlocal flags=Argus2.RenderFlags.FLAG_WARP_TERRAIN\n\nlocal function cone(duration,delay,heading)\n Argus2.addTimedConeFilled(duration,p.x,p.y,p.z,40,2*math.pi/3,heading,30,\n  color,color,nil,delay,nil,nil,nil,1,1.5,0.5,2,false,true,0,true,flags)\nend\ncone(800,0,h+turn)\ncone(1000,800,h-turn)\ncone(1000,1800,h+math.pi)\nself.used=true",
 							name = "Broad Swing Cones",
 							uuid = "68134a2d-a1ab-9224-a935-da6bb6dabed6",
 							version = 2.1,
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 2,
@@ -2480,18 +2480,18 @@ local tbl =
 	},
 	[99] =
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "local old = data.frog_dfg_v2\nlocal s = {line=old and old.line or {}, positions={}, jump={}, side={}, placement={}, planned={}, towers={{},{},{}}, placed={}, resolved={0,0,0}, towerByCaster={}, resolvedCasters={{},{},{}}, stacks=0, geirLocked={}, ready=false}\ndata.frog_dfg_v2 = s\n-- Snapshot the saved strategy for the entire mechanic, including replay seeks.\nlocal settings=data.frog_draw_settings and data.frog_draw_settings.settings\nif not settings then\n    local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n    if FileExists(path) then\n        local ok,saved=pcall(FileLoad,path)\n        if ok and type(saved)==\"table\" then settings=saved end\n    end\nend\ns.strategy=settings and settings.p3_strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\ns.faceSign=s.strategy==\"LPDU\" and 1 or -1\ns.customHold=settings~=nil and settings.p3_custom_hold==true\nlocal boss = TensorCore.mGetEntity(eventArgs.entityID)\nif not boss or not boss.pos or not boss.hitradius or boss.hitradius <= 0 then self.used=true return end\ns.bossID=boss.id\ns.center={x=boss.pos.x,y=boss.pos.y,z=boss.pos.z}\ns.radius=boss.hitradius\ns.drawer=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0)\nlocal party=TensorCore.getEntityGroupList(\"Party\")\nfor _,e in pairs(party or {}) do\n    s.positions[e.id]={x=e.pos.x,y=e.pos.y,z=e.pos.z}\nend\nfunction s.assign()\n    if s.ready then return end\n    local counts={0,0,0}\n    local highs={true,true,true}\n    for id,p in pairs(s.positions) do\n        local line=s.line[id]\n        if not line then return end\n        local e=TensorCore.mGetEntity(id)\n        if not e then return end\n        if not s.jump[id] then\n            if TensorCore.hasBuff(e,2755) then s.jump[id]=1\n            elseif TensorCore.hasBuff(e,2756) then s.jump[id]=2\n            elseif TensorCore.hasBuff(e,2757) then s.jump[id]=3 end\n        end\n        if not s.jump[id] then return end\n        counts[line]=counts[line]+1\n        if s.jump[id]~=1 then highs[line]=false end\n    end\n    if counts[1]~=3 or counts[2]~=2 or counts[3]~=3 then return end\n    local westSecond\n    for id,p in pairs(s.positions) do\n        if s.line[id]==2 and (not westSecond or p.x<s.positions[westSecond].x or (p.x==s.positions[westSecond].x and id<westSecond)) then westSecond=id end\n    end\n    for id,p in pairs(s.positions) do\n        local line,jump=s.line[id],s.jump[id]\n        local side\n        if not highs[line] then\n            if jump==1 then side=\"S\"\n            elseif jump==2 then side=s.strategy==\"LPDU\" and \"W\" or \"E\"\n            else side=s.strategy==\"LPDU\" and \"E\" or \"W\" end\n        elseif line==2 then side=id==westSecond and \"W\" or \"E\"\n        else\n            local dx,dz=p.x-s.center.x,p.z-s.center.z\n            if -dx>=dz and dx<=0 then side=\"W\" elseif dx>=dz then side=\"E\" else side=\"S\" end\n        end\n        s.side[id]=side\n        local r=s.radius\n        local x,z=s.center.x,s.center.z\n        if line==2 then\n            local q=(r+1)/math.sqrt(2)\n            x=x+(side==\"W\" and -q or q); z=z-q\n        elseif side==\"W\" then x=x-r elseif side==\"E\" then x=x+r else z=z+r end\n        -- Keep the player's placement on the edge; project the tower separately.\n        local tx=x\n        if jump==2 then\n            tx=x+14*s.faceSign\n        elseif jump==3 then\n            tx=x-14*s.faceSign\n        end\n        s.placement[id]={x=x,y=s.center.y+0.05,z=z}\n        s.planned[id]={x=tx,y=s.center.y+0.05,z=z}\n    end\n    s.ready=true\nend\nfunction s.tower(wave,side)\n    local best,score,owner\n    -- Captured jump positions supersede assignment predictions.\n    for id,p in pairs(s.planned) do\n        if s.line[id]==wave then\n            local t=s.towers[wave][id] or p\n            local v=side==\"W\" and -t.x or side==\"E\" and t.x or t.z\n            if not best or v>score then best,score,owner=t,v,id end\n        end\n    end\n    return best,owner\nend\nfunction s.guide(id)\n    local line,side=s.line[id],s.side[id]\n    if not s.ready or not line or not side then return nil end\n    if line==1 then\n        if not s.placed[id] then return s.placement[id],\"place1\" end\n        if side==\"S\" then\n            if s.stacks<2 then return nil,\"stack\" end\n            if s.resolved[3]<3 then return s.tower(3,\"S\"),\"soak3\" end\n        else\n            -- Wait at the stack until BOTH second-in-line jumps have landed.\n            -- Arrow jumps can reverse which player owns the west/east tower.\n            for other,wave in pairs(s.line) do\n                if wave==2 and not s.placed[other] then return nil,\"stack\" end\n            end\n            local tower,owner=s.tower(2,side)\n            if not owner then return nil,\"stack\" end\n            -- Stay to soak and bait; leave when this tower clone locks Geirskogul.\n            if not s.geirLocked[owner] then return tower,\"soak2\" end\n            if s.stacks<2 then return nil,\"stack\" end\n        end\n    elseif line==2 then\n        if s.stacks<1 then return nil,\"stack\" end\n        if not s.placed[id] then return s.placement[id],\"place2\" end\n        if s.stacks<2 then return nil,\"stack\" end\n        if s.resolved[3]<3 then return s.tower(3,side),\"soak3\" end\n    elseif line==3 then\n        if s.stacks<1 then return nil,\"stack\" end\n        if s.resolved[1]<3 then return s.tower(1,side),\"soak1\" end\n        if not s.placed[id] then return s.placement[id],\"place3\" end\n    end\n    return nil,\"done\"\nend\ns.assign()\nself.used=true",
+							actionLua = "local old = data.frog_dfg_v2\nlocal s = {line=old and old.line or {}, positions={}, jump={}, side={}, placement={}, planned={}, towers={{},{},{}}, placed={}, resolved={0,0,0}, towerByCaster={}, resolvedCasters={{},{},{}}, stacks=0, geirLocked={}, ready=false}\ndata.frog_dfg_v2 = s\n\nlocal settings=data.frog_draw_settings and data.frog_draw_settings.settings\nif not settings then\n    local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n    if FileExists(path) then\n        local ok,saved=pcall(FileLoad,path)\n        if ok and type(saved)==\"table\" then settings=saved end\n    end\nend\ns.strategy=settings and settings.p3_strategy==\"LPDU\" and \"LPDU\" or \"NAUR\"\ns.faceSign=s.strategy==\"LPDU\" and 1 or -1\ns.customHold=settings~=nil and settings.p3_custom_hold==true\nlocal boss = TensorCore.mGetEntity(eventArgs.entityID)\nif not boss or not boss.pos or not boss.hitradius or boss.hitradius <= 0 then self.used=true return end\ns.bossID=boss.id\ns.center={x=boss.pos.x,y=boss.pos.y,z=boss.pos.z}\ns.radius=boss.hitradius\ns.drawer=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0)\nlocal party=TensorCore.getEntityGroupList(\"Party\")\nfor _,e in pairs(party or {}) do\n    s.positions[e.id]={x=e.pos.x,y=e.pos.y,z=e.pos.z}\nend\nfunction s.assign()\n    if s.ready then return end\n    local counts={0,0,0}\n    local highs={true,true,true}\n    for id,p in pairs(s.positions) do\n        local line=s.line[id]\n        if not line then return end\n        local e=TensorCore.mGetEntity(id)\n        if not e then return end\n        if not s.jump[id] then\n            if TensorCore.hasBuff(e,2755) then s.jump[id]=1\n            elseif TensorCore.hasBuff(e,2756) then s.jump[id]=2\n            elseif TensorCore.hasBuff(e,2757) then s.jump[id]=3 end\n        end\n        if not s.jump[id] then return end\n        counts[line]=counts[line]+1\n        if s.jump[id]~=1 then highs[line]=false end\n    end\n    if counts[1]~=3 or counts[2]~=2 or counts[3]~=3 then return end\n    local westSecond\n    for id,p in pairs(s.positions) do\n        if s.line[id]==2 and (not westSecond or p.x<s.positions[westSecond].x or (p.x==s.positions[westSecond].x and id<westSecond)) then westSecond=id end\n    end\n    for id,p in pairs(s.positions) do\n        local line,jump=s.line[id],s.jump[id]\n        local side\n        if not highs[line] then\n            if jump==1 then side=\"S\"\n            elseif jump==2 then side=s.strategy==\"LPDU\" and \"W\" or \"E\"\n            else side=s.strategy==\"LPDU\" and \"E\" or \"W\" end\n        elseif line==2 then side=id==westSecond and \"W\" or \"E\"\n        else\n            local dx,dz=p.x-s.center.x,p.z-s.center.z\n            if -dx>=dz and dx<=0 then side=\"W\" elseif dx>=dz then side=\"E\" else side=\"S\" end\n        end\n        s.side[id]=side\n        local r=s.radius\n        local x,z=s.center.x,s.center.z\n        if line==2 then\n            local q=(r+1)/math.sqrt(2)\n            x=x+(side==\"W\" and -q or q); z=z-q\n        elseif side==\"W\" then x=x-r elseif side==\"E\" then x=x+r else z=z+r end\n\n        local tx=x\n        if jump==2 then\n            tx=x+14*s.faceSign\n        elseif jump==3 then\n            tx=x-14*s.faceSign\n        end\n        s.placement[id]={x=x,y=s.center.y+0.05,z=z}\n        s.planned[id]={x=tx,y=s.center.y+0.05,z=z}\n    end\n    s.ready=true\nend\nfunction s.tower(wave,side)\n    local best,score,owner\n\n    for id,p in pairs(s.planned) do\n        if s.line[id]==wave then\n            local t=s.towers[wave][id] or p\n            local v=side==\"W\" and -t.x or side==\"E\" and t.x or t.z\n            if not best or v>score then best,score,owner=t,v,id end\n        end\n    end\n    return best,owner\nend\nfunction s.guide(id)\n    local line,side=s.line[id],s.side[id]\n    if not s.ready or not line or not side then return nil end\n    if line==1 then\n        if not s.placed[id] then return s.placement[id],\"place1\" end\n        if side==\"S\" then\n            if s.stacks<2 then return nil,\"stack\" end\n            if s.resolved[3]<3 then return s.tower(3,\"S\"),\"soak3\" end\n        else\n\n\n            for other,wave in pairs(s.line) do\n                if wave==2 and not s.placed[other] then return nil,\"stack\" end\n            end\n            local tower,owner=s.tower(2,side)\n            if not owner then return nil,\"stack\" end\n\n            if not s.geirLocked[owner] then return tower,\"soak2\" end\n            if s.stacks<2 then return nil,\"stack\" end\n        end\n    elseif line==2 then\n        if s.stacks<1 then return nil,\"stack\" end\n        if not s.placed[id] then return s.placement[id],\"place2\" end\n        if s.stacks<2 then return nil,\"stack\" end\n        if s.resolved[3]<3 then return s.tower(3,side),\"soak3\" end\n    elseif line==3 then\n        if s.stacks<1 then return nil,\"stack\" end\n        if s.resolved[1]<3 then return s.tower(1,side),\"soak1\" end\n        if not s.placed[id] then return s.placement[id],\"place3\" end\n    end\n    return nil,\"done\"\nend\ns.assign()\nself.used=true",
 							conditions =
 							{
 
@@ -2511,7 +2511,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 
 					{
@@ -2552,21 +2552,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_dfg_v2\nif not s then s={line={}};data.frog_dfg_v2=s end\ns.line[eventArgs.entityID]=eventArgs.markerID-318\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"9f523295-56ad-7eae-ad77-2106604b6faa",
 									true,
@@ -2578,11 +2578,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -2611,18 +2611,18 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p3_dfg\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_dfg_v2\nif not s or not s.ready then self.used=true return end\nlocal p=TensorCore.mGetPlayer()\nif not p or not p.pos then self.used=true return end\nlocal target,stage=s.guide(p.id)\ns.stage=stage\nif stage==\"stack\" then\n    local boss=TensorCore.mGetEntity(s.bossID)\n    if boss and boss.pos and boss.hitradius then\n        local x,y,z=TensorCore.getPosInDirection(boss.pos,boss.pos.h,boss.hitradius,true)\n        frogGuide.draw(\"p3_dfg\",s.drawer,p.pos.x,p.pos.y,p.pos.z,x,y+0.05,z,8,1.5)\n    end\nelseif target then\n    frogGuide.draw(\"p3_dfg\",s.drawer,p.pos.x,p.pos.y,p.pos.z,target.x,target.y,target.z,8,1.5)\nend\nself.used=true",
+							actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p3_dfg\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_dfg_v2\nif not s or not s.ready then self.used=true return end\nlocal p=TensorCore.mGetPlayer()\nif not p or not p.pos then self.used=true return end\nlocal target,stage=s.guide(p.id)\ns.stage=stage\nif stage==\"stack\" then\n    local boss=TensorCore.mGetEntity(s.bossID)\n    if boss and boss.pos and boss.hitradius then\n        local x,y,z=TensorCore.getPosInDirection(boss.pos,boss.pos.h,boss.hitradius,true)\n        frogGuide.draw(\"p3_dfg\",s.drawer,p.pos.x,p.pos.y,p.pos.z,x,y+0.05,z,8,1.5)\n    end\nelseif target then\n    frogGuide.draw(\"p3_dfg\",s.drawer,p.pos.x,p.pos.y,p.pos.z,target.x,target.y,target.z,8,1.5)\nend\nself.used=true",
 							name = "Draw Dive from Grace tethers",
 							uuid = "b57244ee-2638-f2e6-beb6-b111e99a6293",
 							version = 2.1,
@@ -2655,9 +2655,9 @@ local tbl =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_dfg_v2\nif not s then self.used=true return end\nlocal ref=s.towerByCaster[eventArgs.entityID]\nif ref and not s.resolvedCasters[ref.wave][eventArgs.entityID] then\n    s.resolvedCasters[ref.wave][eventArgs.entityID]=true\n    s.resolved[ref.wave]=s.resolved[ref.wave]+1\nend\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"d819b5ec-0d81-f69e-9499-2725a6409a32",
 									true,
@@ -2674,11 +2674,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -2714,26 +2714,26 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_dfg_v2\nif s and (not s.lastStack or Now()-s.lastStack>1000) then s.stacks=math.min(2,s.stacks+1);s.lastStack=Now() end\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"cfb478be-9789-ae75-be28-aa39084b38f6",
 									true,
 								},
-								
+
 								{
 									"0c7926a3-d0f9-50b9-b7ed-5bae7c19b87f",
 									true,
@@ -2745,11 +2745,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -2760,9 +2760,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -2785,21 +2785,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "local s=data.frog_dfg_v2\nif not s then self.used=true return end\nlocal id=eventArgs.targetID\nlocal wave=s.line[id]\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not wave or not e or not e.pos then self.used=true return end\nif s.placed[id] then self.used=true return end\nlocal x,y,z=e.pos.x,e.pos.y,e.pos.z\nif eventArgs.spellID~=26382 then\n    -- The clone's reported heading already includes Elusive's reversal.\n    x,y,z=TensorCore.getPosInDirection(e.pos,eventArgs.heading,14,true)\nend\nlocal t={x=x,y=y+0.05,z=z}\ns.towers[wave][id]=t\ns.towerByCaster[eventArgs.entityID]={wave=wave,id=id}\ns.placed[id]=true\nself.used=true",
-							conditions = 
+							actionLua = "local s=data.frog_dfg_v2\nif not s then self.used=true return end\nlocal id=eventArgs.targetID\nlocal wave=s.line[id]\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not wave or not e or not e.pos then self.used=true return end\nif s.placed[id] then self.used=true return end\nlocal x,y,z=e.pos.x,e.pos.y,e.pos.z\nif eventArgs.spellID~=26382 then\n\n    x,y,z=TensorCore.getPosInDirection(e.pos,eventArgs.heading,14,true)\nend\nlocal t={x=x,y=y+0.05,z=z}\ns.towers[wave][id]=t\ns.towerByCaster[eventArgs.entityID]={wave=wave,id=id}\ns.placed[id]=true\nself.used=true",
+							conditions =
 							{
-								
+
 								{
 									"8d2b34e1-01b2-de19-925e-bd50b09ef266",
 									true,
@@ -2815,20 +2815,20 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local c=data.frog_dfg_control\nif c and c.active and c.arrow and not c.resolvedAt then c.resolvedAt=Now() end\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"8d2b34e1-01b2-de19-925e-bd50b09ef266",
 									true,
 								},
-								
+
 								{
 									"1be7f415-ec1b-bd86-9378-a631df0112ce",
 									true,
@@ -2845,11 +2845,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -2866,9 +2866,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -2903,21 +2903,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_dfg_v2\nif not s then self.used=true return end\nlocal ref=s.towerByCaster[eventArgs.entityID]\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif ref and e and e.pos then\n    local t=s.towers[ref.wave][ref.id]\n    t.x=e.pos.x; t.y=e.pos.y+0.05; t.z=e.pos.z\nend\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"e9a70d95-dcf1-1735-bd95-efccb2f5ed70",
 									true,
@@ -2934,11 +2934,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -2980,9 +2980,9 @@ local tbl =
 			{
 				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_dfg_v2\nif not s or not s.assign then return end\ns.assign()\nif s.ready then self.used=true end",
@@ -3004,15 +3004,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "if not self.softStarted then\n    local p=TensorCore.mGetPlayer()\n    local buff=TensorCore.getBuff(p,2756) or TensorCore.getBuff(p,2757)\n    if not buff then return end\n    local arrow=TensorCore.hasAnyBuff(p,2756,2757)\n    local solver=data.frog_dfg_v2\n    local heading=solver and solver.strategy==\"LPDU\" and math.pi/2 or -math.pi/2\n    data.frog_dfg_control={expires=Now()+buff.duration*1000,arrow=arrow,active=true,heading=heading}\n    if arrow then\n        TensorCore.API.TensorACR.setLockFaceHeading(heading)\n        TensorCore.API.TensorACR.setHardLockFace(false)\n        TensorCore.API.TensorACR.toggleLockFace(true)\n    end\n    self.softStarted=true\nend\nlocal c=data.frog_dfg_control\nif not c or not c.active or not c.arrow then self.used=true return end\nif Now()<c.expires-2000 then return end\nTensorCore.API.TensorACR.setLockFaceHeading(c.heading)\nTensorCore.API.TensorACR.setHardLockFace(true)\nself.used=true",
@@ -3072,15 +3072,15 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local c=data.frog_dfg_control\nif c then\n    if c.arrow then\n        TensorCore.API.TensorACR.toggleLockFace(false)\n        TensorCore.API.TensorACR.setHardLockFace(false)\n    end\n    c.active=false\nend\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"7f000f46-8cb1-a1b7-bd89-347e0c53852e",
 									true,
@@ -3098,11 +3098,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							buffCheckType = 7,
 							buffDuration = 5,
@@ -3184,15 +3184,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local old=eventArgs.oldData\nlocal c=old and old.frog_dfg_control\nif c and c.active then\n    if c.arrow then\n        TensorCore.API.TensorACR.toggleLockFace(false)\n        TensorCore.API.TensorACR.setHardLockFace(false)\n    end\n    c.active=false\nend\nself.used=true",
@@ -3202,7 +3202,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 9,
@@ -3223,9 +3223,9 @@ local tbl =
 			{
 				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local old=data\nlocal c=old and old.frog_dfg_control\nif c and c.active then\n    if c.arrow then\n        TensorCore.API.TensorACR.toggleLockFace(false)\n        TensorCore.API.TensorACR.setHardLockFace(false)\n    end\n    c.active=false\nend\nself.used=true",
@@ -3250,21 +3250,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_dfg_v2\nif s then\n    local ref=s.towerByCaster[eventArgs.entityID]\n    if ref and ref.wave==2 then\n        s.geirLocked=s.geirLocked or {}\n        s.geirLocked[ref.id]=true\n    end\nend\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"127d5a27-6848-f92e-a8a2-1399b7cc6a4d",
 									true,
@@ -3281,11 +3281,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -3334,21 +3334,21 @@ local tbl =
 			},
 			objectType = "folder",
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "ACR_TensorMagnum3_Hotbar_Potion=false\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"dd5ac10e-6d68-cc64-a158-14bf7e310cff",
 									true,
@@ -3390,11 +3390,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "return TensorReactions_CurrentTimer>=676.9 and TensorReactions_CurrentTimer<681.9",
@@ -3428,21 +3428,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "ACR_TensorMagnum3_Hotbar_Potion=false\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"c359bd80-c6dd-e9ae-a315-be15ef814be7",
 									true,
@@ -3454,11 +3454,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Self",
 							conditionType = 13,
@@ -3478,6 +3478,127 @@ local tbl =
 				timerEndOffset = 6,
 				timerStartOffset = 5,
 				uuid = "a8febc22-a4d2-fd15-904f-6ac3ef3539bf",
+				version = 2,
+			},
+		},
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
+						{
+							aType = "Lua",
+							actionLua = "local t=TensorReactions_CurrentTimer\nlocal s=data.frog_enum_v1\nif not s or (s.last and t<s.last-1) then s={towers={},tethers={},sources={}};data.frog_enum_v1=s end\ns.last=t\nlocal p=TensorCore.mGetPlayer()\nif not p or not p.pos or p.hp.current<=0 then self.used=true return end\nlocal menu=data.frog_draw_settings\nlocal settings=menu and menu.settings\nif not settings then\n local path=GetLuaModsPath()..[[TensorReactions\\FrogDrawsSettings.lua]]\n settings=FileExists(path) and FileLoad(path) or {}\nend\nlocal mode=settings.draw_styles and settings.draw_styles.p3_enum or \"Tether\"\ns.mode=mode\nif not s.role then\n local roster=AnyoneCore and AnyoneCore.Roster\n if not roster or not roster.isReady() then self.used=true return end\n local members=roster.members()\n local party=AnyoneCore.API.getAgnosticPartyList()\n local byName,byJob,counts,rcounts={},{},{},{}\n for _,e in pairs(party)do\n  if e.name and e.job and e.id then byName[e.name..\"\\31\"..e.job]=e;byJob[e.job]=e;counts[e.job]=(counts[e.job]or 0)+1 end\n end\n for _,e in pairs(members)do if e.job then rcounts[e.job]=(rcounts[e.job]or 0)+1 end end\n s.slots={}\n for _,role in ipairs({\"MT\",\"OT\",\"H1\",\"H2\",\"M1\",\"M2\",\"R1\",\"R2\"})do\n  local key=role==\"MT\" and \"T1\" or role==\"OT\" and \"T2\" or role\n  local m=members[key]\n  local e=m and byName[m.name..\"\\31\"..m.job]\n  if not e and m and counts[m.job]==1 and rcounts[m.job]==1 then e=byJob[m.job] end\n  if not e then s.slots=nil;self.used=true return end\n  s.slots[role]=e.id\n  if e.id==p.id then s.role=role end\n end\n if not s.role then self.used=true return end\nend\nif not s.solved then\n for _,e in pairs(TensorCore.entityList(\"contentid=3458\")or{})do\n  local a=e.castinginfo\n  if a and a.channelingid>=26391 and a.channelingid<=26394 then\n   local i=e.pos.z<100 and (e.pos.x<100 and 1 or 2) or (e.pos.x<100 and 4 or 3)\n   s.towers[i]={id=e.id,x=e.pos.x,z=e.pos.z,n=a.channelingid-26390}\n   s.ends=t+math.max(0,a.casttime-a.channeltime)\n  end\n end\n local counts={};local total=0\n for i=1,4 do if not s.towers[i]then self.used=true return end;counts[i]=s.towers[i].n;total=total+counts[i]end\n if total~=8 then self.used=true return end\n local pairs={{\"H1\",\"M1\"},{\"R1\",\"MT\"},{\"H2\",\"M2\"},{\"R2\",\"OT\"}}\n local destinations,filled={},{0,0,0,0}\n for i,pair in ipairs(pairs)do\n  destinations[pair[1]]=i\n  local dest=i\n  if counts[i]==1 then\n   dest=nil\n   for _,step in ipairs({1,-1,2})do local j=(i-1+step)%4+1;if counts[j]>2 then dest=j;break end end\n  end\n  if not dest then self.used=true return end\n  destinations[pair[2]]=dest;filled[i]=filled[i]+1;filled[dest]=filled[dest]+1\n end\n for i=1,4 do if filled[i]~=counts[i]then self.used=true return end end\n s.destinations=destinations;s.index=destinations[s.role]\n local home={H1=1,M1=1,R1=2,MT=2,H2=3,M2=3,R2=4,OT=4}\n s.callout=s.index==home[s.role] and \"STAY\" or ({\"Northwest\",\"Northeast\",\"Southeast\",\"Southwest\"})[s.index]\n s.solved=true\n if mode~=\"Disabled\" then TensorCore.addAlertText(4000,s.callout,1.5,2,true)end\nend\nif not s.ends or t>s.ends+8 then\n s.x,s.z=nil,nil\n if s.arrow then Argus.deleteTimedShape(s.arrow);s.arrow=nil end\n self.used=true return\nend\nlocal tower=s.towers[s.index]\nlocal phase=t<s.ends and \"tower\" or \"post\"\nlocal x,z=tower.x,tower.z\nlocal anchor=s.role:sub(1,1)==\"H\" or s.role:sub(1,1)==\"R\"\nif phase==\"post\" then\n local tethered=s.sources and s.sources[tower.id]\n local clone=TensorCore.mGetEntity(tower.id)\n local casting=clone and clone.castinginfo\n if casting and casting.channelingid==26378 then s.baited=true end\n if anchor and not tethered and not s.baited and t<s.ends+4 then\n  local dx,dz=tower.x-100,tower.z-100;local length=math.sqrt(dx*dx+dz*dz)\n  x,z=tower.x+dx/length,tower.z+dz/length;phase=\"bait\"\n else\n  local boss\n  for _,e in pairs(TensorCore.entityList(\"contentid=3458,targetable,alive\")or{})do boss=e;break end\n  if not boss then self.used=true return end\n  local radius=boss.hitradius+2.5\n  local options={{boss.pos.x-radius,boss.pos.z},{boss.pos.x+radius,boss.pos.z}}\n  local best,score\n  for _,point in ipairs(options)do\n   local safe=true\n   for _,role in ipairs({\"MT\",\"OT\"})do\n    local id=s.slots[role]\n    if s.tethers[id]then local tank=TensorCore.mGetEntity(id);if tank and tank.pos and (point[1]-tank.pos.x)^2+(point[2]-tank.pos.z)^2<42.25 then safe=false end end\n   end\n   local distance=(point[1]-p.pos.x)^2+(point[2]-p.pos.z)^2\n   if safe and (not score or distance<score)then best,score=point,distance end\n  end\n  if not best then s.x,s.z=nil,nil;self.used=true return end\n  x,z=best[1],best[2];phase=\"side\"\n end\nend\ns.x,s.z=x,z\nlocal key=mode..\":\"..phase..\":\"..string.format(\"%.2f:%.2f\",x,z)\nif s.drawKey~=key then\n if s.arrow then Argus.deleteTimedShape(s.arrow);s.arrow=nil end\n s.drawKey=key\n if mode==\"Arrow\" then\n  local dx,dz=x-100,z-100;local length=math.sqrt(dx*dx+dz*dz)\n  if length>0.2 then\n   local duration=math.max(.1,(phase==\"tower\" and s.ends or phase==\"bait\" and s.ends+4 or s.ends+8)-t)*1000\n   local drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,Argus2.RenderFlags.FLAG_WARP_TERRAIN)\n   s.arrow=drawer:addTimedArrow(duration,100,.08,100,math.atan2(dx,dz),math.max(.1,length-2),.75,2,1.5,0,false,Argus2.RenderFlags.FLAG_WARP_TERRAIN)\n  end\n end\nend\nself.used=true",
+							name = "Enumeration solver",
+							uuid = "1afe4ce5-754c-8c01-87cd-c70fc14b8bce",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+				},
+				loop = true,
+				mechanicTime = 676.9,
+				name = "[Draw] Enumeration solver",
+				throttleTime = 100,
+				timeRange = true,
+				timelineIndex = 118,
+				timerEndOffset = 9,
+				timerStartOffset = -7,
+				uuid = "64610df9-3d77-a313-9010-8db736983b7c",
+				version = 2,
+			},
+		},
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_enum_v1\nif not s or s.mode~=\"Tether\" or not s.x or not s.z then self.used=true return end\nlocal p=TensorCore.mGetPlayer()\nif p and p.pos and p.hp.current>0 then\n local drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,Argus2.RenderFlags.FLAG_WARP_TERRAIN)\n drawer:addLine(p.pos.x,p.pos.y+.08,p.pos.z,s.x,.08,s.z,3,1)\nend\nself.used=true",
+							name = "Enumeration tether",
+							uuid = "906f7dd0-5825-0c93-9fd8-8e447772caec",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+				},
+				eventType = 12,
+				loop = true,
+				mechanicTime = 676.9,
+				name = "[Draw] Enumeration tether",
+				timeRange = true,
+				timelineIndex = 118,
+				timerEndOffset = 9,
+				timerStartOffset = -7,
+				uuid = "5454f2f0-59c2-c99f-a618-f4935d5f118b",
+				version = 2,
+			},
+		},
+
+		{
+			data =
+			{
+				actions =
+				{
+
+					{
+						data =
+						{
+							aType = "Lua",
+							actionLua = "data.frog_enum_v1=data.frog_enum_v1 or {towers={},tethers={},sources={}}\nlocal s=data.frog_enum_v1\ns.tethers=s.tethers or {};s.sources=s.sources or {}\nif eventArgs.oldTargetID and eventArgs.oldTargetID>0 then s.tethers[eventArgs.oldTargetID]=nil end\nif eventArgs.newTargetID and eventArgs.newTargetID>0 then\n s.tethers[eventArgs.newTargetID]=true;s.sources[eventArgs.sourceEntityID]=eventArgs.newTargetID\nend\nself.used=true",
+							conditions =
+							{
+
+								{
+									"e7ed0112-196a-daac-af49-d1ca3ddb43b4",
+									true,
+								},
+							},
+							name = "Track tethered clones and tanks",
+							uuid = "35cfa557-ec2a-4d6c-8b55-2fe4cee1ec00",
+							version = 2.1,
+						},
+					},
+				},
+				conditions =
+				{
+
+					{
+						data =
+						{
+							category = "Event",
+							comparator = 3,
+							dequeueIfLuaFalse = true,
+							eventArgType = 5,
+							eventIntValue = 84,
+							name = "Soul Tether",
+							uuid = "e7ed0112-196a-daac-af49-d1ca3ddb43b4",
+							version = 3,
+						},
+					},
+				},
+				eventType = 15,
+				loop = true,
+				mechanicTime = 676.9,
+				name = "[Draw] Enumeration tethers",
+				timeRange = true,
+				timelineIndex = 118,
+				timerEndOffset = 9,
+				timerStartOffset = -7,
+				uuid = "11dfda81-82f8-3921-be5f-75bcfa1b4e71",
 				version = 2,
 			},
 		},
@@ -3569,21 +3690,21 @@ local tbl =
 	},
 	[127] =
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_eyes_v1=data.frog_eyes_v1 or {}\nlocal s=data.frog_eyes_v1\ns.soulTime=TensorReactions_CurrentTimer\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"2485b2fc-3f6a-55e5-9678-7f1cb60cebc6",
 									true,
@@ -3594,9 +3715,9 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_eyes_v1=data.frog_eyes_v1 or {}\ndata.frog_eyes_v1.hatebound=true\nself.used=true",
@@ -3613,9 +3734,9 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_eyes_v1=data.frog_eyes_v1 or {}\nlocal s=data.frog_eyes_v1\ns.yellow=s.yellow or {}\nfor _,id in ipairs(eventArgs.hitTargets) do s.yellow[id]=true end\nself.used=true",
@@ -3632,9 +3753,9 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_eyes_v1=data.frog_eyes_v1 or {}\nlocal s=data.frog_eyes_v1\ns.blue=s.blue or {}\nfor _,id in ipairs(eventArgs.hitTargets) do s.blue[id]=true end\nself.used=true",
@@ -3651,9 +3772,9 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_eyes_v1=data.frog_eyes_v1 or {}\nlocal s=data.frog_eyes_v1\ns.waves=s.waves or {}\ns.wave=s.wave or 0\nlocal t=TensorReactions_CurrentTimer\nlocal id=eventArgs.targetID\nlocal target=TensorCore.mGetEntity(id)\nlocal pos=target and target.pos\nif not pos then return end\nlocal w=s.waves[s.wave]\nif not w or t-w.time>2 then\n    if s.wave>=4 then self.used=true return end\n    s.wave=s.wave+1\n    w={time=t}\n    s.waves[s.wave]=w\nend\nfor _,hit in ipairs(w) do if hit.id==id then self.used=true return end end\nif #w<2 then w[#w+1]={id=id,x=pos.x,z=pos.z} end\nself.used=true",
@@ -3673,9 +3794,9 @@ local tbl =
 				},
 				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -3751,25 +3872,25 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "local t = TensorReactions_CurrentTimer\nlocal s = data.frog_eyes_v1\nif s == nil or (s.lastTime and t < s.lastTime - 1) then\n    s = {}\n    data.frog_eyes_v1 = s\nend\ns.lastTime = t\nif not s.initialized then\n    s.initialized = true\n    s.yellow = s.yellow or {}\n    s.blue = s.blue or {}\n    s.waves = s.waves or {}\n    s.wave = s.wave or 0\n    s.solvedWave = 0\n    s.slots = {}\n    s.roleByID = {}\n    s.station = {}\n    s.pairs = {}\n    s.roleOrder = {\"MT\",\"OT\",\"H1\",\"H2\",\"M1\",\"M2\",\"R1\",\"R2\"}\n    s.rosterNames = {MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"}\n    s.partner = {MT=\"H1\",OT=\"H2\",M1=\"R1\",M2=\"R2\",H1=\"MT\",H2=\"OT\",R1=\"M1\",R2=\"M2\"}\n    s.leftQuery = {contentid=11317}\n    s.rightQuery = {contentid=11318}\n    function s.resolveRoster()\n        local members = AnyoneCore.Roster.members()\n        local party = AnyoneCore.API.getAgnosticPartyList()\n        if type(members) ~= \"table\" or type(party) ~= \"table\" then return false end\n        local byName,byJob,counts,rcounts = {},{},{},{}\n        for _,a in pairs(party) do\n            if a.id and a.name and a.job then\n                byName[a.name..\"\\31\"..a.job]=a\n                byJob[a.job]=a\n                counts[a.job]=(counts[a.job] or 0)+1\n            end\n        end\n        for _,m in pairs(members) do\n            if m.job then rcounts[m.job]=(rcounts[m.job] or 0)+1 end\n        end\n        local seen={}\n        for _,role in ipairs(s.roleOrder) do\n            local m=members[s.rosterNames[role]]\n            if not m or not m.name or not m.job then return false end\n            local a=byName[m.name..\"\\31\"..m.job]\n            if not a and counts[m.job]==1 and rcounts[m.job]==1 then a=byJob[m.job] end\n            if not a or seen[a.id] then return false end\n            seen[a.id]=true\n            s.slots[role]=a.id\n            s.roleByID[a.id]=role\n        end\n        return true\n    end\n    function s.point(x,z,label)\n        s.targetID=nil\n        s.x,s.z,s.label=x,z,label\n    end\n    function s.person(id,label)\n        s.x,s.z=nil,nil\n        s.targetID,s.label=id,label\n    end\n    -- Begin at the north boundary of the NW quadrant, not its diagonal.\n    -- CCW order: NW, SW, SE, NE. Reverse order serves group 2.\n    function s.rank(a,b,cx,cz)\n        local aa=( -math.atan2(a.x-cx,-(a.z-cz)))%(2*math.pi)\n        local bb=( -math.atan2(b.x-cx,-(b.z-cz)))%(2*math.pi)\n        if aa<bb or (aa==bb and a.id<b.id) then return a,b end\n        return b,a\n    end\nend\ns.x,s.z,s.targetID,s.label=nil,nil,nil,nil\ns.callout=nil\nif not s.rosterReady then\n    if s.rosterRetry and t<s.rosterRetry then self.used=true return end\n    s.rosterRetry=t+1\n    s.rosterReady=s.resolveRoster()\n    if not s.rosterReady then s.reason=\"Roster unresolved\"; self.used=true return end\nend\nlocal player=TensorCore.mGetPlayer()\nif not player or not player.pos then self.used=true return end\nlocal role=s.roleByID[player.id]\nif not role then s.reason=\"Self absent from roster\"; self.used=true return end\ns.myRole=role\nlocal left=s.leftID and TensorCore.mGetEntity(s.leftID) or TensorCore.getEntityByGroup(\"ContentID\",s.leftQuery)\nlocal right=s.rightID and TensorCore.mGetEntity(s.rightID) or TensorCore.getEntityByGroup(\"ContentID\",s.rightQuery)\nif not left or not right or not left.pos or not right.pos then\n    s.reason=\"Waiting for eyes\"; self.used=true return\nend\ns.leftID,s.rightID=left.id,right.id\nlocal tank=role==\"MT\" or role==\"OT\"\nlocal melee=role==\"M1\" or role==\"M2\"\nlocal yellowRole=tank or melee\nlocal support=tank or role==\"H1\" or role==\"H2\"\nlocal eye=support and left or right\nlocal north=role==\"H1\" or role==\"R1\"\nlocal sign=north and -1 or 1\nlocal buddy=s.slots[s.partner[role]]\nlocal red=TensorCore.hasBuff(player,2775)\nlocal blue=TensorCore.hasBuff(player,2776)\nlocal clock=t-(s.soulTime or 756.9)\ns.reason=nil\n\n-- Resolve each complete hit pair once; actual hit positions decide priority.\nwhile s.solvedWave < s.wave do\n    local n=s.solvedWave+1\n    local w=s.waves[n]\n    if not w or #w<2 then break end\n    local ccw,cw=s.rank(w[1],w[2],right.pos.x,right.pos.z)\n    if n==1 then s.firstPair={ccw.id,cw.id} end\n    s.pairs={}\n    if n<4 then\n        local takers\n        if n==1 then takers={s.slots.MT,s.slots.OT}\n        elseif n==2 then takers={s.slots.M1,s.slots.M2}\n        else takers=s.firstPair end\n        if takers and takers[1] and takers[2] then\n            s.pairs[1]={giver=ccw.id,taker=takers[1],x=ccw.x,z=ccw.z}\n            s.pairs[2]={giver=cw.id,taker=takers[2],x=cw.x,z=cw.z}\n        end\n    end\n    s.solvedWave=n\nend\n\nif s.wave>0 then\n    if s.solvedWave>=4 then s.label=\"Eyes complete\"; self.used=true return end\n    for _,pair in ipairs(s.pairs) do\n        if not pair.done then\n            if TensorCore.hasBuff(pair.taker,2775) and TensorCore.hasBuff(pair.giver,2776) then\n                pair.done=true\n                s.station[pair.taker]={x=pair.x,z=pair.z}\n                s.station[pair.giver]=nil\n            end\n        end\n        if not pair.done and (player.id==pair.giver or player.id==pair.taker) then\n            s.person(player.id==pair.giver and pair.taker or pair.giver,\"Mirage handoff\")\n            self.used=true return\n        end\n    end\n    -- Red holders spread freely; only blue holders return to the centre.\n    if blue and not red then\n        if (player.pos.x-right.pos.x)^2+(player.pos.z-right.pos.z)^2>1 then\n            s.point(right.pos.x,right.pos.z,\"Wait under right eye\")\n        end\n    end\n    self.used=true return\nend\n\n-- Latch orb resolution from the damage debuff as well as cast hitTargets.\n-- Both orb types apply 2902; the assigned role identifies which orb was soaked.\nif yellowRole then\n    if not s.yellow[player.id] and TensorCore.hasBuff(player,2902) then s.yellow[player.id]=true end\n    if not s.blue[buddy] and TensorCore.hasBuff(buddy,2902) then s.blue[buddy]=true end\nelse\n    if not s.yellow[buddy] and TensorCore.hasBuff(buddy,2902) then s.yellow[buddy]=true end\n    if not s.blue[player.id] and TensorCore.hasBuff(player,2902) then s.blue[player.id]=true end\nend\n-- Initial colour sorting is a one-way stage, never re-entered after a handoff.\nif (yellowRole and red) or (not yellowRole and blue)\n    or s.yellow[player.id] or s.yellow[buddy] or s.blue[player.id] or s.blue[buddy] then\n    s.initialSettled=true\nend\n\nlocal myYellow = yellowRole and s.yellow[player.id] or s.yellow[buddy]\nlocal myBlue = yellowRole and s.blue[buddy] or s.blue[player.id]\n-- Outgoing yellow-orb players finish their handoff on their own Fangbound.\n-- Do not wait for the receiver's status update or blue-orb soak.\nif yellowRole and (myYellow or myBlue) then\n    if blue then s.orbHandoffComplete=true end\n    if not s.orbHandoffComplete then\n        s.person(buddy,\"Pass Clawbound\")\n    elseif not tank or left.hp.percent<=45 then\n        if (player.pos.x-right.pos.x)^2+(player.pos.z-right.pos.z)^2>1 then\n            s.point(right.pos.x,right.pos.z,\"Wait under right eye\")\n        end\n    end\n    self.used=true return\nend\nif myBlue then\n    if tank and left.hp.percent>45 then\n        s.point(left.pos.x,left.pos.z,\"Left eye until 45%\")\n    elseif yellowRole then\n        if (player.pos.x-right.pos.x)^2+(player.pos.z-right.pos.z)^2>1 then\n            s.point(right.pos.x,right.pos.z,\"Wait under right eye\")\n        end\n    end\n    -- Outer Mirage waiting positions are intentionally not tethered.\nelseif myYellow then\n    local giver=yellowRole and player.id or buddy\n    local receiver=yellowRole and buddy or player.id\n    local exchanged=TensorCore.hasBuff(giver,2776) and TensorCore.hasBuff(receiver,2775)\n    if not exchanged then\n        s.person(buddy,\"Pass Clawbound\")\n    elseif not yellowRole and clock>=28 then\n        s.point(eye.pos.x,eye.pos.z+sign*7,\"Blue orb\")\n        s.callout=\"POP NOW\"\n    elseif yellowRole then\n        s.point(eye.pos.x,eye.pos.z,\"Wait for blue orb\")\n    else\n        s.point(eye.pos.x,eye.pos.z+sign*eye.hitradius,\"Wait for blue orb\")\n    end\nelse\n    if not s.initialSettled and (s.hatebound or red or blue) and ((yellowRole and blue) or (not yellowRole and red)) then\n        s.point(100,100,\"Initial color swap\")\n    elseif yellowRole and clock>=22 and red then\n        s.point(eye.pos.x+(support and 7 or -7),eye.pos.z,\"Yellow orb\")\n        s.callout=\"SOAK NOW\"\n    elseif yellowRole then\n        s.point(eye.pos.x,eye.pos.z,\"Initial waiting spot\")\n    else\n        s.point(eye.pos.x,eye.pos.z+sign*eye.hitradius,\"Initial waiting spot\")\n    end\nend\nself.used=true\n",
+							actionLua = "local t = TensorReactions_CurrentTimer\nlocal s = data.frog_eyes_v1\nif s == nil or (s.lastTime and t < s.lastTime - 1) then\n    s = {}\n    data.frog_eyes_v1 = s\nend\ns.lastTime = t\nif not s.initialized then\n    s.initialized = true\n    s.yellow = s.yellow or {}\n    s.blue = s.blue or {}\n    s.waves = s.waves or {}\n    s.wave = s.wave or 0\n    s.solvedWave = 0\n    s.slots = {}\n    s.roleByID = {}\n    s.station = {}\n    s.pairs = {}\n    s.roleOrder = {\"MT\",\"OT\",\"H1\",\"H2\",\"M1\",\"M2\",\"R1\",\"R2\"}\n    s.rosterNames = {MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"}\n    s.partner = {MT=\"H1\",OT=\"H2\",M1=\"R1\",M2=\"R2\",H1=\"MT\",H2=\"OT\",R1=\"M1\",R2=\"M2\"}\n    s.leftQuery = {contentid=11317}\n    s.rightQuery = {contentid=11318}\n    function s.resolveRoster()\n        local members = AnyoneCore.Roster.members()\n        local party = AnyoneCore.API.getAgnosticPartyList()\n        if type(members) ~= \"table\" or type(party) ~= \"table\" then return false end\n        local byName,byJob,counts,rcounts = {},{},{},{}\n        for _,a in pairs(party) do\n            if a.id and a.name and a.job then\n                byName[a.name..\"\\31\"..a.job]=a\n                byJob[a.job]=a\n                counts[a.job]=(counts[a.job] or 0)+1\n            end\n        end\n        for _,m in pairs(members) do\n            if m.job then rcounts[m.job]=(rcounts[m.job] or 0)+1 end\n        end\n        local seen={}\n        for _,role in ipairs(s.roleOrder) do\n            local m=members[s.rosterNames[role]]\n            if not m or not m.name or not m.job then return false end\n            local a=byName[m.name..\"\\31\"..m.job]\n            if not a and counts[m.job]==1 and rcounts[m.job]==1 then a=byJob[m.job] end\n            if not a or seen[a.id] then return false end\n            seen[a.id]=true\n            s.slots[role]=a.id\n            s.roleByID[a.id]=role\n        end\n        return true\n    end\n    function s.point(x,z,label)\n        s.targetID=nil\n        s.x,s.z,s.label=x,z,label\n    end\n    function s.person(id,label)\n        s.x,s.z=nil,nil\n        s.targetID,s.label=id,label\n    end\n\n\n    function s.rank(a,b,cx,cz)\n        local aa=( -math.atan2(a.x-cx,-(a.z-cz)))%(2*math.pi)\n        local bb=( -math.atan2(b.x-cx,-(b.z-cz)))%(2*math.pi)\n        if aa<bb or (aa==bb and a.id<b.id) then return a,b end\n        return b,a\n    end\nend\ns.x,s.z,s.targetID,s.label=nil,nil,nil,nil\ns.callout=nil\nif not s.rosterReady then\n    if s.rosterRetry and t<s.rosterRetry then self.used=true return end\n    s.rosterRetry=t+1\n    s.rosterReady=s.resolveRoster()\n    if not s.rosterReady then s.reason=\"Roster unresolved\"; self.used=true return end\nend\nlocal player=TensorCore.mGetPlayer()\nif not player or not player.pos then self.used=true return end\nlocal role=s.roleByID[player.id]\nif not role then s.reason=\"Self absent from roster\"; self.used=true return end\ns.myRole=role\nlocal left=s.leftID and TensorCore.mGetEntity(s.leftID) or TensorCore.getEntityByGroup(\"ContentID\",s.leftQuery)\nlocal right=s.rightID and TensorCore.mGetEntity(s.rightID) or TensorCore.getEntityByGroup(\"ContentID\",s.rightQuery)\nif not left or not right or not left.pos or not right.pos then\n    s.reason=\"Waiting for eyes\"; self.used=true return\nend\ns.leftID,s.rightID=left.id,right.id\nlocal tank=role==\"MT\" or role==\"OT\"\nlocal melee=role==\"M1\" or role==\"M2\"\nlocal yellowRole=tank or melee\nlocal support=tank or role==\"H1\" or role==\"H2\"\nlocal eye=support and left or right\nlocal north=role==\"H1\" or role==\"R1\"\nlocal sign=north and -1 or 1\nlocal buddy=s.slots[s.partner[role]]\nlocal red=TensorCore.hasBuff(player,2775)\nlocal blue=TensorCore.hasBuff(player,2776)\nlocal clock=t-(s.soulTime or 756.9)\ns.reason=nil\n\nlocal menu=data.frog_draw_settings\nlocal settings=menu and menu.settings or (data.frog_draw_style_v5 and data.frog_draw_style_v5.settings)\nlocal trapezoid=settings and settings.p4_eyes_strategy==\"Trapezoid\"\nlocal function rankDive(a,b)\n    if trapezoid then\n        if a.z<b.z or (a.z==b.z and a.id<b.id) then return a,b end\n        return b,a\n    end\n    return s.rank(a,b,right.pos.x,right.pos.z)\nend\n\nwhile s.solvedWave < s.wave do\n    local n=s.solvedWave+1\n    local w=s.waves[n]\n    if not w or #w<2 then break end\n    local ccw,cw=rankDive(w[1],w[2])\n    if n==1 then s.firstPair={ccw.id,cw.id} end\n    s.pairs={}\n    if n<4 then\n        local takers\n        if n==1 then takers={s.slots.MT,s.slots.OT}\n        elseif n==2 then takers={s.slots.M1,s.slots.M2}\n        else takers=s.firstPair end\n        if takers and takers[1] and takers[2] then\n            s.pairs[1]={giver=ccw.id,taker=takers[1],x=ccw.x,z=ccw.z}\n            s.pairs[2]={giver=cw.id,taker=takers[2],x=cw.x,z=cw.z}\n        end\n    end\n    s.solvedWave=n\nend\n\nif s.wave>0 then\n    if s.solvedWave>=4 then s.label=\"Eyes complete\"; self.used=true return end\n    for _,pair in ipairs(s.pairs) do\n        if not pair.done then\n            if TensorCore.hasBuff(pair.taker,2775) and TensorCore.hasBuff(pair.giver,2776) then\n                pair.done=true\n                s.station[pair.taker]={x=pair.x,z=pair.z}\n                s.station[pair.giver]=nil\n            end\n        end\n        if not pair.done and (player.id==pair.giver or player.id==pair.taker) then\n            s.person(player.id==pair.giver and pair.taker or pair.giver,\"Mirage handoff\")\n            self.used=true return\n        end\n    end\n\n    if blue and not red then\n        if (player.pos.x-right.pos.x)^2+(player.pos.z-right.pos.z)^2>1 then\n            s.point(right.pos.x,right.pos.z,\"Wait under right eye\")\n        end\n    end\n    self.used=true return\nend\n\n\n\nif yellowRole then\n    if not s.yellow[player.id] and TensorCore.hasBuff(player,2902) then s.yellow[player.id]=true end\n    if not s.blue[buddy] and TensorCore.hasBuff(buddy,2902) then s.blue[buddy]=true end\nelse\n    if not s.yellow[buddy] and TensorCore.hasBuff(buddy,2902) then s.yellow[buddy]=true end\n    if not s.blue[player.id] and TensorCore.hasBuff(player,2902) then s.blue[player.id]=true end\nend\n\nif (yellowRole and red) or (not yellowRole and blue)\n    or s.yellow[player.id] or s.yellow[buddy] or s.blue[player.id] or s.blue[buddy] then\n    s.initialSettled=true\nend\n\nlocal myYellow = yellowRole and s.yellow[player.id] or s.yellow[buddy]\nlocal myBlue = yellowRole and s.blue[buddy] or s.blue[player.id]\n\n\nif yellowRole and (myYellow or myBlue) then\n    if blue then s.orbHandoffComplete=true end\n    if not s.orbHandoffComplete then\n        s.person(buddy,\"Pass Clawbound\")\n    elseif not tank or left.hp.percent<=45 then\n        if (player.pos.x-right.pos.x)^2+(player.pos.z-right.pos.z)^2>1 then\n            s.point(right.pos.x,right.pos.z,\"Wait under right eye\")\n        end\n    end\n    self.used=true return\nend\nif myBlue then\n    if tank and left.hp.percent>45 then\n        s.point(left.pos.x,left.pos.z,\"Left eye until 45%\")\n    elseif yellowRole then\n        if (player.pos.x-right.pos.x)^2+(player.pos.z-right.pos.z)^2>1 then\n            s.point(right.pos.x,right.pos.z,\"Wait under right eye\")\n        end\n    end\n\nelseif myYellow then\n    local giver=yellowRole and player.id or buddy\n    local receiver=yellowRole and buddy or player.id\n    local exchanged=TensorCore.hasBuff(giver,2776) and TensorCore.hasBuff(receiver,2775)\n    if not exchanged then\n        s.person(buddy,\"Pass Clawbound\")\n    elseif not yellowRole and clock>=28 then\n        s.point(eye.pos.x,eye.pos.z+sign*7,\"Blue orb\")\n        s.callout=\"POP NOW\"\n    elseif yellowRole then\n        s.point(eye.pos.x,eye.pos.z,\"Wait for blue orb\")\n    else\n        s.point(eye.pos.x,eye.pos.z+sign*eye.hitradius,\"Wait for blue orb\")\n    end\nelse\n    if not s.initialSettled and (s.hatebound or red or blue) and ((yellowRole and blue) or (not yellowRole and red)) then\n        s.point(100,100,\"Initial color swap\")\n    elseif yellowRole and clock>=22 and red then\n        s.point(eye.pos.x+(support and 7 or -7),eye.pos.z,\"Yellow orb\")\n        s.callout=\"SOAK NOW\"\n    elseif yellowRole then\n        s.point(eye.pos.x,eye.pos.z,\"Initial waiting spot\")\n    else\n        s.point(eye.pos.x,eye.pos.z+sign*eye.hitradius,\"Initial waiting spot\")\n    end\nend\nself.used=true",
 							name = "Resolve Eyes Guidance",
 							uuid = "67e73330-b675-dafe-acdd-ddbc00d369ea",
 							version = 2.1,
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				loop = true,
@@ -3784,25 +3905,25 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p4_eyes\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_eyes_v1\nif not s or not s.initialized then return end\nlocal p=TensorCore.mGetPlayer()\nif not p or not p.pos or p.hp.current<=0 then return end\nlocal x,z=s.x,s.z\nlocal y=0.05\nif s.targetID then\n    local target=TensorCore.mGetEntity(s.targetID)\n    if not target or not target.pos then return end\n    x,y,z=target.pos.x,target.pos.y,target.pos.z\nend\nif not x or not z then return end\n-- ShapeDrawer has no entity-attached line; submit this moving endpoint line per frame.\nlocal drawer=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0)\nfrogGuide.draw(\"p4_eyes\",drawer,p.pos.x,p.pos.y,p.pos.z,x,y,z,8,2)\nself.used=true",
+							actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p4_eyes\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_eyes_v1\nif not s or not s.initialized then return end\nlocal p=TensorCore.mGetPlayer()\nif not p or not p.pos or p.hp.current<=0 then return end\nlocal x,z=s.x,s.z\nlocal y=0.05\nif s.targetID then\n    local target=TensorCore.mGetEntity(s.targetID)\n    if not target or not target.pos then return end\n    x,y,z=target.pos.x,target.pos.y,target.pos.z\nend\nif not x or not z then return end\n\nlocal drawer=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0)\nfrogGuide.draw(\"p4_eyes\",drawer,p.pos.x,p.pos.y,p.pos.z,x,y,z,8,2)\nself.used=true",
 							name = "Draw Eyes Tether",
 							uuid = "1d3c1b36-2a86-80e2-9ad5-ecf5934e2b03",
 							version = 2.1,
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 12,
@@ -3817,24 +3938,24 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Alert",
 							alertDuration = 2000,
 							alertScale = 1.5,
 							alertTTS = true,
 							alertText = "SOAK NOW",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"52fcedc9-88f3-78b4-a67f-050911b3b968",
 									true,
@@ -3845,11 +3966,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "return data.frog_eyes_v1 ~= nil and data.frog_eyes_v1.callout == \"SOAK NOW\"",
@@ -3869,15 +3990,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Alert",
 							alertDuration = 2000,
@@ -3897,7 +4018,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 
 					{
@@ -3968,21 +4089,21 @@ local tbl =
 	},
 	[154] =
 	{
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local old=data.frog_wrath_v1\nif old and old.arrow then Argus.deleteTimedShape(old.arrow) end\ndata.frog_wrath_v1={phase=1}\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"ef103cfa-386d-d9ee-8b76-44fa754af142",
 									true,
@@ -4013,11 +4134,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -4054,26 +4175,26 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_wrath_v1=data.frog_wrath_v1 or {}\nlocal s=data.frog_wrath_v1\nlocal e=TensorCore.mGetEntity(eventArgs.sourceEntityID)\nif not e or not e.pos then return end\ns.vellID=eventArgs.newTargetID\ns.vellX,s.vellZ=e.pos.x,e.pos.z\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"a27ee1a7-3178-5b7b-9476-43f83d4e0b6b",
 									true,
 								},
-								
+
 								{
 									"31f11011-c643-3825-ba26-9f533053e1f2",
 									true,
@@ -4109,11 +4230,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							comparator = 3,
@@ -4125,9 +4246,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -4138,9 +4259,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -4164,21 +4285,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_wrath_v1=data.frog_wrath_v1 or {}\nlocal s=data.frog_wrath_v1\nif eventArgs.markerID==14 then s.defamID=eventArgs.entityID else s.diveID=eventArgs.entityID end\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"fb330b8c-69b9-f40c-a81b-abbda8e35d4d",
 									true,
@@ -4190,11 +4311,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -4222,21 +4343,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "data.frog_wrath_v1=data.frog_wrath_v1 or {}\nlocal s=data.frog_wrath_v1\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\ns.gx,s.gz=e.pos.x,e.pos.z\nself.used=true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"9cbe3e84-594e-9bb2-b709-40d049cac022",
 									true,
@@ -4253,11 +4374,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -4293,21 +4414,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "data.frog_wrath_v1=data.frog_wrath_v1 or {}\nlocal s=data.frog_wrath_v1\ns.phase=2\nif s.arrow then Argus.deleteTimedShape(s.arrow) s.arrow=nil end\nself.used=true",
-							conditions = 
+							actionLua = "data.frog_wrath_v1=data.frog_wrath_v1 or {}\nlocal s=data.frog_wrath_v1\ns.phase=2\nif s.arrow then Argus.deleteTimedShape(s.arrow) s.arrow=nil end\nlocal p=TensorCore.mGetPlayer()\nlocal guide=data.frog_draw_style_v5\nif p and p.pos and p.hp.current>0 and s.nx and not s.crossoverCalled\n    and guide and guide.mode(\"p5_wrath\")~=\"Disabled\" then\n local kx,kz\n if p.id==s.ignID then kx,kz=s.ignX,s.ignZ\n elseif p.id==s.vellID then kx,kz=s.vellX,s.vellZ end\n local ex,ez=-s.nz,s.nx\n\n if kx and (kx-100)*ex+(kz-100)*ez<0 then\n  local dx,dz=-0.9238795325*s.nx-0.3826834324*ex,-0.9238795325*s.nz-0.3826834324*ez\n  local drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,guide.flags)\n  s.arrow=drawer:addTimedArrow(8000,100+dx*2,0.08,100+dz*2,math.atan2(dx,dz),12,0.75,3,1.5,0,false,guide.flags)\n  TensorCore.addAlertText(5000,\"Move away from nothings\",1.5,2,true)\n  s.crossoverCalled=true\n end\nend\nself.used=true",
+							conditions =
 							{
-								
+
 								{
 									"bc2c80e8-9423-6e9e-8793-63137706def4",
 									true,
@@ -4338,11 +4459,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -4384,21 +4505,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p5_wrath\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_wrath_v1\nlocal ex,ez=-s.nz,s.nx\nif frogGuide.mode(\"p5_wrath\")==\"Tether\" then\n s.unmarkedLineUntil=TensorReactions_CurrentTimer+8\nelse\n local drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,frogGuide.flags)\n s.arrow=drawer:addTimedArrow(8000,100+ex*5,0.08,100+ez*5,math.atan2(ex,ez),8,1.5,3,4,0,false,frogGuide.flags)\nend\nself.used=true\n",
-							conditions = 
+							actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p5_wrath\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_wrath_v1\nlocal ex,ez=-s.nz,s.nx\nif frogGuide.mode(\"p5_wrath\")==\"Tether\" then\n s.unmarkedLineUntil=TensorReactions_CurrentTimer+8\nelse\n local drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,frogGuide.flags)\n s.arrow=drawer:addTimedArrow(8000,100+ex*5,0.08,100+ez*5,math.atan2(ex,ez),8,1.5,3,4,0,false,frogGuide.flags)\nend\nself.used=true",
+							conditions =
 							{
-								
+
 								{
 									"0f820f54-8583-b2a8-a063-86f19e79fadf",
 									true,
@@ -4410,11 +4531,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "local s=data.frog_wrath_v1\nif not s or s.phase~=1 or not s.nx or not s.vellID or not s.ignID or not s.defamID then return false end\nlocal p=TensorCore.mGetPlayer()\nreturn p and p.id~=s.vellID and p.id~=s.ignID and p.id~=s.defamID",
@@ -4440,12 +4561,12 @@ local tbl =
 			{
 				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p5_wrath\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_wrath_v1\nif not s then return end\nlocal p=TensorCore.mGetPlayer()\nif not p or not p.pos or p.hp.current<=0 then return end\nlocal x,z\nlocal radius=19.5\nif s.phase==1 and s.nx then\n    local kx,kz\n    if p.id==s.vellID then kx,kz=s.vellX,s.vellZ\n    elseif p.id==s.ignID then kx,kz=s.ignX,s.ignZ end\n    if kx then\n        local dx,dz=kx-100,kz-100\n        local length=math.sqrt(dx*dx+dz*dz)\n        if length>0 then x,z=100-radius*dx/length,100-radius*dz/length end\n    elseif p.id==s.defamID then\n        -- WNW: 60 degrees west of dragon-relative north, away from the NW dive lane.\n        local ex,ez=-s.nz,s.nx\n        x,z=100+radius*(0.5*s.nx-0.8660254038*ex),100+radius*(0.5*s.nz-0.8660254038*ez)\n    end\nelseif s.phase==2 and p.id==s.diveID and s.gx then\n    local dx,dz=s.gx-100,s.gz-100\n    local length=math.sqrt(dx*dx+dz*dz)\n    if length>0 then x,z=100-radius*dx/length,100-radius*dz/length end\nend\nif not x and s.phase==1 and s.unmarkedLineUntil\n    and TensorReactions_CurrentTimer<s.unmarkedLineUntil\n    and s.nx and p.id~=s.vellID and p.id~=s.ignID and p.id~=s.defamID then\n    local ex,ez=-s.nz,s.nx\n    x,z=100+19.5*ex,100+19.5*ez\nend\nif x then\n    -- Moving player endpoint requires a per-frame line.\n    local drawer=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0)\n    frogGuide.draw(\"p5_wrath\",drawer,p.pos.x,p.pos.y,p.pos.z,x,0.08,z,8,2)\nend\nself.used=true",
+							actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p5_wrath\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_wrath_v1\nif not s then return end\nlocal p=TensorCore.mGetPlayer()\nif not p or not p.pos or p.hp.current<=0 then return end\nlocal x,z\nlocal radius=19.5\nif s.phase==1 and s.nx then\n    local kx,kz\n    if p.id==s.vellID then kx,kz=s.vellX,s.vellZ\n    elseif p.id==s.ignID then kx,kz=s.ignX,s.ignZ end\n    if kx then\n        local ex,ez=-s.nz,s.nx\n        local side=(-kx+100)*ex+(-kz+100)*ez\n        local sign=side<0 and -1 or 1\n        local c,t=0.9238795325,0.3826834324\n        x,z=100+radius*(-c*s.nx+sign*t*ex),100+radius*(-c*s.nz+sign*t*ez)\n    elseif p.id==s.defamID then\n\n        local ex,ez=-s.nz,s.nx\n        x,z=100+radius*(0.5*s.nx-0.8660254038*ex),100+radius*(0.5*s.nz-0.8660254038*ez)\n    end\nelseif s.phase==2 and p.id==s.diveID and s.gx then\n    local dx,dz=s.gx-100,s.gz-100\n    local length=math.sqrt(dx*dx+dz*dz)\n    if length>0 then x,z=100-radius*dx/length,100-radius*dz/length end\nend\nif not x and s.phase==1 and s.unmarkedLineUntil\n    and TensorReactions_CurrentTimer<s.unmarkedLineUntil\n    and s.nx and p.id~=s.vellID and p.id~=s.ignID and p.id~=s.defamID then\n    local ex,ez=-s.nz,s.nx\n    x,z=100+19.5*ex,100+19.5*ez\nend\nif x then\n\n    local drawer=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0)\n    frogGuide.draw(\"p5_wrath\",drawer,p.pos.x,p.pos.y,p.pos.z,x,0.08,z,8,2)\nend\nself.used=true",
 							name = "Draw Assigned Position",
 							uuid = "cdd0c157-b2d0-6c08-bbae-1c5eedbf2a79",
 							version = 2.1,
@@ -4467,21 +4588,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s = data.frog_wrath_v1\nif s then s.phase = 3 end\nself.used = true",
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"043d56f1-911b-30b3-82d4-6edd863b5aa6",
 									true,
@@ -4493,11 +4614,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -4529,7 +4650,7 @@ local tbl =
 	},
 	[172] =
 	{
-		
+
 		{
 			data =
 			{
@@ -4551,18 +4672,18 @@ local tbl =
 		},
 
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							actionID = 69,
-							conditions = 
+							conditions =
 							{
-								
+
 								{
 									"a22d0722-da75-cfd4-9b8c-ddd4008296b5",
 									true,
@@ -4599,9 +4720,9 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
 						data =
 						{
@@ -4615,7 +4736,7 @@ local tbl =
 					},
 
 					{
-						data = 
+						data =
 						{
 							category = "Lua",
 							conditionLua = "return FFXIV_Common_BotRunning == true",
@@ -4686,16 +4807,16 @@ local tbl =
 	{
 
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "if data.frog_draw_settings == nil then\n local p={\n  version=3,\n  path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]],\n  default=\"R1 H1 M1 MT OT M2 H2 R2\",\n  roles={MT=true,OT=true,H1=true,H2=true,M1=true,M2=true,R1=true,R2=true}\n }\n function p.parse(text)\n  if type(text)~=\"string\" then return nil,\"Enter all eight roles.\" end\n  local order,seen={},{}\n  for role in string.upper(text):gmatch(\"[^%s,]+\") do\n   if not p.roles[role] then return nil,\"Unknown role: \"..role end\n   if seen[role] then return nil,\"Duplicate role: \"..role end\n   seen[role]=true; order[#order+1]=role\n  end\n  if #order~=8 then return nil,\"Enter each of MT OT H1 H2 M1 M2 R1 R2 once.\" end\n  return order,table.concat(order,\" \")\n end\n function p.save(text)\n  local order,normalized=p.parse(text)\n  if not order then p.message=normalized; return false end\n  local nextSettings={}\n  for k,v in pairs(p.settings) do nextSettings[k]=v end\n  nextSettings.doth_conga=normalized\n  local ok,err=pcall(FileSave,p.path,nextSettings)\n  local readOK,saved=pcall(FileLoad,p.path)\n  if not ok or not readOK or type(saved)~=\"table\" or saved.doth_conga~=normalized then\n   p.message=\"Save failed: \"..tostring(err or saved); return false\n  end\n  p.settings=nextSettings\n  p.order,p.saved,p.edit=order,normalized,normalized\n  p.message=\"Saved. Used when DOTH begins.\"\n  return true\n end\n p.order,p.saved=p.parse(p.default)\n p.edit=p.saved\n p.settings={}\n if FileExists(p.path) then\n  local ok,settings=pcall(FileLoad,p.path)\n  local order,normalized\n  if ok and type(settings)==\"table\" then\n   p.settings=settings\n   order,normalized=p.parse(settings.doth_conga)\n  end\n  if order then p.order,p.saved,p.edit=order,normalized,normalized\n  else p.message=\"Invalid settings file; using defaults. Apply to repair.\" end\n else\n  local previous=data.frog_draw_settings\n  p.save(previous and previous.saved or p.default)\n end\n data.frog_draw_settings=p\nend\nlocal s = {\n orderMode=data.frog_draw_settings.settings.doth_order_mode==\"Live positions\" and \"Live positions\" or \"Configured conga\",\n phase=1, doom={}, markers={}, markerPos={}, dives={}, puddles={}, puddleByID={},\n slots={}, roleByID={}, dirty=true,\n order={},\n rosterSlots={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"},\n doomOrder={},clearOrder={}\n}\nfor i,role in ipairs(data.frog_draw_settings.order) do s.order[i]=role end\ndata.frog_doth_v1=s\nfunction s.resolveRoster()\n local members=AnyoneCore.Roster.members()\n local party=AnyoneCore.API.getAgnosticPartyList()\n if type(members)~=\"table\" or type(party)~=\"table\" then return false end\n local byName,byJob,counts,rcounts={},{},{},{}\n for _,a in pairs(party) do\n  if a.id and a.name and a.job then\n   byName[a.name..\"\\31\"..a.job]=a\n   byJob[a.job]=a\n   counts[a.job]=(counts[a.job] or 0)+1\n  end\n end\n for _,m in pairs(members) do\n  if m.job then rcounts[m.job]=(rcounts[m.job] or 0)+1 end\n end\n local seen={}\n for _,role in ipairs(s.order) do\n  local m=members[s.rosterSlots[role]]\n  if not m or not m.name or not m.job then return false end\n  local a=byName[m.name..\"\\31\"..m.job]\n  if not a and counts[m.job]==1 and rcounts[m.job]==1 then a=byJob[m.job] end\n  if not a or seen[a.id] then return false end\n  seen[a.id]=true\n  s.slots[role]=a.id\n  s.roleByID[a.id]=role\n end\n return true\nend\nfunction s.point(e,n,label)\n s.x=100+s.ex*e+s.nx*n\n s.z=100+s.ez*e+s.nz*n\n s.label=label\nend\n-- Preserve the four cleanse slots even when one or more puddles are missing.\ns.cleanseSlots={}\ns.cleanseAnchors={{e=-20,n=0},{e=-12,n=-16},{e=12,n=-16},{e=20,n=0}}\nfunction s.mapPuddles()\n for i=1,4 do s.cleanseSlots[i]=nil end\n for _,p in ipairs(s.puddles) do\n  local e=(p.x-100)*s.ex+(p.z-100)*s.ez\n  local n=(p.x-100)*s.nx+(p.z-100)*s.nz\n  local best,bestD,tied\n  for i,a in ipairs(s.cleanseAnchors) do\n   local d=(e-a.e)^2+(n-a.n)^2\n   if not bestD or d<bestD-0.0001 then best,bestD,tied=i,d,false\n   elseif math.abs(d-bestD)<=0.0001 then tied=true end\n  end\n  -- Do not infer a cleanse from an ambiguous location or a north-side drop.\n  if best and not tied and n<=1 and bestD<80 then\n   if s.cleanseSlots[best]==nil then s.cleanseSlots[best]=p\n   else s.cleanseSlots[best]=false end\n  end\n end\nend\nfunction s.puddlePoint(index,opposite,label)\n local p=s.cleanseSlots[index]\n if not p then\n  s.reason=p==false and \"Ambiguous cleanse in assigned slot\" or \"Waiting for assigned cleanse puddle\"\n  return\n end\n if opposite then s.x,s.z=200-p.x,200-p.z else s.x,s.z=p.x,p.z end\n s.label=label\nend\nfunction s.pairSide(id,marker,axis)\n local mine=s.markerPos[id]\n if not mine then return nil end\n local my=(mine.x-100)*(axis==\"east\" and s.ex or s.nx)+(mine.z-100)*(axis==\"east\" and s.ez or s.nz)\n for other,m in pairs(s.markers) do\n  if other~=id and m==marker then\n   local p=s.markerPos[other]\n   if not p then return nil end\n   local v=(p.x-100)*(axis==\"east\" and s.ex or s.nx)+(p.z-100)*(axis==\"east\" and s.ez or s.nz)\n   return my<v or (my==v and id<other)\n  end\n end\n return nil\nend\ns.rosterReady=s.resolveRoster()\nself.used=true",
+							actionLua = "if data.frog_draw_settings == nil then\n local p={\n  version=3,\n  path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]],\n  default=\"R1 H1 M1 MT OT M2 H2 R2\",\n  roles={MT=true,OT=true,H1=true,H2=true,M1=true,M2=true,R1=true,R2=true}\n }\n function p.parse(text)\n  if type(text)~=\"string\" then return nil,\"Enter all eight roles.\" end\n  local order,seen={},{}\n  for role in string.upper(text):gmatch(\"[^%s,]+\") do\n   if not p.roles[role] then return nil,\"Unknown role: \"..role end\n   if seen[role] then return nil,\"Duplicate role: \"..role end\n   seen[role]=true; order[#order+1]=role\n  end\n  if #order~=8 then return nil,\"Enter each of MT OT H1 H2 M1 M2 R1 R2 once.\" end\n  return order,table.concat(order,\" \")\n end\n function p.save(text)\n  local order,normalized=p.parse(text)\n  if not order then p.message=normalized; return false end\n  local nextSettings={}\n  for k,v in pairs(p.settings) do nextSettings[k]=v end\n  nextSettings.doth_conga=normalized\n  local ok,err=pcall(FileSave,p.path,nextSettings)\n  local readOK,saved=pcall(FileLoad,p.path)\n  if not ok or not readOK or type(saved)~=\"table\" or saved.doth_conga~=normalized then\n   p.message=\"Save failed: \"..tostring(err or saved); return false\n  end\n  p.settings=nextSettings\n  p.order,p.saved,p.edit=order,normalized,normalized\n  p.message=\"Saved. Used when DOTH begins.\"\n  return true\n end\n p.order,p.saved=p.parse(p.default)\n p.edit=p.saved\n p.settings={}\n if FileExists(p.path) then\n  local ok,settings=pcall(FileLoad,p.path)\n  local order,normalized\n  if ok and type(settings)==\"table\" then\n   p.settings=settings\n   order,normalized=p.parse(settings.doth_conga)\n  end\n  if order then p.order,p.saved,p.edit=order,normalized,normalized\n  else p.message=\"Invalid settings file; using defaults. Apply to repair.\" end\n else\n  local previous=data.frog_draw_settings\n  p.save(previous and previous.saved or p.default)\n end\n data.frog_draw_settings=p\nend\nlocal s = {\n orderMode=data.frog_draw_settings.settings.doth_order_mode==\"Live positions\" and \"Live positions\" or \"Configured conga\",\n phase=1, doom={}, markers={}, markerPos={}, dives={}, puddles={}, puddleByID={},\n slots={}, roleByID={}, dirty=true,\n order={},\n rosterSlots={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"},\n doomOrder={},clearOrder={}\n}\nfor i,role in ipairs(data.frog_draw_settings.order) do s.order[i]=role end\ndata.frog_doth_v1=s\nfunction s.resolveRoster()\n local members=AnyoneCore.Roster.members()\n local party=AnyoneCore.API.getAgnosticPartyList()\n if type(members)~=\"table\" or type(party)~=\"table\" then return false end\n local byName,byJob,counts,rcounts={},{},{},{}\n for _,a in pairs(party) do\n  if a.id and a.name and a.job then\n   byName[a.name..\"\\31\"..a.job]=a\n   byJob[a.job]=a\n   counts[a.job]=(counts[a.job] or 0)+1\n  end\n end\n for _,m in pairs(members) do\n  if m.job then rcounts[m.job]=(rcounts[m.job] or 0)+1 end\n end\n local seen={}\n for _,role in ipairs(s.order) do\n  local m=members[s.rosterSlots[role]]\n  if not m or not m.name or not m.job then return false end\n  local a=byName[m.name..\"\\31\"..m.job]\n  if not a and counts[m.job]==1 and rcounts[m.job]==1 then a=byJob[m.job] end\n  if not a or seen[a.id] then return false end\n  seen[a.id]=true\n  s.slots[role]=a.id\n  s.roleByID[a.id]=role\n end\n return true\nend\nfunction s.point(e,n,label)\n s.x=100+s.ex*e+s.nx*n\n s.z=100+s.ez*e+s.nz*n\n s.label=label\nend\n\ns.cleanseSlots={}\ns.cleanseAnchors={{e=-20,n=0},{e=-12,n=-16},{e=12,n=-16},{e=20,n=0}}\nfunction s.mapPuddles()\n for i=1,4 do s.cleanseSlots[i]=nil end\n for _,p in ipairs(s.puddles) do\n  local e=(p.x-100)*s.ex+(p.z-100)*s.ez\n  local n=(p.x-100)*s.nx+(p.z-100)*s.nz\n  local best,bestD,tied\n  for i,a in ipairs(s.cleanseAnchors) do\n   local d=(e-a.e)^2+(n-a.n)^2\n   if not bestD or d<bestD-0.0001 then best,bestD,tied=i,d,false\n   elseif math.abs(d-bestD)<=0.0001 then tied=true end\n  end\n\n  if best and not tied and n<=1 and bestD<80 then\n   if s.cleanseSlots[best]==nil then s.cleanseSlots[best]=p\n   else s.cleanseSlots[best]=false end\n  end\n end\nend\nfunction s.puddlePoint(index,opposite,label)\n local p=s.cleanseSlots[index]\n if not p then\n  s.reason=p==false and \"Ambiguous cleanse in assigned slot\" or \"Waiting for assigned cleanse puddle\"\n  return\n end\n if opposite then s.x,s.z=200-p.x,200-p.z else s.x,s.z=p.x,p.z end\n s.label=label\nend\nfunction s.pairSide(id,marker,axis)\n local mine=s.markerPos[id]\n if not mine then return nil end\n local my=(mine.x-100)*(axis==\"east\" and s.ex or s.nx)+(mine.z-100)*(axis==\"east\" and s.ez or s.nz)\n for other,m in pairs(s.markers) do\n  if other~=id and m==marker then\n   local p=s.markerPos[other]\n   if not p then return nil end\n   local v=(p.x-100)*(axis==\"east\" and s.ex or s.nx)+(p.z-100)*(axis==\"east\" and s.ez or s.nz)\n   return my<v or (my==v and id<other)\n  end\n end\n return nil\nend\ns.rosterReady=s.resolveRoster()\nself.used=true",
 							conditions =
 							{
 
@@ -4710,7 +4831,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 
 					{
@@ -4742,21 +4863,21 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "local s=data.frog_doth_v1\nif not s or s.nx then self.used=true return end\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\nlocal dx,dz=e.pos.x-100,e.pos.z-100\nlocal r=math.sqrt(dx*dx+dz*dz)\n-- The introductory knight ring is radius 12; the actual impact position is radius 9.\nif r<8 or r>10 then self.used=true return end\ns.nx,s.nz=dx/r,dz/r\ns.ex,s.ez=-s.nz,s.nx\ns.dirty=true\nself.used=true",
-							conditions = 
+							actionLua = "local s=data.frog_doth_v1\nif not s or s.nx then self.used=true return end\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\nlocal dx,dz=e.pos.x-100,e.pos.z-100\nlocal r=math.sqrt(dx*dx+dz*dz)\n\nif r<8 or r>10 then self.used=true return end\ns.nx,s.nz=dx/r,dz/r\ns.ex,s.ez=-s.nz,s.nx\ns.dirty=true\nself.used=true",
+							conditions =
 							{
-								
+
 								{
 									"6deb6aaa-916a-086e-88e7-0e003b1d929a",
 									true,
@@ -4775,9 +4896,9 @@ local tbl =
 				},
 				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -4826,10 +4947,10 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "local s=data.frog_doth_v1\nif not s or s.nx then self.used=true return end\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\nlocal dx,dz=e.pos.x-100,e.pos.z-100\nlocal r=math.sqrt(dx*dx+dz*dz)\n-- The introductory knight ring is radius 12; the actual impact position is radius 9.\nif r<8 or r>10 then self.used=true return end\ns.nx,s.nz=dx/r,dz/r\ns.ex,s.ez=-s.nz,s.nx\ns.dirty=true\nself.used=true",
-							conditions = 
+							actionLua = "local s=data.frog_doth_v1\nif not s or s.nx then self.used=true return end\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\nlocal dx,dz=e.pos.x-100,e.pos.z-100\nlocal r=math.sqrt(dx*dx+dz*dz)\n\nif r<8 or r>10 then self.used=true return end\ns.nx,s.nz=dx/r,dz/r\ns.ex,s.ez=-s.nz,s.nx\ns.dirty=true\nself.used=true",
+							conditions =
 							{
-								
+
 								{
 									"7f375b4a-8e30-9595-a6e8-1ae63e3ecb24",
 									true,
@@ -4843,9 +4964,9 @@ local tbl =
 				},
 				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -4884,10 +5005,10 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "local s=data.frog_doth_v1\nif s then\n if s.orderMode==\"Live positions\" and not s.positionSnapshot then\n  -- Snapshot once, on the first Doom event. Never re-read moving players.\n  s.positionSnapshot={}\n  local party=AnyoneCore.API.getAgnosticPartyList()\n  if type(party)==\"table\" then\n   for _,a in pairs(party) do\n    if a.id then\n     local e=TensorCore.mGetEntity(a.id)\n     if e and e.pos then s.positionSnapshot[a.id]={x=e.pos.x,z=e.pos.z} end\n    end\n   end\n  end\n end\n s.doom[eventArgs.entityID]=true\n s.dirty=true\nend\nself.used=true",
-							conditions = 
+							actionLua = "local s=data.frog_doth_v1\nif s then\n if s.orderMode==\"Live positions\" and not s.positionSnapshot then\n\n  s.positionSnapshot={}\n  local party=AnyoneCore.API.getAgnosticPartyList()\n  if type(party)==\"table\" then\n   for _,a in pairs(party) do\n    if a.id then\n     local e=TensorCore.mGetEntity(a.id)\n     if e and e.pos then s.positionSnapshot[a.id]={x=e.pos.x,z=e.pos.z} end\n    end\n   end\n  end\n end\n s.doom[eventArgs.entityID]=true\n s.dirty=true\nend\nself.used=true",
+							conditions =
 							{
-								
+
 								{
 									"437bd08b-7a29-0985-9480-592f9bfd0d3f",
 									true,
@@ -4899,11 +5020,11 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -4933,9 +5054,9 @@ local tbl =
 			{
 				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_doth_v1\nif s and s.phase==1 then\n s.dives[eventArgs.spellID]=true\n if s.dives[27531] and s.dives[27533] and s.dives[27539] then\n  s.phase=2; s.baitAt=TensorReactions_CurrentTimer+3; s.dirty=true\n end\nend\nself.used=true",
@@ -4952,9 +5073,9 @@ local tbl =
 							version = 2.1,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_doth_v1\nif s then s.phase=4; s.x,s.z=nil,nil; s.dirty=true end\nself.used=true",
@@ -4974,9 +5095,9 @@ local tbl =
 				},
 				conditions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -4993,9 +5114,9 @@ local tbl =
 							version = 3,
 						},
 					},
-					
+
 					{
-						data = 
+						data =
 						{
 							category = "Event",
 							dequeueIfLuaFalse = true,
@@ -5023,15 +5144,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_doth_v1\nif s and not s.puddleByID[eventArgs.entityID] and #s.puddles<4 then\n local p={id=eventArgs.entityID,x=eventArgs.x,z=eventArgs.z}\n s.puddleByID[p.id]=p\n s.puddles[#s.puddles+1]=p\n s.puddlesSorted=false\n s.dirty=true\nend\nself.used=true",
@@ -5049,7 +5170,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 
 					{
@@ -5076,15 +5197,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_doth_v1\nif not s then self.used=true return end\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\ns.markers[e.id]=eventArgs.markerID\ns.markerPos[e.id]={x=e.pos.x,z=e.pos.z}\ns.phase=3\ns.dirty=true\nself.used=true",
@@ -5102,7 +5223,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 
 					{
@@ -5136,15 +5257,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_doth_v1\nif not s then self.used=true return end\nlocal t=TensorReactions_CurrentTimer\nif s.lastTick and t<s.lastTick-1 then data.frog_doth_v1=nil; self.used=true return end\ns.lastTick=t\nif not s.rosterReady then\n if not s.retryAt or t>=s.retryAt then s.retryAt=t+1; s.rosterReady=s.resolveRoster(); s.dirty=true end\nend\nif not s.dirty then self.used=true return end\ns.x,s.z,s.label,s.reason=nil,nil,nil,nil\nif not s.rosterReady then s.reason=\"Waiting for Anyone roster\"; self.used=true return end\nif not s.nx then s.reason=\"Waiting for Guerrique arrival\"; self.used=true return end\nlocal player=TensorCore.mGetPlayer()\nif not player then self.used=true return end\ns.myRole=s.roleByID[player.id]\nif not s.myRole then s.reason=\"Self absent from roster\"; self.used=true return end\nif not s.assigned then\n if s.orderMode==\"Live positions\" and not s.liveOrderLocked then\n  if not s.positionSnapshot then s.reason=\"Waiting for Doom position snapshot\"; self.used=true return end\n  local sorted={}\n  for i,role in ipairs(s.order) do\n   local p=s.positionSnapshot[s.slots[role]]\n   if not p then s.reason=\"Missing player in Doom position snapshot\"; self.used=true return end\n   sorted[#sorted+1]={role=role,e=(p.x-100)*s.ex+(p.z-100)*s.ez,tie=i}\n  end\n  table.sort(sorted,function(a,b) if a.e==b.e then return a.tie<b.tie end return a.e<b.e end)\n  for i,p in ipairs(sorted) do s.order[i]=p.role end\n  s.liveOrderLocked=true\n end\n local d=0\n for _,role in ipairs(s.order) do if s.doom[s.slots[role]] then d=d+1 end end\n if d~=4 then s.reason=\"Waiting for all four dooms\"; self.used=true return end\n local di,ci=0,0\n for _,role in ipairs(s.order) do\n  local id=s.slots[role]\n  if s.doom[id] then di=di+1; s.doomOrder[di]=id else ci=ci+1; s.clearOrder[ci]=id end\n end\n s.assigned=true\n s.myDoom=s.doom[player.id]==true\n local order=s.myDoom and s.doomOrder or s.clearOrder\n for rank,id in ipairs(order) do if id==player.id then s.myRank=rank end end\n s.baiter=s.myDoom and (s.myRank==1 or s.myRank==4)\nend\ns.mapPuddles()\nlocal rank=s.myRank\nif s.phase==1 then\n if rank==1 then s.point(s.myDoom and -10.5 or -20,0,\"West spread\")\n elseif rank==4 then s.point(s.myDoom and 10.5 or 20,0,\"East spread\")\n else s.point(rank==2 and -12 or 12,s.myDoom and 16 or -16,\"Offset diagonal spread\") end\nelseif s.phase==2 then\n if s.baiter then s.point(rank==1 and -10.5 or 10.5,0,\"Bait circle\")\n else s.point(0,s.myDoom and -2 or 2,s.myDoom and \"Doom south\" or \"Non-doom north\") end\nelseif s.phase==3 then\n local marker=s.markers[player.id]\n if s.myDoom then\n  if marker==281 then\n   local west=s.pairSide(player.id,281,\"east\")\n   if west==nil and (rank==1 or rank==4) then west=rank==1 end\n   if west~=nil then s.puddlePoint(west and 1 or 4,false,\"Circle cleanse\") end\n  elseif marker==282 or marker==283 then\n   if rank==2 or rank==3 then\n    s.puddlePoint(rank,false,rank==2 and \"Inner doom southwest cleanse\" or \"Inner doom southeast cleanse\")\n   else s.reason=\"Non-circle doom is not an inner conga rank\" end\n  end\n else\n  if marker==282 or marker==283 then\n   local partnerRank\n   for i=2,3 do\n    if s.markers[s.doomOrder[i]]==marker then\n     if partnerRank then\n      s.reason=\"Ambiguous doom symbol partner\"; self.used=true return\n     end\n     partnerRank=i\n    end\n   end\n   if not partnerRank then s.reason=\"Waiting for matching inner doom marker\"; self.used=true return end\n   if s.cleanseSlots[partnerRank] then\n    s.puddlePoint(partnerRank,true,\"Opposite matching doom cleanse\")\n   else\n    s.point(partnerRank==2 and 12 or -12,16,\"Opposite matching inner doom\")\n   end\n  elseif marker==284 then\n   local south=s.pairSide(player.id,284,\"north\")\n   if south~=nil then s.point(0,south and -20 or 20,south and \"Cross south\" or \"Cross north\") end\n  end\n end\nend\ns.dirty=false\nself.used=true",
@@ -5154,7 +5275,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				loop = true,
@@ -5169,15 +5290,15 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Alert",
 							alertDuration = 2000,
@@ -5197,7 +5318,7 @@ local tbl =
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 
 					{
@@ -5221,25 +5342,25 @@ local tbl =
 				version = 2,
 			},
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p5_doth\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_doth_v1\nlocal p=TensorCore.mGetPlayer()\nif s and s.x and s.z and s.phase<4 and p and p.pos and p.hp.current>0 then\n local drawer=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0)\n frogGuide.draw(\"p5_doth\",drawer,p.pos.x,p.pos.y,p.pos.z,s.x,0.08,s.z,8,2)\nend\nself.used=true",
+							actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p5_doth\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_doth_v1\nlocal p=TensorCore.mGetPlayer()\nif s and s.x and s.z and s.phase<4 and p and p.pos and p.hp.current>0 then\n local drawer=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0)\n frogGuide.draw(\"p5_doth\",drawer,p.pos.x,p.pos.y,p.pos.z,s.x,0.08,s.z,8,2)\nend\nself.used=true",
 							name = "Draw only my current destination",
 							uuid = "4c8eec4b-205e-92a4-83ec-f376b894fa26",
 							version = 2.1,
 						},
 					},
 				},
-				conditions = 
+				conditions =
 				{
 				},
 				eventType = 12,
@@ -5277,15 +5398,15 @@ local tbl =
 			},
 			objectType = "folder",
 		},
-		
+
 		{
-			data = 
+			data =
 			{
-				actions = 
+				actions =
 				{
-					
+
 					{
-						data = 
+						data =
 						{
 							aType = "Lua",
 							actionLua = "local s=data.frog_mnk_downtime\nif not s then self.used=true return end\nif Now()>(s.pbUntil or 0) then s.remaining=0 end\nif Now()>(s.chakraUntil or 0) then s.chakra=0 end\ns.prep={key=\"DOTH comet Blitz preparation\",start=Now(),solar=not s.solar,blitz=(s.solar and s.lunar) and 25769 or ((not s.solar) and 25768 or 3545)}\nself.used=true",
@@ -6100,7 +6221,7 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "local s=data.frog_mch_p6_balance\nif not s then\n s={nOptions={contentid=3458,subgroup=\"Nearest\"},hOptions={contentid=4954,subgroup=\"Nearest\"}}\n data.frog_mch_p6_balance=s\nend\nlocal n=TensorCore.getEntityByGroup(\"ContentID\",s.nOptions)\nlocal h=TensorCore.getEntityByGroup(\"ContentID\",s.hOptions)\nlocal function usable(e)\n return e and e.targetable and e.attackable and e.hp.max>0 and e.hp.current>0\n  and math.abs(e.pos.z-100)<=30 and math.max(0,e.distance2d-e.hitradius)<=25\nend\nlocal nu,hu=usable(n),usable(h)\nlocal t=TensorCore.mGetTarget()\nlocal chosen\nif nu and hu then\n local gap=100*n.hp.current/n.hp.max-100*h.hp.current/h.hp.max\n s.gap=gap\n if gap>=2 then chosen=n\n elseif gap<= -2 then chosen=h end\nelseif nu and (not t or not usable(t)) then chosen=n\nelseif hu and (not t or not usable(t)) then chosen=h end\ns.desiredID=chosen and chosen.id or nil\nself.used=true\n",
+							actionLua = "local s=data.frog_mch_p6_balance\nif not s then\n s={nOptions={contentid=3458,subgroup=\"Nearest\"},hOptions={contentid=4954,subgroup=\"Nearest\"}}\n data.frog_mch_p6_balance=s\nend\nlocal n=TensorCore.getEntityByGroup(\"ContentID\",s.nOptions)\nlocal h=TensorCore.getEntityByGroup(\"ContentID\",s.hOptions)\nlocal function usable(e)\n return e and e.targetable and e.attackable and e.hp.max>0 and e.hp.current>0\n  and math.abs(e.pos.z-100)<=30 and math.max(0,e.distance2d-e.hitradius)<=25\nend\nlocal nu,hu=usable(n),usable(h)\nlocal t=TensorCore.mGetTarget()\nlocal chosen\nif nu and hu then\n local gap=100*n.hp.current/n.hp.max-100*h.hp.current/h.hp.max\n s.gap=gap\n if gap>=2 then chosen=n\n elseif gap<= -2 then chosen=h end\nelseif nu and (not t or not usable(t)) then chosen=n\nelseif hu and (not t or not usable(t)) then chosen=h end\ns.desiredID=chosen and chosen.id or nil\nself.used=true",
 							conditions =
 							{
 
@@ -6537,7 +6658,7 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal s=data.frog_wb1_pairs\nif not s then self.used=true return end\ns.stay=false\nlocal guide=data.frog_draw_style_v5\nif guide.mode(\"p6_wb1\")==\"Disabled\" or not s.solution then self.used=true return end\nlocal player=TensorCore.mGetPlayer()\nif not player or player.hp.current<=0 then self.used=true return end\nif s.drawPlayerID~=player.id then s.anchorPoint=nil;s.drawPlayerID=player.id end\nlocal x,y,z\nlocal destination=s.solution[player.id]\n-- Resolve from the current replay player; never reuse another player's tether.\ns.personalAnchor=destination;s.anchorLane=s.anchors and s.anchors[player.id]\nif destination and (not s.anchors or not s.anchors[destination] or s.colors[destination]==s.colors[player.id])then self.used=true return end\nif s.personalAnchor then\n local anchor=TensorCore.mGetEntity(s.personalAnchor)\n if not anchor or anchor.hp.current<=0 then self.used=true return end\n x,y,z=anchor.pos.x,anchor.pos.y,anchor.pos.z\nelseif s.anchorLane then\n if not s.anchorPoint then s.anchorPoint={x=player.pos.x,y=player.pos.y,z=player.pos.z} end\n x,y,z=s.anchorPoint.x,s.anchorPoint.y,s.anchorPoint.z\nelse self.used=true return end\nlocal distance=(player.pos.x-x)^2+(player.pos.z-z)^2\ns.stay=distance<=1\nlocal color=s.stay and 0xFF40E080 or 0xFFFF6626\nlocal d=TensorCore.getStaticDrawer(color,1,0,guide.flags)\n-- Destination remains visible even when no movement is necessary.\nd:addCircle(x,y+0.05,z,0.8,false,guide.flags)\nd:addCircle(x,y+0.06,z,0.15,false,guide.flags)\nif not s.stay then guide.draw(\"p6_wb1\",d,player.pos.x,player.pos.y,player.pos.z,x,y+0.05,z,8,2) end\nself.used=true",
+							actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal s=data.frog_wb1_pairs\nif not s then self.used=true return end\ns.stay=false\nlocal guide=data.frog_draw_style_v5\nif guide.mode(\"p6_wb1\")==\"Disabled\" or not s.solution then self.used=true return end\nlocal player=TensorCore.mGetPlayer()\nif not player or player.hp.current<=0 then self.used=true return end\nif s.drawPlayerID~=player.id then s.anchorPoint=nil;s.drawPlayerID=player.id end\nlocal x,y,z\nlocal destination=s.solution[player.id]\n\ns.personalAnchor=destination;s.anchorLane=s.anchors and s.anchors[player.id]\nif destination and (not s.anchors or not s.anchors[destination] or s.colors[destination]==s.colors[player.id])then self.used=true return end\nif s.personalAnchor then\n local anchor=TensorCore.mGetEntity(s.personalAnchor)\n if not anchor or anchor.hp.current<=0 then self.used=true return end\n x,y,z=anchor.pos.x,anchor.pos.y,anchor.pos.z\nelseif s.anchorLane then\n if not s.anchorPoint then s.anchorPoint={x=player.pos.x,y=player.pos.y,z=player.pos.z} end\n x,y,z=s.anchorPoint.x,s.anchorPoint.y,s.anchorPoint.z\nelse self.used=true return end\nlocal distance=(player.pos.x-x)^2+(player.pos.z-z)^2\ns.stay=distance<=1\nlocal color=s.stay and 0xFF40E080 or 0xFFFF6626\nlocal d=TensorCore.getStaticDrawer(color,1,0,guide.flags)\n\nd:addCircle(x,y+0.05,z,0.8,false,guide.flags)\nd:addCircle(x,y+0.06,z,0.15,false,guide.flags)\nif not s.stay then guide.draw(\"p6_wb1\",d,player.pos.x,player.pos.y,player.pos.z,x,y+0.05,z,8,2) end\nself.used=true",
 							name = "[Draw] Wyrmsbreath 1 flex guidance",
 							uuid = "4e1d99fa-88f2-aa96-b19a-3584523efbb8",
 							version = 2.1,
@@ -6570,7 +6691,7 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "local s=data.frog_wb1_pairs\nif not s then self.used=true return end\nlocal menu=data.frog_draw_settings\nif not s.saved then\n s.saved={}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then local ok,v=pcall(FileLoad,path);if ok and type(v)==\"table\" then s.saved=v end end\nend\nlocal settings=menu and menu.settings or s.saved\nlocal text=settings.p6_wb1_pairs or \"H1 R1 M1 M2 H2 R2\"\nlocal styles=settings.draw_styles\nif styles and styles.p6_wb1==\"Disabled\" then s.personalAnchor=nil;self.used=true return end\nlocal player=TensorCore.mGetPlayer()\nlocal members=AnyoneCore.Roster.members()\nlocal sameRoster=s.roleOrder and type(members)==\"table\"\nif sameRoster then\n for i,role in ipairs(s.roleOrder)do\n  local m=members[role]\n  if not m or m.name~=s.rosterNames[i] or m.job~=s.rosterJobs[i]then sameRoster=false;break end\n end\nend\nif sameRoster and player and s.playerID==player.id and s.signature==text and s.solvedVersion==s.colorVersion then self.used=true return end\nif Now()<s.settleUntil then self.used=true return end\ns.personalAnchor=nil;s.anchorLane=nil;s.solution=nil;s.anchors=nil\nlocal roles,seen={},{}\nfor role in text:gmatch(\"%S+\") do\n if (role~=\"H1\" and role~=\"H2\" and role~=\"M1\" and role~=\"M2\" and role~=\"R1\" and role~=\"R2\") or seen[role] then s.reason=\"Invalid pair assignments\";self.used=true return end\n seen[role]=true;roles[#roles+1]=role\nend\nif #roles~=6 then s.reason=\"Assign all six non-tank roles\";self.used=true return end\nlocal party=AnyoneCore.API.getAgnosticPartyList()\nif type(members)~=\"table\" or type(party)~=\"table\" then self.used=true return end\nlocal byName,byJob,counts,rcounts={},{},{},{}\nfor _,a in pairs(party) do\n if a.id and a.name and a.job then byName[a.name..\"\\31\"..a.job]=a;byJob[a.job]=a;counts[a.job]=(counts[a.job]or 0)+1 end\nend\nfor _,m in pairs(members) do if m.job then rcounts[m.job]=(rcounts[m.job]or 0)+1 end end\nlocal ids,used={},{}\ns.roleOrder=roles;s.rosterNames={};s.rosterJobs={}\nfor i,role in ipairs(roles) do\n local m=members[role]\n if not m or not m.name or not m.job then s.reason=\"Roster unresolved\";self.used=true return end\n s.rosterNames[i]=m.name;s.rosterJobs[i]=m.job\n local a=byName[m.name..\"\\31\"..m.job]\n if not a and counts[m.job]==1 and rcounts[m.job]==1 then a=byJob[m.job] end\n if not a or used[a.id] or not s.colors[a.id] then s.reason=\"Waiting for six colours / roster\";self.used=true return end\n used[a.id]=true;ids[i]=a.id\nend\nlocal best,bestCost\nfor _,p in ipairs({{1,2,3},{1,3,2},{2,1,3},{2,3,1},{3,1,2},{3,2,1}}) do\n local valid,cost=true,0\n for lane=1,3 do\n  if s.colors[ids[lane*2-1]]==s.colors[ids[p[lane]*2]] then valid=false;break end\n  cost=cost+(lane==p[lane] and 0 or 100)+math.abs(lane-p[lane])\n end\n if valid and (not bestCost or cost<bestCost) then best=p;bestCost=cost end\nend\nif not best then s.reason=\"No opposite-colour matching\";self.used=true return end\ns.solution={};s.anchors={}\nfor lane=1,3 do\n local anchor,flex=ids[lane*2-1],ids[best[lane]*2]\n s.solution[flex]=anchor;s.anchors[anchor]=lane\nend\nif player then\n s.playerID=player.id\n s.personalAnchor=s.solution[player.id];s.anchorLane=s.anchors[player.id]\n if s.personalAnchor and (not s.anchors[s.personalAnchor] or s.colors[s.personalAnchor]==s.colors[player.id])then s.personalAnchor=nil;s.reason=\"Invalid personal pair\" end\nend\ns.signature=text;s.solvedVersion=s.colorVersion;s.reason=nil\nself.used=true\n",
+							actionLua = "local s=data.frog_wb1_pairs\nif not s then self.used=true return end\nlocal menu=data.frog_draw_settings\nif not s.saved then\n s.saved={}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then local ok,v=pcall(FileLoad,path);if ok and type(v)==\"table\" then s.saved=v end end\nend\nlocal settings=menu and menu.settings or s.saved\nlocal text=settings.p6_wb1_pairs or \"H1 R1 M1 M2 H2 R2\"\nlocal styles=settings.draw_styles\nif styles and styles.p6_wb1==\"Disabled\" then s.personalAnchor=nil;self.used=true return end\nlocal player=TensorCore.mGetPlayer()\nlocal members=AnyoneCore.Roster.members()\nlocal sameRoster=s.roleOrder and type(members)==\"table\"\nif sameRoster then\n for i,role in ipairs(s.roleOrder)do\n  local m=members[role]\n  if not m or m.name~=s.rosterNames[i] or m.job~=s.rosterJobs[i]then sameRoster=false;break end\n end\nend\nif sameRoster and player and s.playerID==player.id and s.signature==text and s.solvedVersion==s.colorVersion then self.used=true return end\nif Now()<s.settleUntil then self.used=true return end\ns.personalAnchor=nil;s.anchorLane=nil;s.solution=nil;s.anchors=nil\nlocal roles,seen={},{}\nfor role in text:gmatch(\"%S+\") do\n if (role~=\"H1\" and role~=\"H2\" and role~=\"M1\" and role~=\"M2\" and role~=\"R1\" and role~=\"R2\") or seen[role] then s.reason=\"Invalid pair assignments\";self.used=true return end\n seen[role]=true;roles[#roles+1]=role\nend\nif #roles~=6 then s.reason=\"Assign all six non-tank roles\";self.used=true return end\nlocal party=AnyoneCore.API.getAgnosticPartyList()\nif type(members)~=\"table\" or type(party)~=\"table\" then self.used=true return end\nlocal byName,byJob,counts,rcounts={},{},{},{}\nfor _,a in pairs(party) do\n if a.id and a.name and a.job then byName[a.name..\"\\31\"..a.job]=a;byJob[a.job]=a;counts[a.job]=(counts[a.job]or 0)+1 end\nend\nfor _,m in pairs(members) do if m.job then rcounts[m.job]=(rcounts[m.job]or 0)+1 end end\nlocal ids,used={},{}\ns.roleOrder=roles;s.rosterNames={};s.rosterJobs={}\nfor i,role in ipairs(roles) do\n local m=members[role]\n if not m or not m.name or not m.job then s.reason=\"Roster unresolved\";self.used=true return end\n s.rosterNames[i]=m.name;s.rosterJobs[i]=m.job\n local a=byName[m.name..\"\\31\"..m.job]\n if not a and counts[m.job]==1 and rcounts[m.job]==1 then a=byJob[m.job] end\n if not a or used[a.id] or not s.colors[a.id] then s.reason=\"Waiting for six colours / roster\";self.used=true return end\n used[a.id]=true;ids[i]=a.id\nend\nlocal best,bestCost\nfor _,p in ipairs({{1,2,3},{1,3,2},{2,1,3},{2,3,1},{3,1,2},{3,2,1}}) do\n local valid,cost=true,0\n for lane=1,3 do\n  if s.colors[ids[lane*2-1]]==s.colors[ids[p[lane]*2]] then valid=false;break end\n  cost=cost+(lane==p[lane] and 0 or 100)+math.abs(lane-p[lane])\n end\n if valid and (not bestCost or cost<bestCost) then best=p;bestCost=cost end\nend\nif not best then s.reason=\"No opposite-colour matching\";self.used=true return end\ns.solution={};s.anchors={}\nfor lane=1,3 do\n local anchor,flex=ids[lane*2-1],ids[best[lane]*2]\n s.solution[flex]=anchor;s.anchors[anchor]=lane\nend\nif player then\n s.playerID=player.id\n s.personalAnchor=s.solution[player.id];s.anchorLane=s.anchors[player.id]\n if s.personalAnchor and (not s.anchors[s.personalAnchor] or s.colors[s.personalAnchor]==s.colors[player.id])then s.personalAnchor=nil;s.reason=\"Invalid personal pair\" end\nend\ns.signature=text;s.solvedVersion=s.colorVersion;s.reason=nil\nself.used=true",
 							name = "[Draw] Wyrmsbreath 1 opposite-colour pairs",
 							uuid = "31552416-e055-c019-8433-e04f11a659d9",
 							version = 2.1,
@@ -6713,7 +6834,7 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "local s=data.frog_vow_v1\nif not self.started then\n local settings=data.frog_draw_settings and data.frog_draw_settings.settings\n if not settings then\n  local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n  if FileExists(path) then\n   local ok,saved=pcall(FileLoad,path)\n   if ok and type(saved)==\"table\" then settings=saved end\n  end\n end\n s={bossID=eventArgs.entityID,holder=eventArgs.targetID,initial=eventArgs.targetID,\n    passAt=Now()+34000,passes=0,seen={[eventArgs.targetID]=true},order={},slots={},ready=false,done=false,\n    groups={T={\"MT\",\"OT\"},M={\"M1\",\"M2\"},R={\"R1\",\"R2\"}},\n    roleKeys={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"}}\n local orderText=settings and settings.vow_pass_order or \"T T M R\"\n if type(orderText)~=\"string\" then orderText=\"T T M R\" end\n for token in string.upper(orderText):gmatch(\"[^%s,]+\") do\n  if not s.groups[token] then s.done=true end\n  s.order[#s.order+1]=token\n end\n if #s.order~=4 then s.done=true end\n function s.choose()\n  s.receiver=nil\n  if not s.ready or s.done or s.passes>=4 then return end\n  -- R2 may receive the fourth pass again after Mortal Atonement falls off.\n  if s.passes==3 then s.receiver=s.slots.R2; return end\n  local candidates=s.groups[s.order[s.passes+1]]\n  for _,role in ipairs(candidates or {}) do\n   local id=s.slots[role]\n   if role~=\"H1\" and role~=\"H2\" and id and not s.seen[id] then s.receiver=id; return end\n  end\n end\n data.frog_vow_v1=s\n self.started=true\nend\nif s.done then self.used=true return end\n-- Join logical roster roles to current replay/live entities once.\nlocal members=AnyoneCore.Roster.members()\nlocal party=AnyoneCore.API.getAgnosticPartyList()\nif type(members)~=\"table\" or type(party)~=\"table\" then return end\nlocal byNameJob,byJob,partyCount,rosterCount={},{},{},{}\nfor _,actor in pairs(party) do\n if actor and actor.id and actor.job and actor.name then\n  byNameJob[tostring(actor.name)..\"\\31\"..tostring(actor.job)]=actor\n  byJob[actor.job]=actor\n  partyCount[actor.job]=(partyCount[actor.job] or 0)+1\n end\nend\nfor _,member in pairs(members) do\n if member and member.job then rosterCount[member.job]=(rosterCount[member.job] or 0)+1 end\nend\n-- Replay party helpers omit dead actors; resolve missing roster jobs from bodies.\nlocal missing=false\nfor job in pairs(rosterCount) do if not partyCount[job] then missing=true break end end\nif missing then\n for _,actor in pairs(EntityList(\"\")) do\n  if actor and actor.id and actor.job and actor.name and actor.hp.current<=0\n   and rosterCount[actor.job] and not party[actor.id] then\n   byNameJob[tostring(actor.name)..\"\\31\"..tostring(actor.job)]=actor\n   byJob[actor.job]=actor\n   partyCount[actor.job]=(partyCount[actor.job] or 0)+1\n  end\n end\nend\nlocal used={}\nfor role,key in pairs(s.roleKeys) do\n local member=members[key]\n if not member or not member.name or not member.job then return end\n local actor=byNameJob[tostring(member.name)..\"\\31\"..tostring(member.job)]\n if not actor and partyCount[member.job]==1 and rosterCount[member.job]==1 then actor=byJob[member.job] end\n if not actor or used[actor.id] then return end\n s.slots[role]=actor.id\n used[actor.id]=true\nend\nif not used[s.initial] then return end\ns.ready=true\ns.choose()\nself.used=true",
+							actionLua = "local s=data.frog_vow_v1\nif not self.started then\n local settings=data.frog_draw_settings and data.frog_draw_settings.settings\n if not settings then\n  local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n  if FileExists(path) then\n   local ok,saved=pcall(FileLoad,path)\n   if ok and type(saved)==\"table\" then settings=saved end\n  end\n end\n s={bossID=eventArgs.entityID,holder=eventArgs.targetID,initial=eventArgs.targetID,\n    passAt=Now()+34000,passes=0,seen={[eventArgs.targetID]=true},order={},slots={},ready=false,done=false,\n    groups={T={\"MT\",\"OT\"},M={\"M1\",\"M2\"},R={\"R1\",\"R2\"}},\n    roleKeys={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"}}\n local orderText=settings and settings.vow_pass_order or \"T T M R\"\n if type(orderText)~=\"string\" then orderText=\"T T M R\" end\n for token in string.upper(orderText):gmatch(\"[^%s,]+\") do\n  if not s.groups[token] then s.done=true end\n  s.order[#s.order+1]=token\n end\n if #s.order~=4 then s.done=true end\n function s.choose()\n  s.receiver=nil\n  if not s.ready or s.done or s.passes>=4 then return end\n\n  if s.passes==3 then s.receiver=s.slots.R2; return end\n  local candidates=s.groups[s.order[s.passes+1]]\n  for _,role in ipairs(candidates or {}) do\n   local id=s.slots[role]\n   if role~=\"H1\" and role~=\"H2\" and id and not s.seen[id] then s.receiver=id; return end\n  end\n end\n data.frog_vow_v1=s\n self.started=true\nend\nif s.done then self.used=true return end\n\nlocal members=AnyoneCore.Roster.members()\nlocal party=AnyoneCore.API.getAgnosticPartyList()\nif type(members)~=\"table\" or type(party)~=\"table\" then return end\nlocal byNameJob,byJob,partyCount,rosterCount={},{},{},{}\nfor _,actor in pairs(party) do\n if actor and actor.id and actor.job and actor.name then\n  byNameJob[tostring(actor.name)..\"\\31\"..tostring(actor.job)]=actor\n  byJob[actor.job]=actor\n  partyCount[actor.job]=(partyCount[actor.job] or 0)+1\n end\nend\nfor _,member in pairs(members) do\n if member and member.job then rosterCount[member.job]=(rosterCount[member.job] or 0)+1 end\nend\n\nlocal missing=false\nfor job in pairs(rosterCount) do if not partyCount[job] then missing=true break end end\nif missing then\n for _,actor in pairs(EntityList(\"\")) do\n  if actor and actor.id and actor.job and actor.name and actor.hp.current<=0\n   and rosterCount[actor.job] and not party[actor.id] then\n   byNameJob[tostring(actor.name)..\"\\31\"..tostring(actor.job)]=actor\n   byJob[actor.job]=actor\n   partyCount[actor.job]=(partyCount[actor.job] or 0)+1\n  end\n end\nend\nlocal used={}\nfor role,key in pairs(s.roleKeys) do\n local member=members[key]\n if not member or not member.name or not member.job then return end\n local actor=byNameJob[tostring(member.name)..\"\\31\"..tostring(member.job)]\n if not actor and partyCount[member.job]==1 and rosterCount[member.job]==1 then actor=byJob[member.job] end\n if not actor or used[actor.id] then return end\n s.slots[role]=actor.id\n used[actor.id]=true\nend\nif not used[s.initial] then return end\ns.ready=true\ns.choose()\nself.used=true",
 							conditions =
 							{
 
@@ -6767,7 +6888,7 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "local s=data.frog_vow_v1\nif not s or s.done then self.used=true return end\nlocal id=eventArgs.entityID\nif id~=s.holder then\n if s.seen[id] and not (s.passes==3 and id==s.slots.R2) then\n  -- Do not suggest a fifth/repeated recipient after an invalid transfer.\n  s.done=true\n  s.receiver=nil\n else\n  s.passAt=Now()+34000\n  s.holder=id\n  s.seen[id]=true\n  s.passes=s.passes+1\n  if s.passes>=4 then s.done=true end\n  s.choose()\n end\nend\nself.used=true",
+							actionLua = "local s=data.frog_vow_v1\nif not s or s.done then self.used=true return end\nlocal id=eventArgs.entityID\nif id~=s.holder then\n if s.seen[id] and not (s.passes==3 and id==s.slots.R2) then\n\n  s.done=true\n  s.receiver=nil\n else\n  s.passAt=Now()+34000\n  s.holder=id\n  s.seen[id]=true\n  s.passes=s.passes+1\n  if s.passes>=4 then s.done=true end\n  s.choose()\n end\nend\nself.used=true",
 							conditions =
 							{
 
@@ -6837,7 +6958,7 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\n\nself.used=true\nlocal s=data.frog_vow_v1\nif not s or not s.ready or s.done or s.passes>=4 then return end\nlocal boss=TensorCore.mGetEntity(s.bossID)\nif not boss then return end\nif boss.hp.current<=0 then s.done=true; s.receiver=nil; return end\nif frogGuide.mode(\"p6_vow\")==\"Disabled\" then return end\nlocal player=TensorCore.mGetPlayer()\nif not player or not player.pos or player.hp.current<=0 then return end\nif player.id~=s.holder and player.id~=s.receiver then return end\nlocal holder=TensorCore.mGetEntity(s.holder)\nlocal receiver=s.receiver and TensorCore.mGetEntity(s.receiver)\nif not holder or not receiver or not holder.pos or not receiver.pos\n or receiver.hp.current<=0 then return end\nlocal buff=TensorCore.getBuff(holder,2896)\nif not buff or buff.duration<=0 or buff.duration>10 then return end\nlocal dx,dz=holder.pos.x-receiver.pos.x,holder.pos.z-receiver.pos.z\n-- Action 27953 has a five-yalm radius; no hitbox padding.\nif dx*dx+dz*dz<=25 then return end\nlocal target=player.id==s.holder and receiver or holder\nlocal drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,frogGuide.flags)\nfrogGuide.draw(\"p6_vow\",drawer,player.pos.x,player.pos.y,player.pos.z,\n target.pos.x,target.pos.y,target.pos.z,8,2)\n",
+							actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\n\nself.used=true\nlocal s=data.frog_vow_v1\nif not s or not s.ready or s.done or s.passes>=4 then return end\nlocal boss=TensorCore.mGetEntity(s.bossID)\nif not boss then return end\nif boss.hp.current<=0 then s.done=true; s.receiver=nil; return end\nif frogGuide.mode(\"p6_vow\")==\"Disabled\" then return end\nlocal player=TensorCore.mGetPlayer()\nif not player or not player.pos or player.hp.current<=0 then return end\nif player.id~=s.holder and player.id~=s.receiver then return end\nlocal holder=TensorCore.mGetEntity(s.holder)\nlocal receiver=s.receiver and TensorCore.mGetEntity(s.receiver)\nif not holder or not receiver or not holder.pos or not receiver.pos\n or receiver.hp.current<=0 then return end\nlocal buff=TensorCore.getBuff(holder,2896)\nif not buff or buff.duration<=0 or buff.duration>10 then return end\nlocal dx,dz=holder.pos.x-receiver.pos.x,holder.pos.z-receiver.pos.z\n\nif dx*dx+dz*dz<=25 then return end\nlocal target=player.id==s.holder and receiver or holder\nlocal drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,frogGuide.flags)\nfrogGuide.draw(\"p6_vow\",drawer,player.pos.x,player.pos.y,player.pos.z,\n target.pos.x,target.pos.y,target.pos.z,8,2)",
 							name = "[Draw] Mortal Vow Personal Guidance",
 							uuid = "5761dae7-72c7-a6ef-b3a4-83f75fd1765d",
 							version = 2.1,
@@ -6977,7 +7098,7 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "data.frog_wroth_start_v1={orbs={},seen={},count=0,stage=\"collecting\"}\nlocal s=data.frog_wroth_start_v1\nfunction s.tryDraw()\n    if s.stage~=\"collecting\" or s.count<6 or (s.diveX==nil and not s.dive) or not s.akhEnd then return end\n    local remaining=s.akhEnd-Now()\n    if remaining<=0 then s.stage=\"expired\" return end\n    -- The third triplet is opposite the second. Wait for its full triplet and the dive lane.\n    local tx,tz=0,0\n    for i=4,6 do tx=tx+s.orbs[i].x tz=tz+s.orbs[i].z end\n    tx,tz=200-tx/3,200-tz/3\n    -- Verified corner-triplet centres are 87/113 on each axis.\n    if math.abs(math.abs(tx-100)-13)>1 or math.abs(math.abs(tz-100)-13)>1 then\n        s.stage=\"unrecognised pattern\" return\n    end\n    local diveX=s.diveX or s.dive.x\n    -- Classify with tolerance: cast coordinates are slightly rounded.\n    if math.abs(diveX-100)<=2 then diveX=100\n    elseif math.abs(diveX-89)<=2 then diveX=89\n    elseif math.abs(diveX-111)<=2 then diveX=111\n    else return end\n    -- Prefer west for targetable Nidhogg uptime, including the 2-1 route.\n    -- Hraesvelgr always dives here; use east only when his lane blocks west.\n    local x=79\n    if math.abs(x-diveX)<=12 then x=200-x end\n    if math.abs(x-diveX)<=12 then return end\n    local z=tz>100 and 113 or 87\n    local dx,dz\n    -- The starting point must also clear every arm of the first three crosses.\n    for i=1,3 do\n        local orb=s.orbs[i]\n        if math.abs(x-orb.x)<=4 or math.abs(z-orb.z)<=4 then\n            s.stage=\"no verified first-wave-safe start\" return\n        end\n    end\n    dx,dz=x-100,z-100\n    local length=math.sqrt(dx*dx+dz*dz)\n    local flags=Argus2.RenderFlags.FLAG_RENDER_OVERLAY+Argus2.RenderFlags.FLAG_WARP_TERRAIN\n    local drawer=TensorCore.getStaticDrawer(0xFF33FF33,1,0,flags)\n    drawer:setGradient(0,1,0)\n    s.arrow=drawer:addTimedArrow(remaining,100,0.08,100,math.atan2(dx,dz),length-3,1.5,3,4,0,false,flags)\n    drawer:setGradient() -- Restore cached drawer defaults for other callers.\n    s.startX,s.startZ=x,z\n    s.stage=\"guiding\"\n    local direction=(z<100 and \"north\" or \"south\")..(x<100 and \"west\" or \"east\")\n    local markerNames={\"A\",\"B\",\"C\",\"D\",\"1\",\"2\",\"3\",\"4\"}\n    local marker,best=nil,math.huge\n    for id=1,8 do\n        local mx,my,mz,active=Argus.getWaymarkInfo(id)\n        if active and (mx-100)*(x-100)>0 and (mz-100)*(z-100)>0 then\n            local distance=(mx-x)^2+(mz-z)^2\n            if distance<best then marker,best=markerNames[id],distance end\n        end\n    end\n    local message=\"Wroth start: \"..(marker and marker..\", \" or \"\")..direction\n    TensorCore.addAlertText(8000,(marker and marker..\", \" or \"\")..direction,1.5,2,false)\n    TensorCore.sendTTS(message)\nend\nself.used=true",
+							actionLua = "data.frog_wroth_start_v1={orbs={},seen={},count=0,stage=\"collecting\"}\nlocal s=data.frog_wroth_start_v1\nfunction s.tryDraw()\n    if s.stage~=\"collecting\" or s.count<6 or (s.diveX==nil and not s.dive) or not s.akhEnd then return end\n    local remaining=s.akhEnd-Now()\n    if remaining<=0 then s.stage=\"expired\" return end\n\n    local tx,tz=0,0\n    for i=4,6 do tx=tx+s.orbs[i].x tz=tz+s.orbs[i].z end\n    tx,tz=200-tx/3,200-tz/3\n\n    if math.abs(math.abs(tx-100)-13)>1 or math.abs(math.abs(tz-100)-13)>1 then\n        s.stage=\"unrecognised pattern\" return\n    end\n    local diveX=s.diveX or s.dive.x\n\n    if math.abs(diveX-100)<=2 then diveX=100\n    elseif math.abs(diveX-89)<=2 then diveX=89\n    elseif math.abs(diveX-111)<=2 then diveX=111\n    else return end\n\n\n    local x=79\n    if math.abs(x-diveX)<=12 then x=200-x end\n    if math.abs(x-diveX)<=12 then return end\n    local z=tz>100 and 113 or 87\n    local dx,dz\n\n    for i=1,3 do\n        local orb=s.orbs[i]\n        if math.abs(x-orb.x)<=4 or math.abs(z-orb.z)<=4 then\n            s.stage=\"no verified first-wave-safe start\" return\n        end\n    end\n    dx,dz=x-100,z-100\n    local length=math.sqrt(dx*dx+dz*dz)\n    local flags=Argus2.RenderFlags.FLAG_RENDER_OVERLAY+Argus2.RenderFlags.FLAG_WARP_TERRAIN\n    local drawer=TensorCore.getStaticDrawer(0xFF33FF33,1,0,flags)\n    drawer:setGradient(0,1,0)\n    s.arrow=drawer:addTimedArrow(remaining,100,0.08,100,math.atan2(dx,dz),length-3,1.5,3,4,0,false,flags)\n    drawer:setGradient()\n    s.startX,s.startZ=x,z\n    s.stage=\"guiding\"\n    local direction=(z<100 and \"north\" or \"south\")..(x<100 and \"west\" or \"east\")\n    local markerNames={\"A\",\"B\",\"C\",\"D\",\"1\",\"2\",\"3\",\"4\"}\n    local marker,best=nil,math.huge\n    for id=1,8 do\n        local mx,my,mz,active=Argus.getWaymarkInfo(id)\n        if active and (mx-100)*(x-100)>0 and (mz-100)*(z-100)>0 then\n            local distance=(mx-x)^2+(mz-z)^2\n            if distance<best then marker,best=markerNames[id],distance end\n        end\n    end\n    local message=\"Wroth start: \"..(marker and marker..\", \" or \"\")..direction\n    TensorCore.addAlertText(8000,(marker and marker..\", \" or \"\")..direction,1.5,2,false)\n    TensorCore.sendTTS(message)\nend\nself.used=true",
 							conditions =
 							{
 
@@ -7166,7 +7287,7 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "local s=data.frog_wroth_start_v1\nif not s or s.stage~=\"collecting\" then self.used=true return end\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\n-- Reject the normal combat position; only accept the off-arena dive staging lane.\nif math.abs(e.pos.z-100)<30 then self.used=true return end\nlocal x=e.pos.x\nif math.abs(x-100)<=2 then x=100\nelseif math.abs(x-89)<=2 then x=89\nelseif math.abs(x-111)<=2 then x=111\nelse self.used=true return end\ns.diveX=x\ns.tryDraw()\nself.used=true",
+							actionLua = "local s=data.frog_wroth_start_v1\nif not s or s.stage~=\"collecting\" then self.used=true return end\nlocal e=TensorCore.mGetEntity(eventArgs.entityID)\nif not e or not e.pos then return end\n\nif math.abs(e.pos.z-100)<30 then self.used=true return end\nlocal x=e.pos.x\nif math.abs(x-100)<=2 then x=100\nelseif math.abs(x-89)<=2 then x=89\nelseif math.abs(x-111)<=2 then x=111\nelse self.used=true return end\ns.diveX=x\ns.tryDraw()\nself.used=true",
 							conditions =
 							{
 
@@ -7428,7 +7549,7 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "-- Shared renderer; load once even when a replay skips the Start menu.\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\n\nself.used=true\nlocal s=data.frog_wb2_v1\nif not s then\n s={slots={},roleKeys={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"},\n spots={MT={85.25,87.75},OT={115.28,110.83},H1={99.87,80.74},H2={99.96,119.40},\n M1={96.85,110.37},M2={103.93,89.59},R1={93.25,118.12},R2={106.80,81.32}}}\n function s.clear()\n  if s.line then Argus.deleteTimedShape(s.line); s.line=nil end\n  if s.ring then Argus.deleteTimedShape(s.ring); s.ring=nil end\n  if s.dot then Argus.deleteTimedShape(s.dot); s.dot=nil end\n end\n data.frog_wb2_v1=s\nend\n-- Remove only our old timed shapes if this is edited during a replay.\nif not s.frameMode then s.clear(); s.frameMode=true end\nlocal mode=frogGuide.mode(\"p6_wb2\")\nlocal player=TensorCore.mGetPlayer()\nlocal remaining=(1356.5-TensorReactions_CurrentTimer)*1000\nif mode==\"Disabled\" or not player or player.hp.current<=0 or remaining<=0 then s.clear(); return end\nif s.playerID~=player.id then\n s.clear(); s.spot=nil; s.playerID=player.id\nend\nlocal menu=data.frog_draw_settings\nlocal r1North=menu and menu.wb2R1North or (not menu and frogGuide.settings.p6_wb2_r1_north==true)\nlocal orderText=menu and menu.settings.p6_wb2_order or (not menu and frogGuide.settings.p6_wb2_order)\nif s.orderText~=orderText then\n s.orderText=orderText;s.spot=nil;s.slotByRole=nil\n local roles,seen={},{}\n local allowed={H1=true,H2=true,M1=true,M2=true,R1=true,R2=true}\n local valid=type(orderText)==\"string\"\n if valid then\n  for role in orderText:gmatch(\"%S+\")do\n   if not allowed[role] or seen[role] then valid=false;break end\n   seen[role]=true;roles[#roles+1]=role\n  end\n end\n if valid and #roles==6 then\n  local fixed={\"H1\",\"R1\",\"M1\",\"M2\",\"H2\",\"R2\"};s.slotByRole={}\n  for i,role in ipairs(roles)do s.slotByRole[role]=fixed[i]end\n end\nend\nif s.r1North~=r1North then s.spot=nil;s.r1North=r1North end\nif not s.spot then\n local now=Now()\n if s.nextRoster and now<s.nextRoster then return end\n s.nextRoster=now+500\n local members=AnyoneCore.Roster.members()\nlocal party=AnyoneCore.API.getAgnosticPartyList()\nif type(members)~=\"table\" or type(party)~=\"table\" then return end\nlocal byNameJob,byJob,partyCount,rosterCount={},{},{},{}\nfor _,actor in pairs(party) do\n if actor and actor.id and actor.job and actor.name then\n  byNameJob[tostring(actor.name)..\"\\31\"..tostring(actor.job)]=actor\n  byJob[actor.job]=actor\n  partyCount[actor.job]=(partyCount[actor.job] or 0)+1\n end\nend\nfor _,member in pairs(members) do\n if member and member.job then rosterCount[member.job]=(rosterCount[member.job] or 0)+1 end\nend\nlocal used={}\nfor role,key in pairs(s.roleKeys) do\n local member=members[key]\n if not member or not member.name or not member.job then return end\n local actor=byNameJob[tostring(member.name)..\"\\31\"..tostring(member.job)]\n if not actor and partyCount[member.job]==1 and rosterCount[member.job]==1 then actor=byJob[member.job] end\n if not actor or used[actor.id] then return end\n s.slots[role]=actor.id\n used[actor.id]=true\nend\n\n for role,id in pairs(s.slots) do\n  if id==player.id then s.role=role;local spotRole=role;if s.slotByRole and s.slotByRole[role] then spotRole=s.slotByRole[role] elseif s.r1North and role==\"R1\" then spotRole=\"R2\" elseif s.r1North and role==\"R2\" then spotRole=\"R1\" end;s.spot=s.spots[spotRole]; break end\n end\n if not s.spot then return end\nend\nlocal x,z=s.spot[1],s.spot[2]\nlocal flags=frogGuide.flags\nlocal ring=TensorCore.getCachedDrawer(0x00FF6626,0x00FF6626,0x00FF6626,0xFFFF6626,2,0,flags)\nring:addCircle(x,0.05,z,0.6,false,flags)\nlocal drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,flags)\ndrawer:addCircle(x,0.06,z,0.15,false,flags)\nlocal dx,dz=x-player.pos.x,z-player.pos.z\nif dx*dx+dz*dz<=1 then return end\nfrogGuide.draw(\"p6_wb2\",drawer,player.pos.x,player.pos.y,player.pos.z,x,0.05,z,8,2)\n",
+							actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\n\nself.used=true\nlocal s=data.frog_wb2_v1\nif not s then\n s={slots={},roleKeys={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"},\n spots={MT={85.25,87.75},OT={115.28,110.83},H1={99.87,80.74},H2={99.96,119.40},\n M1={96.85,110.37},M2={103.93,89.59},R1={93.25,118.12},R2={106.80,81.32}}}\n function s.clear()\n  if s.line then Argus.deleteTimedShape(s.line); s.line=nil end\n  if s.ring then Argus.deleteTimedShape(s.ring); s.ring=nil end\n  if s.dot then Argus.deleteTimedShape(s.dot); s.dot=nil end\n end\n data.frog_wb2_v1=s\nend\n\nif not s.frameMode then s.clear(); s.frameMode=true end\nlocal mode=frogGuide.mode(\"p6_wb2\")\nlocal player=TensorCore.mGetPlayer()\nlocal remaining=(1356.5-TensorReactions_CurrentTimer)*1000\nif mode==\"Disabled\" or not player or player.hp.current<=0 or remaining<=0 then s.clear(); return end\nif s.playerID~=player.id then\n s.clear(); s.spot=nil; s.playerID=player.id\nend\nlocal menu=data.frog_draw_settings\nlocal r1North=menu and menu.wb2R1North or (not menu and frogGuide.settings.p6_wb2_r1_north==true)\nlocal orderText=menu and menu.settings.p6_wb2_order or (not menu and frogGuide.settings.p6_wb2_order)\nif s.orderText~=orderText then\n s.orderText=orderText;s.spot=nil;s.slotByRole=nil\n local roles,seen={},{}\n local allowed={H1=true,H2=true,M1=true,M2=true,R1=true,R2=true}\n local valid=type(orderText)==\"string\"\n if valid then\n  for role in orderText:gmatch(\"%S+\")do\n   if not allowed[role] or seen[role] then valid=false;break end\n   seen[role]=true;roles[#roles+1]=role\n  end\n end\n if valid and #roles==6 then\n  local fixed={\"H1\",\"R1\",\"M1\",\"M2\",\"H2\",\"R2\"};s.slotByRole={}\n  for i,role in ipairs(roles)do s.slotByRole[role]=fixed[i]end\n end\nend\nif s.r1North~=r1North then s.spot=nil;s.r1North=r1North end\nif not s.spot then\n local now=Now()\n if s.nextRoster and now<s.nextRoster then return end\n s.nextRoster=now+500\n local members=AnyoneCore.Roster.members()\nlocal party=AnyoneCore.API.getAgnosticPartyList()\nif type(members)~=\"table\" or type(party)~=\"table\" then return end\nlocal byNameJob,byJob,partyCount,rosterCount={},{},{},{}\nfor _,actor in pairs(party) do\n if actor and actor.id and actor.job and actor.name then\n  byNameJob[tostring(actor.name)..\"\\31\"..tostring(actor.job)]=actor\n  byJob[actor.job]=actor\n  partyCount[actor.job]=(partyCount[actor.job] or 0)+1\n end\nend\nfor _,member in pairs(members) do\n if member and member.job then rosterCount[member.job]=(rosterCount[member.job] or 0)+1 end\nend\nlocal used={}\nfor role,key in pairs(s.roleKeys) do\n local member=members[key]\n if not member or not member.name or not member.job then return end\n local actor=byNameJob[tostring(member.name)..\"\\31\"..tostring(member.job)]\n if not actor and partyCount[member.job]==1 and rosterCount[member.job]==1 then actor=byJob[member.job] end\n if not actor or used[actor.id] then return end\n s.slots[role]=actor.id\n used[actor.id]=true\nend\n\n for role,id in pairs(s.slots) do\n  if id==player.id then s.role=role;local spotRole=role;if s.slotByRole and s.slotByRole[role] then spotRole=s.slotByRole[role] elseif s.r1North and role==\"R1\" then spotRole=\"R2\" elseif s.r1North and role==\"R2\" then spotRole=\"R1\" end;s.spot=s.spots[spotRole]; break end\n end\n if not s.spot then return end\nend\nlocal x,z=s.spot[1],s.spot[2]\nlocal flags=frogGuide.flags\nlocal ring=TensorCore.getCachedDrawer(0x00FF6626,0x00FF6626,0x00FF6626,0xFFFF6626,2,0,flags)\nring:addCircle(x,0.05,z,0.6,false,flags)\nlocal drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,flags)\ndrawer:addCircle(x,0.06,z,0.15,false,flags)\nlocal dx,dz=x-player.pos.x,z-player.pos.z\nif dx*dx+dz*dz<=1 then return end\nfrogGuide.draw(\"p6_wb2\",drawer,player.pos.x,player.pos.y,player.pos.z,x,0.05,z,8,2)",
 							name = "Personal fixed spot and proximity guidance",
 							uuid = "6b0e76b6-f527-49d8-bf15-7735b6a37364",
 							version = 2.1,
@@ -7672,7 +7793,7 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "self.used=true\nlocal cid=eventArgs.entityContentID\nif not ((cid==3458 and eventArgs.spellID==27966) or (cid==4954 and eventArgs.spellID==27967)) then return end\nlocal boss=TensorCore.mGetEntity(eventArgs.entityID)\nlocal player=TensorCore.mGetPlayer()\nif not boss or not player or boss.pos.z>=80 then return end\nlocal s=data.frog_p6_cauterize\nif s and s.hit then s=nil end\nif not s then\n s={dragons={},settings={}}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then s.settings=settings end\n end\n data.frog_p6_cauterize=s\nend\n-- These are the actual channeling actors, not Wyrmsbreath visual clones.\ns.dragons[cid]={x=boss.pos.x,y=boss.pos.y,z=boss.pos.z,radius=boss.hitradius}\nif TensorCore.getBuff(player,2898) or TensorCore.getBuff(player,960) then s.element=\"Fire\"\nelseif TensorCore.getBuff(player,2899) then s.element=\"Ice\" end\nlocal wb=data.frog_wb2_v1\nif wb and wb.playerID==player.id then s.role=wb.role end\nif not s.role then\n local members=AnyoneCore.Roster.members()\n local party=AnyoneCore.API.getAgnosticPartyList()\n if type(members)~=\"table\" or type(party)~=\"table\" then return end\n local keys={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"}\n for role,key in pairs(keys) do\n  local member=members[key]\n  if member and member.name and member.job then\n   local match,count=nil,0\n   for _,actor in pairs(party) do\n    if actor.job==member.job and actor.name==member.name then match=actor; count=count+1 end\n   end\n   -- Replays can anonymize names. Only use job matching when unique in both lists.\n   if count==0 then\n    local rosterCount=0\n    for _,other in pairs(members) do if other.job==member.job then rosterCount=rosterCount+1 end end\n    if rosterCount==1 then\n     for _,actor in pairs(party) do\n      if actor.job==member.job then match=actor; count=count+1 end\n     end\n    end\n   end\n   if count==1 and match.id==player.id then s.role=role; break end\n  end\n end\nend\n",
+							actionLua = "self.used=true\nlocal cid=eventArgs.entityContentID\nif not ((cid==3458 and eventArgs.spellID==27966) or (cid==4954 and eventArgs.spellID==27967)) then return end\nlocal boss=TensorCore.mGetEntity(eventArgs.entityID)\nlocal player=TensorCore.mGetPlayer()\nif not boss or not player or boss.pos.z>=80 then return end\nlocal s=data.frog_p6_cauterize\nif s and s.hit then s=nil end\nif not s then\n s={dragons={},settings={}}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then s.settings=settings end\n end\n data.frog_p6_cauterize=s\nend\n\ns.dragons[cid]={x=boss.pos.x,y=boss.pos.y,z=boss.pos.z,radius=boss.hitradius}\nif TensorCore.getBuff(player,2898) or TensorCore.getBuff(player,960) then s.element=\"Fire\"\nelseif TensorCore.getBuff(player,2899) then s.element=\"Ice\" end\nlocal wb=data.frog_wb2_v1\nif wb and wb.playerID==player.id then s.role=wb.role end\nif not s.role then\n local members=AnyoneCore.Roster.members()\n local party=AnyoneCore.API.getAgnosticPartyList()\n if type(members)~=\"table\" or type(party)~=\"table\" then return end\n local keys={MT=\"T1\",OT=\"T2\",H1=\"H1\",H2=\"H2\",M1=\"M1\",M2=\"M2\",R1=\"R1\",R2=\"R2\"}\n for role,key in pairs(keys) do\n  local member=members[key]\n  if member and member.name and member.job then\n   local match,count=nil,0\n   for _,actor in pairs(party) do\n    if actor.job==member.job and actor.name==member.name then match=actor; count=count+1 end\n   end\n\n   if count==0 then\n    local rosterCount=0\n    for _,other in pairs(members) do if other.job==member.job then rosterCount=rosterCount+1 end end\n    if rosterCount==1 then\n     for _,actor in pairs(party) do\n      if actor.job==member.job then match=actor; count=count+1 end\n     end\n    end\n   end\n   if count==1 and match.id==player.id then s.role=role; break end\n  end\n end\nend",
 							name = "Double Cauterize Capture",
 							uuid = "6cdf2383-12d3-4f0e-9ee9-239f4510638c",
 							version = 2.1,
@@ -7705,7 +7826,7 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "self.used=true\nlocal s=data.frog_p6_cauterize\nif not s or s.hit then return end\nlocal player=TensorCore.mGetPlayer()\nif not player or player.hp.current<=0 then return end\nlocal menu=data.frog_draw_settings\nlocal settings=menu and menu.settings or s.settings\nlocal styles=settings.draw_styles\nlocal mode=styles and styles.p6_cauterize or \"Tether\"\nif mode==\"Disabled\" then return end\nlocal n,h=s.dragons[3458],s.dragons[4954]\nif not n or not h then return end\nlocal dragon\nlocal tank=s.role==\"MT\" or s.role==\"OT\"\nif tank then\n local assignment=settings.p6_cauterize_mt or \"Nidhogg\"\n if assignment==\"Hraesvelgr\" then dragon=h\n elseif assignment==\"Fixed West\" then dragon=n.x<h.x and n or h\n elseif assignment==\"Fixed East\" then dragon=n.x>h.x and n or h\n else dragon=n end\n if s.role==\"OT\" then dragon=dragon==n and h or n end\nelseif s.element==\"Fire\" then dragon=h\nelseif s.element==\"Ice\" then dragon=n\nelse return end\n-- Green is the chosen lane with the other dragon's lane subtracted.\n-- Reported geometry: 80y length, 22y total width. Clip the visible base to P6's 21y square.\nlocal opposite=dragon==n and h or n\nlocal channel=Argus2.getNextUnusedChannel(true)\nif channel then\n local left=math.max(79,dragon.x-11)\n local right=math.min(121,dragon.x+11)\n local flags=Argus2.RenderFlags.FLAG_WARP_TERRAIN\n if right>left then\n  Argus.addRectFilled((left+right)/2,0.05,79,42,right-left,0,\n   0x9900FF00,0xCC00FF00,1,false,1.5,0.5,2,false,\n   flags+Argus2.RenderFlags.FLAG_OCCLUSION_BASE,channel)\n  Argus.addRectFilled(opposite.x,0.05,opposite.z,80,22,0,\n   0xFFFFFFFF,nil,nil,true,0,1,0,false,\n   flags+Argus2.RenderFlags.FLAG_OCCLUDE,channel)\n end\nend\nlocal x,z\nif tank then\n -- North wall directly in front of the selected dragon, just inside the arena.\n x,z=dragon.x,80.5\nelse\n if not dragon.radius or dragon.radius<=0 then return end\n -- North-facing Cauterize travels south; use the middle of the south hitbox edge.\n x,z=dragon.x,dragon.z+dragon.radius\nend\nlocal flags=Argus2.RenderFlags.FLAG_WARP_TERRAIN\nif not s.drawer then s.drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,flags) end\ns.drawer:addCircle(x,0.06,z,0.3,false,flags)\nlocal p=player.pos\nlocal dx,dz=x-p.x,z-p.z\nlocal length=math.sqrt(dx*dx+dz*dz)\nif length<=0.6 then return end\nif mode==\"Arrow\" then\n local tip=math.min(2,length*0.35)\n s.drawer:addArrow(p.x,p.y+0.08,p.z,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,flags)\nelse\n s.drawer:addLine(p.x,p.y,p.z,x,0.06,z,8,2)\nend\n",
+							actionLua = "self.used=true\nlocal s=data.frog_p6_cauterize\nif not s or s.hit then return end\nlocal player=TensorCore.mGetPlayer()\nif not player or player.hp.current<=0 then return end\nlocal menu=data.frog_draw_settings\nlocal settings=menu and menu.settings or s.settings\nlocal styles=settings.draw_styles\nlocal mode=styles and styles.p6_cauterize or \"Tether\"\nif mode==\"Disabled\" then return end\nlocal n,h=s.dragons[3458],s.dragons[4954]\nif not n or not h then return end\nlocal dragon\nlocal tank=s.role==\"MT\" or s.role==\"OT\"\nif tank then\n local assignment=settings.p6_cauterize_mt or \"Nidhogg\"\n if assignment==\"Hraesvelgr\" then dragon=h\n elseif assignment==\"Fixed West\" then dragon=n.x<h.x and n or h\n elseif assignment==\"Fixed East\" then dragon=n.x>h.x and n or h\n else dragon=n end\n if s.role==\"OT\" then dragon=dragon==n and h or n end\nelseif s.element==\"Fire\" then dragon=h\nelseif s.element==\"Ice\" then dragon=n\nelse return end\n\n\nlocal opposite=dragon==n and h or n\nlocal channel=Argus2.getNextUnusedChannel(true)\nif channel then\n local left=math.max(79,dragon.x-11)\n local right=math.min(121,dragon.x+11)\n local flags=Argus2.RenderFlags.FLAG_WARP_TERRAIN\n if right>left then\n  Argus.addRectFilled((left+right)/2,0.05,79,42,right-left,0,\n   0x9900FF00,0xCC00FF00,1,false,1.5,0.5,2,false,\n   flags+Argus2.RenderFlags.FLAG_OCCLUSION_BASE,channel)\n  Argus.addRectFilled(opposite.x,0.05,opposite.z,80,22,0,\n   0xFFFFFFFF,nil,nil,true,0,1,0,false,\n   flags+Argus2.RenderFlags.FLAG_OCCLUDE,channel)\n end\nend\nlocal x,z\nif tank then\n\n x,z=dragon.x,80.5\nelse\n if not dragon.radius or dragon.radius<=0 then return end\n\n x,z=dragon.x,dragon.z+dragon.radius\nend\nlocal flags=Argus2.RenderFlags.FLAG_WARP_TERRAIN\nif not s.drawer then s.drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,flags) end\ns.drawer:addCircle(x,0.06,z,0.3,false,flags)\nlocal p=player.pos\nlocal dx,dz=x-p.x,z-p.z\nlocal length=math.sqrt(dx*dx+dz*dz)\nif length<=0.6 then return end\nif mode==\"Arrow\" then\n local tip=math.min(2,length*0.35)\n s.drawer:addArrow(p.x,p.y+0.08,p.z,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,flags)\nelse\n s.drawer:addLine(p.x,p.y,p.z,x,0.06,z,8,2)\nend",
 							name = "Double Cauterize Guidance",
 							uuid = "6d993d90-8f1f-13e0-933d-65a9f87cd211",
 							version = 2.1,
@@ -7738,7 +7859,7 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "self.used=true\nlocal cid=eventArgs.entityContentID\nif not ((cid==3458 and eventArgs.spellID==27966) or (cid==4954 and eventArgs.spellID==27967)) then return end\nlocal player=TensorCore.mGetPlayer()\nif not player then return end\nfor _,id in ipairs(eventArgs.hitTargets) do\n if id==player.id then\n  local s=data.frog_p6_cauterize\n  if s then s.hit=true end\n  local hold=data.frog_wb2_hold\n  if cid==4954 and hold then hold.hitHrae=true end\n  return\n end\nend\n",
+							actionLua = "self.used=true\nlocal cid=eventArgs.entityContentID\nif not ((cid==3458 and eventArgs.spellID==27966) or (cid==4954 and eventArgs.spellID==27967)) then return end\nlocal player=TensorCore.mGetPlayer()\nif not player then return end\nfor _,id in ipairs(eventArgs.hitTargets) do\n if id==player.id then\n  local s=data.frog_p6_cauterize\n  if s then s.hit=true end\n  local hold=data.frog_wb2_hold\n  if cid==4954 and hold then hold.hitHrae=true end\n  return\n end\nend",
 							name = "Double Cauterize Hit Tracking",
 							uuid = "f5df93b6-d37b-626d-98a2-5d018660c3b8",
 							version = 2.1,
@@ -7774,7 +7895,7 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "if eventArgs.entityContentID~=11319 then self.used=true return end\nlocal aura=eventArgs.newActiveAura1\nif aura~=1119 and aura~=1120 then self.used=true return end\nif eventArgs.oldActiveAura1==aura then self.used=true return end\ndata.frog_p7_element=data.frog_p7_element or {}\nlocal s=data.frog_p7_element\nif s.draw then Argus.deleteTimedShape(s.draw); s.draw=nil end\ns.bossID=eventArgs.entityID\ns.element=aura==1120 and \"ice\" or \"fire\"\n-- Keep element tracking active even when the area draw is disabled.\nlocal menu=data.frog_draw_settings\nif not menu and not s.settings then\n s.settings={}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then s.settings=settings end\n end\nend\nlocal settings=menu and menu.settings or s.settings\nif settings and settings.p7_element_draws==false then self.used=true return end\nlocal flags=Argus2.RenderFlags.FLAG_WARP_TERRAIN\nlocal color=GUI:ColorConvertFloat4ToU32(1,0,0,0.9)\nlocal outline=GUI:ColorConvertFloat4ToU32(1,0,0,1)\nlocal drawer=TensorCore.getCachedDrawer(color,nil,color,outline,3.5,0,flags)\ndrawer.gradientDistance=1.5\ndrawer.gradientMinOpacity=0.5\ndrawer.gradientIntensity=2\nif aura==1120 then\n s.draw=drawer:addTimedDonutOnEnt(12000,s.bossID,8,50,0,false,false,flags)\nelse\n s.draw=drawer:addTimedCircleOnEnt(12000,s.bossID,8,0,false,false,flags)\nend\nself.used=true",
+							actionLua = "if eventArgs.entityContentID~=11319 then self.used=true return end\nlocal aura=eventArgs.newActiveAura1\nif aura~=1119 and aura~=1120 then self.used=true return end\nif eventArgs.oldActiveAura1==aura then self.used=true return end\ndata.frog_p7_element=data.frog_p7_element or {}\nlocal s=data.frog_p7_element\nif s.draw then Argus.deleteTimedShape(s.draw); s.draw=nil end\ns.bossID=eventArgs.entityID\ns.element=aura==1120 and \"ice\" or \"fire\"\n\nlocal menu=data.frog_draw_settings\nif not menu and not s.settings then\n s.settings={}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then s.settings=settings end\n end\nend\nlocal settings=menu and menu.settings or s.settings\nif settings and settings.p7_element_draws==false then self.used=true return end\nlocal flags=Argus2.RenderFlags.FLAG_WARP_TERRAIN\nlocal color=GUI:ColorConvertFloat4ToU32(1,0,0,0.9)\nlocal outline=GUI:ColorConvertFloat4ToU32(1,0,0,1)\nlocal drawer=TensorCore.getCachedDrawer(color,nil,color,outline,3.5,0,flags)\ndrawer.gradientDistance=1.5\ndrawer.gradientMinOpacity=0.5\ndrawer.gradientIntensity=2\nif aura==1120 then\n s.draw=drawer:addTimedDonutOnEnt(12000,s.bossID,8,50,0,false,false,flags)\nelse\n s.draw=drawer:addTimedCircleOnEnt(12000,s.bossID,8,0,false,false,flags)\nend\nself.used=true",
 							name = "P7 Fire Ice Telegraph",
 							uuid = "77197fac-bfd1-5e27-8f74-f25535e17933",
 							version = 2.1,
@@ -7937,7 +8058,7 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
-							actionLua = "local s=data.frog_p7_guidance\nif not s then self.used=true return end\nlocal t=TensorReactions_CurrentTimer\nif s.lastTime and t<s.lastTime-2 then\n s.clear(); s.akh=nil; s.giga=nil; s.resolved=0; s.warned=nil; s.moved=nil; s.activeAuto=nil\nend\ns.lastTime=t\nlocal player=TensorCore.mGetPlayer()\nlocal element=data.frog_p7_element\nlocal bossID=s.bossID or (element and element.bossID)\nlocal boss=bossID and TensorCore.mGetEntity(bossID)\nif not s.ready or not player or not player.alive or not boss or not boss.alive then s.clear(); self.used=true return end\nlocal role=s.byID[player.id]\nlocal bp=boss.pos\nlocal key,x,y,z\nlocal menu=data.frog_draw_settings\nlocal settings=menu and menu.settings or s.settings\nlocal storedMode=settings and settings.p7_auto_mode\nlocal autoMode=storedMode==\"Shotcaller\" and \"Shotcaller\" or storedMode==\"Disabled\" and \"Disabled\" or \"Personal\"\n-- Rebuild the six-role sequence only when the saved setting changes.\nlocal storedOrder=settings and settings.p7_auto_order or \"M R H\"\nif s.autoOrderSource~=storedOrder then\n local compact=type(storedOrder)==\"string\" and string.upper(storedOrder):gsub(\"[%s,]\",\"\") or \"\"\n local order,seen={},{}\n local valid=#compact==3\n for token in compact:gmatch(\".\") do\n  if (token~=\"M\" and token~=\"R\" and token~=\"H\") or seen[token] then valid=false; break end\n  seen[token]=true; order[#order+1]=token..\"1\"; order[#order+1]=token..\"2\"\n end\n s.order=valid and order or {\"M1\",\"M2\",\"R1\",\"R2\",\"H1\",\"H2\"}\n s.autoOrderSource=storedOrder\nend\n-- Call only inside this hit's lead-in, never across intervening mechanics.\nfor i,at in ipairs(s.times) do\n if i>s.resolved and t>=at-6 and t<=at+1 then\n  local autoRole=s.order[(i-1)%6+1]\n  local personal=role==autoRole\n  local callEnabled=autoMode==\"Shotcaller\" or autoMode==\"Personal\" and personal\n  if callEnabled and s.warned~=i then\n   local text=autoMode==\"Shotcaller\" and autoRole..\" auto\" or \"Take next auto\"\n   TensorCore.addAlertText(3500,text,1.5,2,true,75); s.warned=i\n  end\n  if personal and autoMode~=\"Disabled\" and t>=at-2.2 then\n   if autoMode==\"Personal\" and s.moved~=i then\n    TensorCore.addAlertText(2200,\"Move in\",1.5,2,true,75); s.moved=i\n   end\n   s.activeAuto=i\n   key,x,y,z=\"p7_trinity\",bp.x,bp.y,bp.z\n  end\n  break\n end\nend\nif not role then s.clear(); self.used=true return end\nlocal elementName=element and element.element\n-- Only use the hidden status while an elemental telegraph is active.\n-- Resolution clears element.element, preventing a lingering status from rearming it.\nif elementName then\n local buff=TensorCore.getBuff(boss,2056)\n if buff and buff.stacks==299 then elementName=\"ice\"\n elseif buff and buff.stacks==298 then elementName=\"fire\" end\nend\nif not key and s.akh and t<s.akh.expires and (elementName or s.akh.elementKnown) then\n s.akh.elementKnown=true\n local towerID=s.tower(role,s.akh.n)\n local tower=towerID and s.akh.towers[towerID]\n if tower then\n  local dx,dz=tower.x-bp.x,tower.z-bp.z\n  local length=math.sqrt(dx*dx+dz*dz)\n  if length>0.1 then\n   local radius=elementName==\"fire\" and 9 or elementName==\"ice\" and 7 or length\n   key,x,y,z=\"p7_akh\",bp.x+dx/length*radius,tower.y,bp.z+dz/length*radius\n  end\n end\nelseif not key and s.giga and t<s.giga.expires and (elementName or s.giga.elementKnown) then\n s.giga.elementKnown=true\n local spot=s.giga.spots[s.giga.step]\n if spot then\n  local dx,dz=bp.x-spot.x,bp.z-spot.z\n  local length=math.sqrt(dx*dx+dz*dz)\n  if length>0.1 then\n   local meleeRadius=boss.hitradius+3.5\n   local radius=elementName==\"ice\" and math.min(7,meleeRadius) or meleeRadius\n   key,x,y,z=\"p7_giga\",bp.x+dx/length*radius,bp.y,bp.z+dz/length*radius\n  end\n end\nend\nif key then s.drawTo(player,key,x,y,z) else s.clear() end\nself.used=true",
+							actionLua = "local s=data.frog_p7_guidance\nif not s then self.used=true return end\nlocal t=TensorReactions_CurrentTimer\nif s.lastTime and t<s.lastTime-2 then\n s.clear(); s.akh=nil; s.giga=nil; s.resolved=0; s.warned=nil; s.moved=nil; s.activeAuto=nil\nend\ns.lastTime=t\nlocal player=TensorCore.mGetPlayer()\nlocal element=data.frog_p7_element\nlocal bossID=s.bossID or (element and element.bossID)\nlocal boss=bossID and TensorCore.mGetEntity(bossID)\nif not s.ready or not player or not player.alive or not boss or not boss.alive then s.clear(); self.used=true return end\nlocal role=s.byID[player.id]\nlocal bp=boss.pos\nlocal key,x,y,z\nlocal menu=data.frog_draw_settings\nlocal settings=menu and menu.settings or s.settings\nlocal storedMode=settings and settings.p7_auto_mode\nlocal autoMode=storedMode==\"Shotcaller\" and \"Shotcaller\" or storedMode==\"Disabled\" and \"Disabled\" or \"Personal\"\n\nlocal storedOrder=settings and settings.p7_auto_order or \"M R H\"\nif s.autoOrderSource~=storedOrder then\n local compact=type(storedOrder)==\"string\" and string.upper(storedOrder):gsub(\"[%s,]\",\"\") or \"\"\n local order,seen={},{}\n local valid=#compact==3\n for token in compact:gmatch(\".\") do\n  if (token~=\"M\" and token~=\"R\" and token~=\"H\") or seen[token] then valid=false; break end\n  seen[token]=true; order[#order+1]=token..\"1\"; order[#order+1]=token..\"2\"\n end\n s.order=valid and order or {\"M1\",\"M2\",\"R1\",\"R2\",\"H1\",\"H2\"}\n s.autoOrderSource=storedOrder\nend\n\nfor i,at in ipairs(s.times) do\n if i>s.resolved and t>=at-6 and t<=at+1 then\n  local autoRole=s.order[(i-1)%6+1]\n  local personal=role==autoRole\n  local callEnabled=autoMode==\"Shotcaller\" or autoMode==\"Personal\" and personal\n  if callEnabled and s.warned~=i then\n   local text=autoMode==\"Shotcaller\" and autoRole..\" auto\" or \"Take next auto\"\n   TensorCore.addAlertText(3500,text,1.5,2,true,75); s.warned=i\n  end\n  if personal and autoMode~=\"Disabled\" and t>=at-2.2 then\n   if autoMode==\"Personal\" and s.moved~=i then\n    TensorCore.addAlertText(2200,\"Move in\",1.5,2,true,75); s.moved=i\n   end\n   s.activeAuto=i\n   key,x,y,z=\"p7_trinity\",bp.x,bp.y,bp.z\n  end\n  break\n end\nend\nif not role then s.clear(); self.used=true return end\nlocal elementName=element and element.element\n\n\nif elementName then\n local buff=TensorCore.getBuff(boss,2056)\n if buff and buff.stacks==299 then elementName=\"ice\"\n elseif buff and buff.stacks==298 then elementName=\"fire\" end\nend\nif not key and s.akh and t<s.akh.expires and (elementName or s.akh.elementKnown) then\n s.akh.elementKnown=true\n local towerID=s.tower(role,s.akh.n)\n local tower=towerID and s.akh.towers[towerID]\n if tower then\n  local dx,dz=tower.x-bp.x,tower.z-bp.z\n  local length=math.sqrt(dx*dx+dz*dz)\n  if length>0.1 then\n   local radius=elementName==\"fire\" and 9 or elementName==\"ice\" and 7 or length\n   key,x,y,z=\"p7_akh\",bp.x+dx/length*radius,tower.y,bp.z+dz/length*radius\n  end\n end\nelseif not key and s.giga and t<s.giga.expires and (elementName or s.giga.elementKnown) then\n s.giga.elementKnown=true\n local spot=s.giga.spots[s.giga.step]\n if spot then\n  local dx,dz=bp.x-spot.x,bp.z-spot.z\n  local length=math.sqrt(dx*dx+dz*dz)\n  if length>0.1 then\n   local meleeRadius=boss.hitradius+3.5\n   local radius=elementName==\"ice\" and math.min(7,meleeRadius) or meleeRadius\n   key,x,y,z=\"p7_giga\",bp.x+dx/length*radius,bp.y,bp.z+dz/length*radius\n  end\n end\nend\nif key then s.drawTo(player,key,x,y,z) else s.clear() end\nself.used=true",
 							name = "P7 Personal Guidance",
 							uuid = "d418bbe1-e588-6c68-a7fb-b5773ca6a74a",
 							version = 2.1,
@@ -8663,7 +8784,7 @@ local tbl =
 			},
 		},
 	},
-	inheritedProfiles = 
+	inheritedProfiles =
 	{
 	},
 	timelineName = "dsw",
