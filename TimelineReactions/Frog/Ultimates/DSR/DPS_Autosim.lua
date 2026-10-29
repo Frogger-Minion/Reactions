@@ -17,20 +17,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "Disable Duty Helper",
-				uuid = "682beece-c4b0-97ad-ab3d-f25d03c84408",
-				version = 2,
-			},
-			inheritedObjectUUID = "0aa4264a-c853-7cad-8e8d-9e7d2d367ef3",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				name = "Set Toggles",
 				uuid = "cb340422-3f4a-8921-8acc-9f9c8e309588",
 				version = 2,
@@ -45,53 +31,11 @@ local tbl =
 		{
 			data =
 			{
-				name = "Check Stance",
-				uuid = "4b6e0ff9-63bf-4eb5-b139-f62279122020",
-				version = 2,
-			},
-			inheritedObjectUUID = "8b091900-941e-3545-99fd-0d6ed74171e7",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				name = "[DRG] Force move in",
 				uuid = "d1a12752-5091-b0a8-a443-3f250042e9cf",
 				version = 2,
 			},
 			inheritedObjectUUID = "ae21405e-af61-f2e3-a420-6c63348b9617",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Set custom cone angle",
-				uuid = "fc0f5bbe-f06f-9030-8b07-d40c120eabf6",
-				version = 2,
-			},
-			inheritedObjectUUID = "a6e75154-2021-4960-aaf0-adf7f31723e7",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Add blacklists",
-				uuid = "8d2a1f6b-f81e-4ffe-ae76-c6491331095e",
-				version = 2,
-			},
-			inheritedObjectUUID = "2036e7b4-d472-fe89-a812-1e107eb9210a",
 			inheritedOverwrites =
 			{
 				enabled = false,
@@ -328,20 +272,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "TTS Move",
-				uuid = "4b0cdc0d-c55e-6093-89dc-ea5830b59051",
-				version = 2,
-			},
-			inheritedObjectUUID = "ad5d7f8b-51cf-70b8-a50a-b0b2596409f2",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				name = "Hold Jumps",
 				uuid = "7d074289-e20d-0e98-916c-450cff76a666",
 				version = 2,
@@ -454,20 +384,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "317425ee-229f-1145-b112-7c6821edfebc",
-				version = 2,
-			},
-			inheritedObjectUUID = "02195257-601b-cf00-84e3-8719dd2aa59d",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[10] =
 	{
@@ -481,20 +397,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Draw line with marker",
-				uuid = "cb966dfc-6f73-98ec-aec4-7b51af6115da",
-				version = 2,
-			},
-			inheritedObjectUUID = "8b9646c0-e3b3-4629-91b9-d660e96b0c0f",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -565,34 +467,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "Draw knockback",
-				uuid = "ae8cdc30-1d52-e9fc-8fb6-31ee796399d1",
-				version = 2,
-			},
-			inheritedObjectUUID = "64bca99e-e346-d588-9670-dfcfaee3ae42",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw orb radius",
-				uuid = "56a0c4bf-9719-eb12-8bb4-f528b1717ff2",
-				version = 2,
-			},
-			inheritedObjectUUID = "349e6a46-7db0-5ce2-a0bb-2a30ae747610",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[13] =
 	{
@@ -606,20 +480,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "2a70e699-936c-432c-8c2a-fc1bd5512364",
-				version = 2,
-			},
-			inheritedObjectUUID = "6a0844ef-1566-1c4e-a84f-fe64e619b0c2",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -692,20 +552,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "Draw knockback",
-				uuid = "e87c6861-9ddb-52de-a444-afc85ff35a0b",
-				version = 2,
-			},
-			inheritedObjectUUID = "13031b79-354d-0b21-8aca-62dfd2f7b7fd",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				name = "[Melee] Self-Mitigation",
 				uuid = "673dbaf9-1111-7e8d-9406-2d97d44c3d7c",
 				version = 2,
@@ -730,20 +576,6 @@ local tbl =
 						},
 					},
 				},
-			},
-		},
-
-		{
-			data =
-			{
-				name = "TTS Marker Type",
-				uuid = "70e6758e-7581-46b5-b7b1-73f620d5ed75",
-				version = 2,
-			},
-			inheritedObjectUUID = "34671482-090f-3e70-a579-90ed350eefc1",
-			inheritedOverwrites =
-			{
-				enabled = false,
 			},
 		},
 
@@ -784,20 +616,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "038a5426-4d57-99c1-853e-6a871c12d575",
-				version = 2,
-			},
-			inheritedObjectUUID = "8a1400e6-a6e6-625f-9289-47609a48dd39",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 	},
 	[17] =
@@ -855,20 +673,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "6081f5c3-2725-2b3a-a039-4f03635f3bd7",
-				version = 2,
-			},
-			inheritedObjectUUID = "d9d8042e-93ef-497f-985c-06443095be5f",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[24] =
 	{
@@ -883,19 +687,19 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
+	},
+	[26] =
+	{
 
 		{
 			data =
 			{
-				name = "Find target",
-				uuid = "edb1e0f4-2524-63ff-8ff0-7358d159264f",
-				version = 2,
+				displayPath = "",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "52b50c34-73bb-e710-1255-cdfab0e0f484",
 			},
-			inheritedObjectUUID = "98ff5c5c-ead6-f6d7-bf8d-52d83464a799",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
+			objectType = "folder",
 		},
 	},
 	[29] =
@@ -966,20 +770,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "06fc195d-8703-ac88-b25f-c6aa273cd65f",
-				version = 2,
-			},
-			inheritedObjectUUID = "0f01afdc-1b6b-87c9-9d21-8d73895ac956",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -1257,20 +1047,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "TTS Move",
-				uuid = "5b5d67ad-6fc4-8feb-b434-9e788199f760",
-				version = 2,
-			},
-			inheritedObjectUUID = "7bd1e51e-c3ee-9644-8166-7aa7f4e346d0",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				name = "force meikyo after kaeshi",
 				uuid = "0f17b0d0-4b9a-4b51-91dd-63570ddd000e",
 				version = 2,
@@ -1308,34 +1084,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Draw Heavy Impact",
-				uuid = "4c90848b-fa87-4f1d-81ad-93c9f1be9e96",
-				version = 2,
-			},
-			inheritedObjectUUID = "0053e5d9-ae8f-1e42-bc21-72da9ce4c8ac",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw spreads",
-				uuid = "d8750986-df4c-cceb-bb0a-35b487dd1315",
-				version = 2,
-			},
-			inheritedObjectUUID = "021df5aa-a1a5-8849-86ea-7963b0e8daa4",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -1413,34 +1161,6 @@ local tbl =
 				version = 2,
 			},
 			inheritedObjectUUID = "3cb4e569-50f1-2373-a31b-0b5c5175800d",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Predraw dashes",
-				uuid = "ccafbe3a-4e9a-999c-a3d7-f3a35ce95361",
-				version = 2,
-			},
-			inheritedObjectUUID = "37491814-6076-2c11-b9ea-ceabdc1938a7",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Set arenaCenter",
-				uuid = "b4125517-6e26-26ce-9a16-be2754ca14d3",
-				version = 2,
-			},
-			inheritedObjectUUID = "8cd9563d-586a-f3e6-9968-fd6d624667be",
 			inheritedOverwrites =
 			{
 				enabled = false,
@@ -1550,62 +1270,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "TTS Flare",
-				uuid = "922eabf1-1ff0-35e1-be67-aeee81deda47",
-				version = 2,
-			},
-			inheritedObjectUUID = "ff877487-0da4-de5e-b35c-59ca6850cbdb",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "TTS Move",
-				uuid = "3259cc13-f69d-4dce-ad8d-7029aa1550d0",
-				version = 2,
-			},
-			inheritedObjectUUID = "36fb5716-fb48-5cac-9677-398759727b3e",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Marker Draw",
-				uuid = "004fdf9a-e58f-6fc7-8c83-33e35303c74d",
-				version = 2,
-			},
-			inheritedObjectUUID = "701c164e-bd03-4bc4-aabe-f52a1cd7dd0d",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw line to Warrior for alignment",
-				uuid = "ee9bfc3d-7b09-b356-9c26-5f702621b45f",
-				version = 2,
-			},
-			inheritedObjectUUID = "85f754e5-a6fa-3aee-88cb-1b9ce885c7d1",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				displayPath = "",
 				name = "Frog\\Ultimates\\DSR\\Draws",
 				uuid = "cf83e72b-1b72-2237-ff89-807137c216fb",
@@ -1654,20 +1318,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "0e4e9a3d-41a5-687d-b86e-a521ef5c8421",
-				version = 2,
-			},
-			inheritedObjectUUID = "ac8fda96-f622-5669-9194-ec6b1f89e905",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -1885,34 +1535,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "Check for marker 1",
-				uuid = "d2e24c79-6efd-4ff9-9e0a-fea4953ab0ff",
-				version = 2,
-			},
-			inheritedObjectUUID = "b9cc08aa-6871-c2b6-9d7f-ea478f265738",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw heading on knights",
-				uuid = "8ae19094-fa4d-533e-b7a4-749287a78475",
-				version = 2,
-			},
-			inheritedObjectUUID = "4e590c1b-5297-17cd-9a00-98fad2d6c818",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				displayPath = "",
 				name = "Frog\\Ultimates\\DSR\\Draws",
 				uuid = "f8be1dc2-3d61-c996-a721-218cc3100552",
@@ -1943,20 +1565,6 @@ local tbl =
 				version = 2,
 			},
 			inheritedObjectUUID = "89b11261-e66b-9d42-97af-64e012cba1dd",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "store eye position",
-				uuid = "16b07ed1-0674-ba38-a186-55ebfd2d1c5d",
-				version = 2,
-			},
-			inheritedObjectUUID = "4b5bf511-ea8b-06cb-8f09-9e1438934be7",
 			inheritedOverwrites =
 			{
 				enabled = false,
@@ -2074,20 +1682,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "lookaway",
-				uuid = "1f816c5b-e97f-b79d-9f73-191b8747761a",
-				version = 2,
-			},
-			inheritedObjectUUID = "6df0cfed-35f5-454a-bb5c-a229f5621d2c",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[68] =
 	{
@@ -2101,20 +1695,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Draw orb radius",
-				uuid = "eb181517-6ee8-3b5c-a77f-14bded14f06f",
-				version = 2,
-			},
-			inheritedObjectUUID = "7076f51d-da51-d313-9dfb-d1e1cdb312a3",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -2171,62 +1751,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "TTS Marker Role",
-				uuid = "4d56f4ae-ae8c-924f-a9ce-5f8e5b2a6891",
-				version = 2,
-			},
-			inheritedObjectUUID = "7a13a9e4-c7fc-95f8-854e-8334c5d877b7",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Set comets",
-				uuid = "2f41a15f-2c58-725c-a7af-cebaf5fe7e93",
-				version = 2,
-			},
-			inheritedObjectUUID = "af9fa8d3-780b-b377-972b-d35f908ddb26",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "TTS Meteor Pattern",
-				uuid = "5c5f2366-60d8-328e-b82c-9f30fe077e1d",
-				version = 2,
-			},
-			inheritedObjectUUID = "0fef7b13-337b-38bc-afa8-a82d31ed5326",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw Tower Splits",
-				uuid = "c1045b58-8532-e6d1-9186-31930d925560",
-				version = 2,
-			},
-			inheritedObjectUUID = "01a71a79-c32d-a5aa-9ce1-d95e77569110",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[71] =
 	{
@@ -2254,20 +1778,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Draw comet drops timer",
-				uuid = "5fa10eac-369c-12df-aa4b-f97fc1b7b701",
-				version = 2,
-			},
-			inheritedObjectUUID = "9bdf53d1-e128-bd9e-8a69-a502540c0f8a",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -2338,20 +1848,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "Draw knockback",
-				uuid = "d1411a69-99d8-62dd-b995-98cade2bbce9",
-				version = 2,
-			},
-			inheritedObjectUUID = "c7806d06-68bf-6ff2-a089-db92ed10b695",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[82] =
 	{
@@ -2365,20 +1861,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "513e8846-2411-3eea-9cca-567970285b3f",
-				version = 2,
-			},
-			inheritedObjectUUID = "8b34f398-920b-348f-b5fb-c88a90590787",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -2649,20 +2131,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "TTS Broad Swing",
-				uuid = "a2753c5d-03d8-5dd9-a2c1-01f6def85191",
-				version = 2,
-			},
-			inheritedObjectUUID = "7348cd16-086e-9c17-99e7-e0be7ccaa830",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				name = "Hold Gauge",
 				uuid = "2d7dcff5-86e7-8270-bd64-4a9b9c51946e",
 				version = 2,
@@ -2711,20 +2179,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "TTS Broad Swing",
-				uuid = "1aa6ca2a-1df4-7621-89b9-b49644b8f8b5",
-				version = 2,
-			},
-			inheritedObjectUUID = "163817d2-c0a0-6aca-b2a0-84c3db512182",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 	},
 	[94] =
@@ -2795,20 +2249,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "1a93e501-9275-62c6-942f-a325b11358fe",
-				version = 2,
-			},
-			inheritedObjectUUID = "baa1ebcf-1e25-481b-8de7-27f709376c44",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -3026,34 +2466,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "Set markers",
-				uuid = "f457e1d4-a8ea-e731-9631-6bf55ca5ad42",
-				version = 2,
-			},
-			inheritedObjectUUID = "05eff784-fc28-daca-b6f3-b3e484f5b2dc",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Set arrow type",
-				uuid = "4b0eefbc-231a-df36-91e9-e22fea199166",
-				version = 2,
-			},
-			inheritedObjectUUID = "213caf2c-435d-8930-8852-d1455c803b93",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				displayPath = "",
 				name = "Frog\\Ultimates\\DSR\\Draws",
 				uuid = "2cdd478e-d07b-f9f2-3ec6-6dbcfba7d1de",
@@ -3117,34 +2529,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "Gnash and lash",
-				uuid = "7be3f523-c0b4-afb5-a8b5-420455a2e9c6",
-				version = 2,
-			},
-			inheritedObjectUUID = "1eba0d7d-987e-10e5-9b7a-d8519fa7c4e5",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Gnash and lash TTS",
-				uuid = "028f1b20-3e41-c46d-9508-509a9945b828",
-				version = 2,
-			},
-			inheritedObjectUUID = "74374219-c1fe-c384-8b9e-acbcf90f41c5",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[101] =
 	{
@@ -3158,48 +2542,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Unlock face",
-				uuid = "d75276d7-9a63-19e9-9dbc-779858e75338",
-				version = 2,
-			},
-			inheritedObjectUUID = "e611b105-6a30-ed4a-b4f9-a26d8fc0c970",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Lock face",
-				uuid = "8470866e-dba8-becc-813c-736744b38c4b",
-				version = 2,
-			},
-			inheritedObjectUUID = "90347a66-51c4-a45c-b1c0-94a4f7e11766",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "TTS Bait",
-				uuid = "bd523d32-36d5-4bc7-9092-fd2f6bd6c04e",
-				version = 2,
-			},
-			inheritedObjectUUID = "5dbdd3b3-6a58-86e4-969f-0ba4fe6de894",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -3277,48 +2619,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "Lock face",
-				uuid = "c8f893d2-bd75-66a7-a428-472101f83762",
-				version = 2,
-			},
-			inheritedObjectUUID = "fda072ee-def8-f366-bf75-8aee6df53bd3",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Unlock face",
-				uuid = "8bef2ad9-5642-974c-b7b7-d1ce696b6397",
-				version = 2,
-			},
-			inheritedObjectUUID = "33d7f612-2290-5b67-ad73-40205ec1daae",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "TTS Bait",
-				uuid = "52fe9972-c05a-3d9c-8f57-8418273c1faf",
-				version = 2,
-			},
-			inheritedObjectUUID = "66a2f8a2-518c-b2c6-bb1b-ea9d3425fa36",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				name = "Draw tower position (personal only)",
 				uuid = "a3775b06-0d5f-6455-8c36-9e0fca17f77c",
 				version = 2,
@@ -3389,53 +2689,11 @@ local tbl =
 		{
 			data =
 			{
-				name = "Unlock face",
-				uuid = "f067428f-d399-852f-80e4-d237212d4839",
-				version = 2,
-			},
-			inheritedObjectUUID = "090974f5-c3e4-e365-b0cf-4527515bd6ab",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				name = "Draw tower position (personal only)",
 				uuid = "9cc95bee-8bc4-822d-94ec-dabc4db9fde8",
 				version = 2,
 			},
 			inheritedObjectUUID = "d1cc0c7a-ecb3-426a-8b5e-b5b2e3b7df46",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "TTS Bait",
-				uuid = "e487349d-cb09-e6b2-841f-03ed1ef93434",
-				version = 2,
-			},
-			inheritedObjectUUID = "c1823f69-ae3b-99f7-9d99-9ce00e9aab70",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Lock face",
-				uuid = "cef0500d-2a1c-a2b0-9761-63b75eb1514e",
-				version = 2,
-			},
-			inheritedObjectUUID = "58ca87de-c205-7ef6-b022-7b3e386ec1eb",
 			inheritedOverwrites =
 			{
 				enabled = false,
@@ -3454,34 +2712,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Gnash and lash",
-				uuid = "a390d696-23e7-610f-b9f5-8bc5a4da2e11",
-				version = 2,
-			},
-			inheritedObjectUUID = "8bb1f513-7d89-a871-88d1-f76bc5b10904",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Gnash and lash TTS",
-				uuid = "18da34d1-0859-f575-810e-c52f3a42d9ac",
-				version = 2,
-			},
-			inheritedObjectUUID = "4c5d1317-92da-4fcf-a8df-9276f25a3e1b",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 	},
 	[111] =
@@ -3829,20 +3059,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "Draw AOE on Tethers",
-				uuid = "ddaf2781-893e-33b1-ba50-7ffcefb6140f",
-				version = 2,
-			},
-			inheritedObjectUUID = "f5c0fd58-444e-ecaa-98ac-d28f3bfdf5e4",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				name = "Enable Fast TA",
 				uuid = "a968a3ee-8ac1-5215-81ca-36bfb4c5d63b",
 				version = 2,
@@ -3891,20 +3107,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Set new priority",
-				uuid = "91226ff9-9811-6656-993a-2cd09c222904",
-				version = 2,
-			},
-			inheritedObjectUUID = "7e365a35-f02b-1a5c-9ce8-59ff5577dbfc",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 	},
 	[123] =
@@ -3989,20 +3191,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "85f10ed6-69aa-7270-ab74-d30cca138579",
-				version = 2,
-			},
-			inheritedObjectUUID = "ef13e6df-da0f-f4b7-a6e7-a7c27132b9fe",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -4469,20 +3657,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "Post-draw mirage dive",
-				uuid = "85e51394-65d1-d084-a467-8d069166f356",
-				version = 2,
-			},
-			inheritedObjectUUID = "7db15b0c-8355-4ee5-a407-17d169d3c360",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[130] =
 	{
@@ -4566,20 +3740,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "9055d8d3-94b3-e3bf-9a43-8ee896995473",
-				version = 2,
-			},
-			inheritedObjectUUID = "d580baef-5bfe-f854-9cb7-a689cc5a4837",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -4680,20 +3840,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "bf8b9db6-49bd-b194-ab2a-375c981f6847",
-				version = 2,
-			},
-			inheritedObjectUUID = "f11eb469-7c4a-ee21-a8b9-ab63575fafd9",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -4822,6 +3968,20 @@ local tbl =
 			},
 		},
 	},
+	[137] =
+	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "9140fa79-15c0-0c5d-7796-75d3c3ea8b09",
+			},
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
+			objectType = "folder",
+		},
+	},
 	[140] =
 	{
 
@@ -4872,20 +4032,6 @@ local tbl =
 				version = 2,
 			},
 			inheritedObjectUUID = "131ef6e9-b55e-a936-9ba0-b3b6f9f13f5c",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "2be6315d-ebcc-9aa6-abe8-0f66f6035b5f",
-				version = 2,
-			},
-			inheritedObjectUUID = "27cfe60d-39ff-05d4-b49d-ea4b3ee5b78b",
 			inheritedOverwrites =
 			{
 				enabled = false,
@@ -5018,20 +4164,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "abacc3c7-4481-f210-9015-2558e50a3657",
-				version = 2,
-			},
-			inheritedObjectUUID = "85d88f92-56f6-c9d5-8c88-4b039772f12a",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -5243,76 +4375,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "TTS Divebomb",
-				uuid = "e1a827f6-9745-8cb9-bfc4-c978345ad2b7",
-				version = 2,
-			},
-			inheritedObjectUUID = "26aeded5-adf6-d65e-b895-167889e88ac8",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Record Tether",
-				uuid = "94945ad2-ddc2-5948-9011-4c801233d558",
-				version = 2,
-			},
-			inheritedObjectUUID = "929d6d5c-6fc6-f9c1-a314-6ffbff864064",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Record Defamation",
-				uuid = "a6881d9b-63fa-7216-8962-850db99fb597",
-				version = 2,
-			},
-			inheritedObjectUUID = "c2b38d33-d013-177b-9022-51b86e756bfc",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "TTS Mechanic",
-				uuid = "7b26dcaf-c49a-0446-b6dc-76e2ba759198",
-				version = 2,
-			},
-			inheritedObjectUUID = "ae0d01cf-235e-a19c-905a-ef2bd2a662dd",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw Thunder Radius",
-				uuid = "eb8e4585-5e63-6ef6-af71-9f37eead2c01",
-				version = 2,
-			},
-			inheritedObjectUUID = "3affab55-aa0a-73c7-a72c-3fc07d43a4eb",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[157] =
 	{
@@ -5327,76 +4389,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "Draw Twisters",
-				uuid = "86a4a7cd-6da8-6692-af38-546a3a30e033",
-				version = 2,
-			},
-			inheritedObjectUUID = "888afb2b-5e50-23ef-9c9d-28ef21bff631",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw blue marker",
-				uuid = "4584bbf3-c75b-6d7b-a2e7-431373f40232",
-				version = 2,
-			},
-			inheritedObjectUUID = "886d8d53-d101-cd6a-b8ca-7181858816af",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw Twister Snapshot",
-				uuid = "cb019261-545b-82b7-9ac4-c7f74232f5fe",
-				version = 2,
-			},
-			inheritedObjectUUID = "91728547-278a-bd65-b2ab-43b6f6dddd57",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw arrow to warrior",
-				uuid = "ee6ad7cc-a329-3db7-829f-ef9b5990dc21",
-				version = 2,
-			},
-			inheritedObjectUUID = "61475749-e2b4-5485-9cff-5c1cb32b75c4",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw tether",
-				uuid = "bd04deb2-57bc-6405-a91e-0544f70e0bc1",
-				version = 2,
-			},
-			inheritedObjectUUID = "3c500a62-0c0b-2b14-9510-292375f4b157",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[160] =
 	{
@@ -5410,20 +4402,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Draw proteans",
-				uuid = "1b5bc809-095e-5b59-bfc4-5cccef297f8a",
-				version = 2,
-			},
-			inheritedObjectUUID = "b71be9d2-1ae7-eca5-b09f-68249e379103",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -5453,20 +4431,6 @@ local tbl =
 						},
 					},
 				},
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Shade shift",
-				uuid = "687bb5b0-73be-45b0-96cd-6a41faf82dea",
-				version = 2,
-			},
-			inheritedObjectUUID = "dad21179-291f-faea-9583-e2ddd5fad5cb",
-			inheritedOverwrites =
-			{
-				enabled = false,
 			},
 		},
 	},
@@ -5577,20 +4541,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "a85a6359-3537-0207-9f1c-f5b1a5e60126",
-				version = 2,
-			},
-			inheritedObjectUUID = "70bbd963-d595-dda3-bc39-92cc4f31a61d",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 	},
 	[178] =
@@ -5722,20 +4672,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "Draw Heavy Impact",
-				uuid = "53fc5ae1-7295-774a-a6b7-370cd12c809d",
-				version = 2,
-			},
-			inheritedObjectUUID = "31b3a39d-787e-b3be-b032-2d55c8657e83",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				name = "[Multi] Anti-ghosting",
 				uuid = "5280ab76-11d1-db37-8506-905281920b58",
 				version = 2,
@@ -5760,34 +4696,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "Draw Twisters",
-				uuid = "2b28a427-11a2-df61-8e03-a731a554e1a1",
-				version = 2,
-			},
-			inheritedObjectUUID = "4e5c4a61-6110-a0df-81d1-e353c28ca68f",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw Twister Snapshot",
-				uuid = "c10f2870-a712-26d1-851b-7ffe1a341955",
-				version = 2,
-			},
-			inheritedObjectUUID = "c1340714-6b0a-6fa5-82f9-3a8717a8ba50",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[187] =
 	{
@@ -5802,34 +4710,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "Draw spreads",
-				uuid = "b18a71e5-c1a9-5869-af65-87b6e0b7abc5",
-				version = 2,
-			},
-			inheritedObjectUUID = "f14ed201-a1a3-734b-9fea-44af3e751b97",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw Doom Puddles",
-				uuid = "34fb2670-c71a-7d4a-8550-bb61c9207c32",
-				version = 2,
-			},
-			inheritedObjectUUID = "2c80bebe-66d2-f5e7-b9d4-0fe65ea337da",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[190] =
 	{
@@ -5843,62 +4723,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "lookaway",
-				uuid = "c38aa941-8b8b-eadb-a6f7-49728b32a9a4",
-				version = 2,
-			},
-			inheritedObjectUUID = "498f7b69-050e-aa33-8201-e48fac5e0ccd",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw knockback",
-				uuid = "2e81fa79-cb78-38a4-95d4-e02edb17d28f",
-				version = 2,
-			},
-			inheritedObjectUUID = "1f4dc2a5-5e37-c052-861d-62572ac618c0",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "TTS Marker Type",
-				uuid = "03921d91-67e1-02f4-b519-4ab92506ab7f",
-				version = 2,
-			},
-			inheritedObjectUUID = "d41df8c5-3cb9-2274-a894-112e79b3a899",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "store eye position",
-				uuid = "930fc3f8-1a52-20eb-8fb5-4fd4f08968d1",
-				version = 2,
-			},
-			inheritedObjectUUID = "c18e0549-33be-c4db-8c42-494022ecfe33",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 	},
 	[193] =
@@ -5981,34 +4805,6 @@ local tbl =
 				version = 2,
 			},
 			inheritedObjectUUID = "396f92c0-a0c7-a73f-a334-6f31c8b32925",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "81dfba0c-993e-5a52-bfe4-2a68495e1a86",
-				version = 2,
-			},
-			inheritedObjectUUID = "c580d9cd-d84c-2d08-b638-5ea3e1197cb8",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Advanced Find Target (Highest HP)",
-				uuid = "0e417f32-dd0f-8972-aa9c-4dd46e743e9a",
-				version = 2,
-			},
-			inheritedObjectUUID = "26494dd6-6202-eb1f-baf8-9a76827e8ea2",
 			inheritedOverwrites =
 			{
 				enabled = false,
@@ -6213,20 +5009,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "Find target",
-				uuid = "a607766f-65dd-8e7a-bf3e-37a2f84bb2bd",
-				version = 2,
-			},
-			inheritedObjectUUID = "729008cb-14f8-decb-9e54-a5cb50d5e4cd",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				name = "Enable Queen",
 				uuid = "d94943e4-cbcd-90eb-99b7-df6a70e5c1ee",
 				version = 2,
@@ -6325,20 +5107,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "Remove Target",
-				uuid = "889d64a8-bbc3-4a95-8351-486dd21b6f51",
-				version = 2,
-			},
-			inheritedObjectUUID = "89057924-152d-3790-a422-52cf27ab86c3",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				name = "Disable 15s",
 				uuid = "57ae2537-4c92-da9d-9aad-c6cf7f113e49",
 				version = 2,
@@ -6362,20 +5130,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "81d7f902-582b-159b-8a77-43d3197b1f53",
-				version = 2,
-			},
-			inheritedObjectUUID = "cae736ad-f08d-a2c6-bb4f-9aba6e9c03fb",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -6428,20 +5182,6 @@ local tbl =
 				version = 2,
 			},
 			inheritedObjectUUID = "8034508b-5794-9ac1-9918-72adb8a2cac7",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Remove Target",
-				uuid = "3899a421-b964-d889-88b2-934a346d5a11",
-				version = 2,
-			},
-			inheritedObjectUUID = "073663ec-5ea0-bae2-be18-0b79b0495894",
 			inheritedOverwrites =
 			{
 				enabled = false,
@@ -6546,20 +5286,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "Draw Tethers",
-				uuid = "f99e0f0a-3add-a52b-8c33-e8c05aca8c90",
-				version = 2,
-			},
-			inheritedObjectUUID = "6f552a4e-f3c4-caf5-8a5b-49db3d1b21f3",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				name = "[Melee] Self-Mitigation",
 				uuid = "37ed62b9-c864-e853-a100-55becc66cc94",
 				version = 2,
@@ -6590,48 +5316,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "Detect Tank Mech Hraesvelgar",
-				uuid = "99c62a3b-511a-c115-ae76-1b541541b28d",
-				version = 2,
-			},
-			inheritedObjectUUID = "d3ed2828-c088-2be6-aab3-4654cbf034e6",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Detect Tank Mech Nidhog",
-				uuid = "2ed3479a-07c6-7179-ad22-3cdc761d4e00",
-				version = 2,
-			},
-			inheritedObjectUUID = "56cef626-3fac-8ab1-a354-123d677da577",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw Tank Mech",
-				uuid = "4581eea7-b7e3-3fdb-ba51-2a3861818600",
-				version = 2,
-			},
-			inheritedObjectUUID = "8a097c9f-58a3-88e5-96fd-e2778bc92b25",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				displayPath = "",
 				name = "Frog\\Ultimates\\DSR\\Draws",
 				uuid = "70a971bd-c752-f611-94a5-2053cecf91cd",
@@ -6652,34 +5336,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "TTS Mortal Vow Passing",
-				uuid = "1c37ce84-0627-6349-8412-d7342a3649c4",
-				version = 2,
-			},
-			inheritedObjectUUID = "c6dd700d-29e8-f194-9777-f97d4abc2fdf",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Find Highest HP target",
-				uuid = "47ab47ce-b8f0-a1e3-9272-6a6608f4e526",
-				version = 2,
-			},
-			inheritedObjectUUID = "523036da-d7d2-3717-bc56-7f10bb6b38a9",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -6734,34 +5390,6 @@ local tbl =
 						},
 					},
 				},
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Reset tank mech",
-				uuid = "5a92bc4b-cc4b-b25a-be48-5cc9c973dab5",
-				version = 2,
-			},
-			inheritedObjectUUID = "3c01bee0-8509-71ac-8746-a1725b5dd4a7",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Target hraes",
-				uuid = "cfd48fdb-b9b8-46cb-864e-abacb2641aec",
-				version = 2,
-			},
-			inheritedObjectUUID = "7fab58f7-f2d1-a146-98a5-ecb80d086ba2",
-			inheritedOverwrites =
-			{
-				enabled = false,
 			},
 		},
 
@@ -6898,20 +5526,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "Pre-draw cauterize (niddy)",
-				uuid = "903139e9-d05c-b510-a494-8f485cd659eb",
-				version = 2,
-			},
-			inheritedObjectUUID = "8eda97a1-357b-ec29-99a8-0fee95de3d40",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[211] =
 	{
@@ -6925,34 +5539,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Draw Hallowed Wings",
-				uuid = "981ed118-d9df-bcf4-b008-3c890aef43bc",
-				version = 2,
-			},
-			inheritedObjectUUID = "f848d4c1-4f27-f5bd-ad43-453aa7806bb5",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "TTS Party Location",
-				uuid = "f9e70446-3163-2c1b-83fe-47d515d1a0bb",
-				version = 2,
-			},
-			inheritedObjectUUID = "1a278774-f25a-6cee-83ab-f32c4e507b71",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 	},
 	[212] =
@@ -6968,20 +5554,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "TTS + Draw Mortal Vow Passing",
-				uuid = "beb65f60-ba24-bba2-8fc7-91cc6b93b43c",
-				version = 2,
-			},
-			inheritedObjectUUID = "509b18a5-bf30-80fa-9857-537b74851d04",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[213] =
 	{
@@ -6995,34 +5567,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Automarkers",
-				uuid = "8ac42cc0-56b6-82be-aa51-737ca56fdba0",
-				version = 2,
-			},
-			inheritedObjectUUID = "b9b1ddf8-6f34-9386-af4a-1db7538207de",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Target nidhog",
-				uuid = "0c051b44-4c74-01c2-9597-c792ea5f9b90",
-				version = 2,
-			},
-			inheritedObjectUUID = "ddbdd4be-660e-bd05-9a20-0a5c0d514451",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -7062,20 +5606,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Pre-draw cauterize (hraes)",
-				uuid = "7ce176bd-c0b2-e541-871e-43c923ce3daf",
-				version = 2,
-			},
-			inheritedObjectUUID = "b9c282b1-f256-2349-8b64-cb8f6e4e8be7",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 	},
 	[216] =
@@ -7149,20 +5679,6 @@ local tbl =
 				enabled = false,
 			},
 		},
-
-		{
-			data =
-			{
-				name = "Draw Spreads",
-				uuid = "d3476c2c-41eb-a1f1-a9ff-66169a7e8ff6",
-				version = 2,
-			},
-			inheritedObjectUUID = "7bc9ae7f-db37-7439-9d58-7e1d54c0b897",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[219] =
 	{
@@ -7176,20 +5692,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Find Highest HP target",
-				uuid = "958d3374-b9ae-9ea6-9de0-73091cf33a02",
-				version = 2,
-			},
-			inheritedObjectUUID = "c7a83263-c8c8-dbb5-80ce-d1b81bf9429c",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 	},
 	[220] =
@@ -7235,20 +5737,6 @@ local tbl =
 				},
 			},
 		},
-
-		{
-			data =
-			{
-				name = "Disable Markers",
-				uuid = "cde4cc64-4eb6-e25f-806d-4abe9befe9d6",
-				version = 2,
-			},
-			inheritedObjectUUID = "c994c03c-e7a9-cb9b-b362-bfc463b4aa32",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[222] =
 	{
@@ -7262,34 +5750,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Disable Markers",
-				uuid = "c4f72712-88b1-15d6-bec9-cef6d16ad694",
-				version = 2,
-			},
-			inheritedObjectUUID = "5951b56e-f6f3-9883-bec4-3e74c7403a88",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "TTS + Draw Mortal Vow Passing",
-				uuid = "709f4e10-f9d9-ca7d-bdd2-b3874da095e4",
-				version = 2,
-			},
-			inheritedObjectUUID = "f1c730da-b880-6871-80d0-1e25048f3f3e",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 	},
 	[223] =
@@ -7339,34 +5799,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "Target hraes",
-				uuid = "1437c201-2941-e2c1-8321-e8d34cedcb2b",
-				version = 2,
-			},
-			inheritedObjectUUID = "265a6a86-2fae-46e9-9a1b-bf8e927efbe5",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw on Healers",
-				uuid = "9df6a564-e93d-5211-a500-4c00a3c7e2ad",
-				version = 2,
-			},
-			inheritedObjectUUID = "bf801fe6-d43d-531b-97b0-70ad40257701",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				displayPath = "",
 				name = "Frog\\Ultimates\\DSR\\Draws",
 				uuid = "79b4d119-84a7-6f25-0cc8-0b87fb3f9d29",
@@ -7387,34 +5819,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Draw Hallowed Wings",
-				uuid = "700bb824-68e4-0b32-aa41-158b6c12cdf2",
-				version = 2,
-			},
-			inheritedObjectUUID = "f469ab10-4c98-1adf-a98d-ba0534de9033",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "TTS Party Location",
-				uuid = "4a739770-68c3-c14f-91f4-0b24c393af80",
-				version = 2,
-			},
-			inheritedObjectUUID = "ff6273f0-e956-767f-947c-a7395e2b39ee",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -7443,20 +5847,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "TTS + Draw Mortal Vow Passing",
-				uuid = "536d2143-4ec3-d79c-a279-4e4bf581039c",
-				version = 2,
-			},
-			inheritedObjectUUID = "1cfede9b-4eec-fe93-b3b2-460fadca1fb3",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 	},
 	[232] =
@@ -7509,62 +5899,6 @@ local tbl =
 				version = 2,
 			},
 			inheritedObjectUUID = "43be994b-fbc6-13da-b1a0-6b853115a63e",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw Tethers",
-				uuid = "5c1ca598-c1f2-7011-9658-1e952fb3afea",
-				version = 2,
-			},
-			inheritedObjectUUID = "02c84f78-6b86-0726-8dbe-76434df9d50c",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Detect Tank Mech Hraesvelgar",
-				uuid = "faedacd4-d589-01b7-861d-92055d144d4a",
-				version = 2,
-			},
-			inheritedObjectUUID = "cf2e912a-0674-45d1-82fe-2642e45fb060",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Detect Tank Mech Nidhog",
-				uuid = "d4aa9323-c9d4-d691-93c5-007def0dd403",
-				version = 2,
-			},
-			inheritedObjectUUID = "375d4852-efa6-8a66-9df0-b2d6059b5435",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Draw Tank Mech",
-				uuid = "e80d8f09-d5ce-a519-968d-6c61c1a4360d",
-				version = 2,
-			},
-			inheritedObjectUUID = "008cce79-8648-ae95-be51-52ddb84ce369",
 			inheritedOverwrites =
 			{
 				enabled = false,
@@ -7715,48 +6049,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "Stop if fire",
-				uuid = "f519ec3f-a78a-222f-a29e-32443cb84820",
-				version = 2,
-			},
-			inheritedObjectUUID = "c4259f37-b557-16e5-9154-ea8dff3653fd",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Keep going if ice",
-				uuid = "fbae1646-945f-bbd4-a35e-a8070a6e3866",
-				version = 2,
-			},
-			inheritedObjectUUID = "ff71c181-4b74-b69d-afe5-04dfc3920f4b",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Resume after fire",
-				uuid = "ece38e59-651d-6a68-8ed9-c5e685b4cc52",
-				version = 2,
-			},
-			inheritedObjectUUID = "efab6804-c968-183f-ae66-4d20f50d0dcc",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				displayPath = "",
 				name = "Frog\\Ultimates\\DSR\\Draws",
 				uuid = "edbd1ba5-b264-c5b9-0117-036f0d6a9df5",
@@ -7787,20 +6079,6 @@ local tbl =
 				version = 2,
 			},
 			inheritedObjectUUID = "d8c964bf-dbc9-00fa-9510-52bf502e3f10",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Target nidhog",
-				uuid = "d59f91e6-84d9-8017-89df-0bbae36623b4",
-				version = 2,
-			},
-			inheritedObjectUUID = "eedf48c4-10c2-80dd-99a6-356d5ad4f40e",
 			inheritedOverwrites =
 			{
 				enabled = false,
@@ -7918,20 +6196,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "TTS + Draw Mortal Vow Passing",
-				uuid = "73eb68cc-fc05-c6ec-948b-2f7ec78c5f10",
-				version = 2,
-			},
-			inheritedObjectUUID = "d8aa0105-4fb0-2788-a95b-bea05818d6d6",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[237] =
 	{
@@ -7945,20 +6209,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "b5b93b88-f025-8ff0-96d9-07a503f8a4b9",
-				version = 2,
-			},
-			inheritedObjectUUID = "4d15b9eb-df35-b160-b36a-75d095234693",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 	},
 	[239] =
@@ -8029,20 +6279,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Find target",
-				uuid = "af911324-64d7-919d-8470-f8a4468432cc",
-				version = 2,
-			},
-			inheritedObjectUUID = "3d85dc4a-5e88-8b66-a227-8650eb8e968c",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -8257,34 +6493,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "Draw Exaflares",
-				uuid = "a9e3b109-a0d6-577b-bed5-f34d31635301",
-				version = 2,
-			},
-			inheritedObjectUUID = "20ce0d84-6b3e-2314-ae96-c9d097a0aec4",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Reset exaflares",
-				uuid = "3e6bf96d-1d32-fcdc-a0f2-590de63c9965",
-				version = 2,
-			},
-			inheritedObjectUUID = "8e970bf4-970b-d67b-b5db-c623a9b32ea6",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[245] =
 	{
@@ -8298,20 +6506,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Draw in/out",
-				uuid = "31fb40e9-dd0f-9a26-b94f-b37204935904",
-				version = 2,
-			},
-			inheritedObjectUUID = "bc868fc3-8cd5-9124-b1ac-7650a8650e48",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 	},
 	[248] =
@@ -8371,20 +6565,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "Draw in/out",
-				uuid = "17a5ccf8-5002-7c67-855c-b9abbf7ebb04",
-				version = 2,
-			},
-			inheritedObjectUUID = "c76fbf91-8660-aa79-9a38-b6e637b0e581",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[251] =
 	{
@@ -8440,20 +6620,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Draw in/out",
-				uuid = "85644dbe-fded-5d48-be9f-3c54e7caa023",
-				version = 2,
-			},
-			inheritedObjectUUID = "07467977-ea9b-4621-86d5-00442779c12b",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
@@ -8545,34 +6711,6 @@ local tbl =
 		{
 			data =
 			{
-				name = "Draw Exaflares",
-				uuid = "31a50b9d-0534-9edb-8724-f96fdcac7f3d",
-				version = 2,
-			},
-			inheritedObjectUUID = "5fd2bc41-6909-553e-b634-f1e96510fef6",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Reset exaflares",
-				uuid = "58f4a070-fde3-7b0d-956f-d98ecb376482",
-				version = 2,
-			},
-			inheritedObjectUUID = "4963fcf5-5a8c-a4d0-ba21-81817fa2940a",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
 				name = "Disable Fast TA",
 				uuid = "4debdd1f-0939-f901-aaf7-13a4026356e9",
 				version = 2,
@@ -8596,20 +6734,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Draw in/out",
-				uuid = "ea427f30-7aea-a270-8060-69d5204fbffa",
-				version = 2,
-			},
-			inheritedObjectUUID = "d65ea3cc-f581-6161-9450-8f5c7f8f6e89",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 	},
 	[260] =
@@ -8697,20 +6821,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "Draw in/out",
-				uuid = "ae08257a-7222-c2e1-b5dc-4cc5e79f5682",
-				version = 2,
-			},
-			inheritedObjectUUID = "2d8981d2-4f42-d2cb-81f3-9b089c94fcaa",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[266] =
 	{
@@ -8724,20 +6834,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Draw in/out",
-				uuid = "bd703012-e52d-4522-99a6-bb5ffb6d0079",
-				version = 2,
-			},
-			inheritedObjectUUID = "dd789161-7e78-9ceb-a24e-f5b167d50db7",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 	},
 	[267] =
@@ -8797,34 +6893,6 @@ local tbl =
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "Draw Exaflares",
-				uuid = "c6396867-241c-31b6-ab5a-4c8b5d59f29f",
-				version = 2,
-			},
-			inheritedObjectUUID = "61ad0911-9b06-73bb-bd5d-c2db602886e8",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				name = "Reset exaflares",
-				uuid = "ddb15b29-eb39-cb04-b6f9-669c3e9c9d81",
-				version = 2,
-			},
-			inheritedObjectUUID = "19775c0b-2d17-682c-9eb6-9b77ce7878bb",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
-		},
 	},
 	[271] =
 	{
@@ -8838,20 +6906,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Draw in/out",
-				uuid = "f72e6626-5cab-e783-860f-39f8505b04b3",
-				version = 2,
-			},
-			inheritedObjectUUID = "b9b92c07-58ac-1541-a3f7-5015e98e839b",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 	},
 	[274] =
@@ -8910,20 +6964,6 @@ local tbl =
 			},
 			inheritanceRoot = "store\\anyone\\dsw\\universal",
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				name = "Draw in/out",
-				uuid = "84b418b1-d473-7674-a46e-41a79831c88b",
-				version = 2,
-			},
-			inheritedObjectUUID = "57baee0b-e3a4-9c37-8961-f81f1349a1a9",
-			inheritedOverwrites =
-			{
-				enabled = false,
-			},
 		},
 
 		{
