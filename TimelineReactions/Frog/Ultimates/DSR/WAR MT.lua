@@ -1805,6 +1805,20 @@ local tbl =
 			},
 		},
 	},
+	[26] =
+	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "0a0695fd-36ec-f859-c9b7-b1ff5d97994d",
+			},
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
+			objectType = "folder",
+		},
+	},
 	[27] =
 	{
 
@@ -2117,94 +2131,6 @@ local tbl =
 				uuid = "fc835306-33ee-df63-8215-5123fc8a6fbc",
 			},
 			objectType = "folder",
-		},
-
-		{
-			data =
-			{
-				actions =
-				{
-
-					{
-						data =
-						{
-							aType = "Lua",
-							actionLua = "\ndata.frog_strength_marker_v2 = data.frog_strength_marker_v2 or {hidden={}, visible={}, ids={}}\nlocal s = data.frog_strength_marker_v2\nif s.called then self.used = true return end\nlocal cid = eventArgs.entityContentID\ns.ids[cid] = eventArgs.entityID\ns.visible[cid] = eventArgs.isVisible\nif not eventArgs.isVisible then s.hidden[cid] = true end\nif not s.hidden[3634] or not s.hidden[3635] or not s.visible[3634] or not s.visible[3635] then\n    self.used = true\n    return\nend\nlocal adelphel = TensorCore.mGetEntity(s.ids[3634])\nlocal janlenoux = TensorCore.mGetEntity(s.ids[3635])\nif not adelphel or not janlenoux then return end\nlocal nx = 100 - (adelphel.pos.x + janlenoux.pos.x) / 2\nlocal nz = 100 - (adelphel.pos.z + janlenoux.pos.z) / 2\nlocal radius = math.sqrt(nx * nx + nz * nz)\nif radius < 1 then return end\nnx, nz = nx / radius, nz / radius\nlocal ex, ez = -nz, nx\nlocal aSide = (adelphel.pos.x - 100) * ex + (adelphel.pos.z - 100) * ez\nlocal jSide = (janlenoux.pos.x - 100) * ex + (janlenoux.pos.z - 100) * ez\nif math.abs(aSide - jSide) < 1 then return end\nlocal px, pz = 100 + nx * 23, 100 + nz * 23\nlocal nearest, best\nfor id = 1, 8 do\n    local x, y, z, active = Argus.getWaymarkInfo(id)\n    if active then\n        local mx, mz = x - px, z - pz\n        local distance = mx * mx + mz * mz\n        if not best or distance < best then\n            nearest, best = id, distance\n        end\n    end\nend\nif not nearest then s.called = true\nself.used = true return end\nlocal labels = \"ABCD1234\"\nlocal marker = labels:sub(nearest, nearest)\nTensorCore.addAlertText(8000, \"Thordan: \" .. marker, 1.5, 2, false)\nTensorCore.sendTTS(\"Thordan at \" .. marker)\ns.called = true\nself.used = true",
-							conditions =
-							{
-
-								{
-									"203b0169-6994-defa-8e1a-973faaf83d95",
-									true,
-								},
-							},
-							name = "Track Adelphel appearance",
-							uuid = "480dfee7-67b7-6c9b-ae79-49ecced7ee5c",
-							version = 2.1,
-						},
-					},
-
-					{
-						data =
-						{
-							aType = "Lua",
-							actionLua = "\ndata.frog_strength_marker_v2 = data.frog_strength_marker_v2 or {hidden={}, visible={}, ids={}}\nlocal s = data.frog_strength_marker_v2\nif s.called then self.used = true return end\nlocal cid = eventArgs.entityContentID\ns.ids[cid] = eventArgs.entityID\ns.visible[cid] = eventArgs.isVisible\nif not eventArgs.isVisible then s.hidden[cid] = true end\nif not s.hidden[3634] or not s.hidden[3635] or not s.visible[3634] or not s.visible[3635] then\n    self.used = true\n    return\nend\nlocal adelphel = TensorCore.mGetEntity(s.ids[3634])\nlocal janlenoux = TensorCore.mGetEntity(s.ids[3635])\nif not adelphel or not janlenoux then return end\nlocal nx = 100 - (adelphel.pos.x + janlenoux.pos.x) / 2\nlocal nz = 100 - (adelphel.pos.z + janlenoux.pos.z) / 2\nlocal radius = math.sqrt(nx * nx + nz * nz)\nif radius < 1 then return end\nnx, nz = nx / radius, nz / radius\nlocal ex, ez = -nz, nx\nlocal aSide = (adelphel.pos.x - 100) * ex + (adelphel.pos.z - 100) * ez\nlocal jSide = (janlenoux.pos.x - 100) * ex + (janlenoux.pos.z - 100) * ez\nif math.abs(aSide - jSide) < 1 then return end\nlocal px, pz = 100 + nx * 23, 100 + nz * 23\nlocal nearest, best\nfor id = 1, 8 do\n    local x, y, z, active = Argus.getWaymarkInfo(id)\n    if active then\n        local mx, mz = x - px, z - pz\n        local distance = mx * mx + mz * mz\n        if not best or distance < best then\n            nearest, best = id, distance\n        end\n    end\nend\nif not nearest then s.called = true\nself.used = true return end\nlocal labels = \"ABCD1234\"\nlocal marker = labels:sub(nearest, nearest)\nTensorCore.addAlertText(8000, \"Thordan: \" .. marker, 1.5, 2, false)\nTensorCore.sendTTS(\"Thordan at \" .. marker)\ns.called = true\nself.used = true",
-							conditions =
-							{
-
-								{
-									"d28923fd-b34f-4209-9c40-e7945260d6be",
-									true,
-								},
-							},
-							name = "Track Janlenoux appearance",
-							uuid = "f78e175e-f89d-ee17-a37a-fd82e3c23e58",
-							version = 2.1,
-						},
-					},
-				},
-				conditions =
-				{
-
-					{
-						data =
-						{
-							category = "Event",
-							dequeueIfLuaFalse = true,
-							eventArgOptionType = 2,
-							eventEntityContentID = 3634,
-							eventSpellID = 25555,
-							name = "Adelphel visibility",
-							uuid = "203b0169-6994-defa-8e1a-973faaf83d95",
-							version = 3,
-						},
-					},
-
-					{
-						data =
-						{
-							category = "Event",
-							dequeueIfLuaFalse = true,
-							eventArgOptionType = 2,
-							eventEntityContentID = 3635,
-							name = "Janlenoux visibility",
-							uuid = "d28923fd-b34f-4209-9c40-e7945260d6be",
-							version = 3,
-						},
-					},
-				},
-				displayPath = "Frog",
-				eventType = 22,
-				loop = true,
-				mechanicTime = 317.5,
-				name = "Thordan Marker",
-				timeRange = true,
-				timelineIndex = 45,
-				timerEndOffset = 30,
-				timerStartOffset = -2,
-				uuid = "f27efa68-4a64-d742-bef4-cc63158a8a5c",
-				version = 2,
-			},
 		},
 	},
 	[46] =
@@ -6172,6 +6098,17 @@ local tbl =
 			data =
 			{
 				displayPath = "",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "f12e77ae-107d-9c9a-81c2-a7a84075dc3e",
+			},
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
 				uuid = "d96a8f21-b9fe-9125-f85f-f2a39762dab1",
 			},
@@ -6233,84 +6170,6 @@ local tbl =
 				timelineIndex = 128,
 				timerOffset = -4,
 				uuid = "cc2af448-91e4-ab82-b90b-a14aec642b8b",
-				version = 2,
-			},
-		},
-
-		{
-			data =
-			{
-				actions =
-				{
-
-					{
-						data =
-						{
-							aType = "Alert",
-							alertDuration = 4000,
-							alertPriority = 2,
-							alertScale = 1.5,
-							alertTTS = true,
-							alertText = "Move to left eye",
-							conditions =
-							{
-
-								{
-									"eb8273ba-fe1f-85bf-80bd-c9b8d7a8ac76",
-									true,
-								},
-							},
-							name = "Move to left eye",
-							uuid = "fea70c0d-7326-2485-a114-acf453cffc1b",
-							version = 2.1,
-						},
-					},
-				},
-				conditions =
-				{
-
-					{
-						data =
-						{
-							category = "Party",
-							comparator = 2,
-							conditionType = 4,
-							inRangeValue = 5,
-							name = "Within hitbox +5",
-							partyTargetType = "Detection Target",
-							uuid = "5b573078-9d07-c1c7-9913-e96485aef580",
-							version = 3,
-						},
-					},
-
-					{
-						data =
-						{
-							category = "Filter",
-							conditions =
-							{
-
-								{
-									"5b573078-9d07-c1c7-9913-e96485aef580",
-									false,
-								},
-							},
-							filterTargetType = "ContentID",
-							name = "Left Eye",
-							partyTargetContentID = 11317,
-							uuid = "eb8273ba-fe1f-85bf-80bd-c9b8d7a8ac76",
-							version = 3,
-						},
-					},
-				},
-				mechanicTime = 772.7,
-				name = "[Callout] Left Eye",
-				randomOffset = 8,
-				timeRange = true,
-				timelineIndex = 128,
-				timerEndOffset = -4.4,
-				timerStartOffset = -5,
-				uuid = "70a48c65-3211-7ee2-9c3f-7f7a2983181a",
 				version = 2,
 			},
 		},
@@ -7037,6 +6896,20 @@ local tbl =
 			},
 		},
 	},
+	[137] =
+	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "12dfc27a-7c59-06ee-ccb5-ee008414ceca",
+			},
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
+			objectType = "folder",
+		},
+	},
 	[138] =
 	{
 
@@ -7633,7 +7506,7 @@ local tbl =
 							inheritedObjectUUID = "cdd0c157-b2d0-6c08-bbae-1c5eedbf2a79",
 							inheritedOverwrites =
 							{
-								actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p5_wrath\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_wrath_v1\nif not s then return end\nlocal p=TensorCore.mGetPlayer()\nif not p or not p.pos or p.hp.current<=0 then return end\nlocal x,z\nlocal radius=19.5\nif s.phase==1 and s.nx then\n    local kx,kz\n    if p.id==s.vellID then kx,kz=s.vellX,s.vellZ\n    elseif p.id==s.ignID then kx,kz=s.ignX,s.ignZ end\n    if kx then\n        local ex,ez=-s.nz,s.nx\n        local side=(-kx+100)*ex+(-kz+100)*ez\n        local sign=side<0 and -1 or 1\n        local c,t=0.9238795325,0.3826834324\n        x,z=100+radius*(-c*s.nx+sign*t*ex),100+radius*(-c*s.nz+sign*t*ez)\n    elseif p.id==s.defamID then\n\n        local ex,ez=-s.nz,s.nx\n        x,z=100+radius*(0.5*s.nx-0.8660254038*ex),100+radius*(0.5*s.nz-0.8660254038*ez)\n    end\nelseif s.phase==2 and p.id==s.diveID and s.gx then\n    local dx,dz=s.gx-100,s.gz-100\n    local length=math.sqrt(dx*dx+dz*dz)\n    if length>0 then x,z=100-radius*dx/length,100-radius*dz/length end\nend\nif x then\n\n    local drawer=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0)\n    frogGuide.draw(\"p5_wrath\",drawer,p.pos.x,p.pos.y,p.pos.z,x,0.08,z,8,2)\nend\nself.used=true",
+								actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p5_wrath\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_wrath_v1\nif not s then return end\nlocal p=TensorCore.mGetPlayer()\nif not p or not p.pos or p.hp.current<=0 then return end\nlocal x,z\nlocal radius=19.5\nif s.phase==1 and s.nx then\n    local kx,kz\n    if p.id==s.vellID then kx,kz=s.vellX,s.vellZ\n    elseif p.id==s.ignID then kx,kz=s.ignX,s.ignZ end\n    if kx then\n        local ex,ez=-s.nz,s.nx\n        local side=(-kx+100)*ex+(-kz+100)*ez\n        local sign=side<0 and -1 or 1\n        local c,t=0.9238795325,0.3826834324\n        x,z=100+radius*(-c*s.nx+sign*t*ex),100+radius*(-c*s.nz+sign*t*ez)\n    elseif p.id==s.defamID then\n        \n        local ex,ez=-s.nz,s.nx\n        x,z=100+radius*(0.5*s.nx-0.8660254038*ex),100+radius*(0.5*s.nz-0.8660254038*ez)\n    end\nelseif s.phase==2 and p.id==s.diveID and s.gx then\n    local dx,dz=s.gx-100,s.gz-100\n    local length=math.sqrt(dx*dx+dz*dz)\n    if length>0 then x,z=100-radius*dx/length,100-radius*dz/length end\nend\nif x then\n    \n    local drawer=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0)\n    frogGuide.draw(\"p5_wrath\",drawer,p.pos.x,p.pos.y,p.pos.z,x,0.08,z,8,2)\nend\nself.used=true",
 							},
 						},
 					},
@@ -9286,38 +9159,6 @@ local tbl =
 			},
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				actions =
-				{
-
-					{
-						data =
-						{
-							aType = "Lua",
-							actionLua = "local s=data.frog_dragon_hp_v1\nif not s then\n    s={nextUpdate=0,enabled=true}\n    local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n    if FileExists(path) then\n        local ok,settings=pcall(FileLoad,path)\n        if ok and type(settings)==\"table\" then s.enabled=settings.p6_dragon_hp_window~=false end\n    end\n    function s.formatHP(value)\n        local text=string.format(\"%.0f\",value)\n        local count\n        repeat text,count=text:gsub(\"^(%-?%d+)(%d%d%d)\",\"%1,%2\") until count==0\n        return text\n    end\n    data.frog_dragon_hp_v1=s\nend\nlocal menu=data.frog_draw_settings\nlocal enabled=s.enabled\nif menu then enabled=menu.settings.p6_dragon_hp_window~=false end\nif not enabled then self.used=true return end\nlocal now=Now()\nif now>=s.nextUpdate then\n    s.nextUpdate=now+250\n    local hrae=s.hraeID and TensorCore.mGetEntity(s.hraeID)\n    local nidd=s.niddID and TensorCore.mGetEntity(s.niddID)\n    if not hrae then hrae=TensorCore.getEntityByGroup(\"ContentID\",{contentid=4954,subgroup=\"Nearest\",noAliveCheck=true}) end\n    if not nidd then nidd=TensorCore.getEntityByGroup(\"ContentID\",{contentid=3458,subgroup=\"Nearest\",noAliveCheck=true}) end\n    s.hrae,s.nidd=nil,nil\n    s.hraeText,s.niddText=\"HRAE   --\",\"NIDD   --\"\n    if hrae and hrae.hp.max>0 then\n        s.hraeID=hrae.id\n        s.hrae=100*hrae.hp.current/hrae.hp.max\n        s.hraeText=string.format(\"HRAE  %6.2f%%   %s / %s\",s.hrae,s.formatHP(hrae.hp.current),s.formatHP(hrae.hp.max))\n    end\n    if nidd and nidd.hp.max>0 then\n        s.niddID=nidd.id\n        s.nidd=100*nidd.hp.current/nidd.hp.max\n        s.niddText=string.format(\"NIDD  %6.2f%%   %s / %s\",s.nidd,s.formatHP(nidd.hp.current),s.formatHP(nidd.hp.max))\n    end\n    s.advice=nil\n    s.high=nil\n    if s.hrae and s.nidd then\n        if math.abs(s.hrae-s.nidd)<=3.5 then s.advice=\"KEEP EVEN\"\n        else s.high=s.hrae>s.nidd and \"HRAE\" or \"NIDD\";s.advice=\"HIT \"..s.high end\n    end\nend\nif not s.hrae and not s.nidd then self.used=true return end\nif s.hrae==0 and s.nidd==0 then self.used=true return end\nGUI:SetNextWindowPos(360,220,GUI.SetCond_FirstUseEver)\nlocal visible=GUI:Begin(\"Dragon HP\",nil,GUI.WindowFlags_AlwaysAutoResize)\nif visible then\n    if s.high==\"HRAE\" then GUI:TextColored(1,0.8,0.25,1,s.hraeText) else GUI:TextUnformatted(s.hraeText) end\n    if s.high==\"NIDD\" then GUI:TextColored(1,0.8,0.25,1,s.niddText) else GUI:TextUnformatted(s.niddText) end\n    if s.advice then\n        GUI:Separator()\n        if s.high then GUI:TextColored(1,0.8,0.25,1,s.advice)\n        else GUI:TextColored(0.4,1,0.5,1,s.advice) end\n    end\nend\nGUI:End()\nself.used=true",
-							name = "Dragon HP window",
-							uuid = "a9bb561c-d84d-cd89-b1c6-1486b12b3ade",
-							version = 2.1,
-						},
-					},
-				},
-				conditions =
-				{
-				},
-				displayPath = "Frog",
-				eventType = 13,
-				mechanicTime = 1217.6,
-				name = "[Draw] Dragon HP",
-				timeRange = true,
-				timelineIndex = 203,
-				timerEndOffset = 315.1,
-				uuid = "03b229bd-20b7-d887-857e-760acbead950",
-				version = 2,
-			},
-		},
 	},
 	[205] =
 	{
@@ -9350,132 +9191,12 @@ local tbl =
 		{
 			data =
 			{
-				actions =
-				{
-
-					{
-						data =
-						{
-							aType = "Lua",
-							actionLua = "data.frog_war_wb1 = { nidhogg = false, hraesvelgr = false }\nself.used = true",
-							name = "Reset mouth glows",
-							uuid = "fe0afd9b-24ea-f2b2-bcda-bb17d03d1b8f",
-							version = 2.1,
-						},
-					},
-				},
-				conditions =
-				{
-				},
-				mechanicTime = 1235.9,
-				name = "[WAR] Reset",
-				timeRange = true,
-				timelineIndex = 206,
-				timerEndOffset = -9,
-				timerStartOffset = -12,
-				uuid = "4cab7dd9-014e-1be5-aba0-f60aaa1c3fe4",
-				version = 2,
+				displayPath = "",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "2b7b8ca1-344d-44f5-12cb-66d7c69c0171",
 			},
-		},
-
-		{
-			data =
-			{
-				actions =
-				{
-
-					{
-						data =
-						{
-							aType = "Lua",
-							actionLua = "data.frog_war_wb1 = data.frog_war_wb1 or {}\nlocal s = data.frog_war_wb1\nif s.drawGuidance == nil then\n    function s.drawGuidance()\n        if s.guidanceDrawn or s.nidhoggSpell == nil or s.hraesvelgrSpell == nil then return end\n        local player = TensorCore.mGetPlayer()\n        if not player or not player.pos then return end\n        local other = TensorCore.getEntityByGroup(\"Other Tank\")\n        local drawer = TensorCore.getStaticDrawer(0xE0FF8800, 2, 0, Argus2.RenderFlags.FLAG_WARP_TERRAIN + Argus2.RenderFlags.FLAG_RENDER_OVERLAY)\n        local duration = 7200\n        local shared = s.nidhoggSpell == 27955 and s.hraesvelgrSpell == 27957\n        local mtx, mtz, otx, otz\n        if shared then\n            mtx, mtz, otx, otz = 100, 100, 100, 100\n        else\n            mtx, mtz, otx, otz = 87, 87, 113, 87\n        end\n        drawer:addTimedCircle(duration, mtx, 0, mtz, 1.0)\n        drawer:addTimedLine(duration, player.pos.x, player.pos.y, player.pos.z, mtx, 0, mtz, 0.5, 0.8)\n        if other and other.pos then\n            if not shared then drawer:addTimedCircle(duration, otx, 0, otz, 1.0) end\n            drawer:addTimedLine(duration, other.pos.x, other.pos.y, other.pos.z, otx, 0, otz, 0.5, 0.8)\n        end\n        s.guidanceDrawn = true\n    end\nend\ns.nidhoggSpell = eventArgs.spellID\ns.nidhogg = eventArgs.spellID == 27955\ns.drawGuidance()\nself.used = true",
-							conditions =
-							{
-
-								{
-									"b046771d-6600-f829-a434-bd101e4eb347",
-									true,
-								},
-							},
-							name = "Capture Nidhogg cast",
-							uuid = "2e790352-9d4a-e138-adf2-9bb292f172ab",
-							version = 2.1,
-						},
-					},
-
-					{
-						data =
-						{
-							aType = "Lua",
-							actionLua = "data.frog_war_wb1 = data.frog_war_wb1 or {}\nlocal s = data.frog_war_wb1\nif s.drawGuidance == nil then\n    function s.drawGuidance()\n        if s.guidanceDrawn or s.nidhoggSpell == nil or s.hraesvelgrSpell == nil then return end\n        local player = TensorCore.mGetPlayer()\n        if not player or not player.pos then return end\n        local other = TensorCore.getEntityByGroup(\"Other Tank\")\n        local drawer = TensorCore.getStaticDrawer(0xE0FF8800, 2, 0, Argus2.RenderFlags.FLAG_WARP_TERRAIN + Argus2.RenderFlags.FLAG_RENDER_OVERLAY)\n        local duration = 7200\n        local shared = s.nidhoggSpell == 27955 and s.hraesvelgrSpell == 27957\n        local mtx, mtz, otx, otz\n        if shared then\n            mtx, mtz, otx, otz = 100, 100, 100, 100\n        else\n            mtx, mtz, otx, otz = 87, 87, 113, 87\n        end\n        drawer:addTimedCircle(duration, mtx, 0, mtz, 1.0)\n        drawer:addTimedLine(duration, player.pos.x, player.pos.y, player.pos.z, mtx, 0, mtz, 0.5, 0.8)\n        if other and other.pos then\n            if not shared then drawer:addTimedCircle(duration, otx, 0, otz, 1.0) end\n            drawer:addTimedLine(duration, other.pos.x, other.pos.y, other.pos.z, otx, 0, otz, 0.5, 0.8)\n        end\n        s.guidanceDrawn = true\n    end\nend\ns.hraesvelgrSpell = eventArgs.spellID\ns.hraesvelgr = eventArgs.spellID == 27957\ns.drawGuidance()\nself.used = true",
-							conditions =
-							{
-
-								{
-									"f035eb93-eb74-1575-8ca5-670516bbd672",
-									true,
-								},
-							},
-							name = "Capture Hraesvelgr cast",
-							uuid = "a8f6e6c7-034f-aa70-b5b8-1a3a3a6748d0",
-							version = 2.1,
-						},
-					},
-				},
-				conditions =
-				{
-
-					{
-						data =
-						{
-							category = "Event",
-							comparator = 3,
-							dequeueIfLuaFalse = true,
-							eventArgOptionType = 3,
-							eventArgType = 2,
-							eventIntValue = 1293,
-							name = "Nidhogg 27954/27955",
-							spellIDList =
-							{
-								27954,
-								27955,
-							},
-							uuid = "b046771d-6600-f829-a434-bd101e4eb347",
-							version = 3,
-						},
-					},
-
-					{
-						data =
-						{
-							category = "Event",
-							comparator = 3,
-							dequeueIfLuaFalse = true,
-							eventArgOptionType = 3,
-							eventArgType = 2,
-							eventIntValue = 1294,
-							name = "Hraesvelgr 27956/27957",
-							spellIDList =
-							{
-								27956,
-								27957,
-							},
-							uuid = "f035eb93-eb74-1575-8ca5-670516bbd672",
-							version = 3,
-						},
-					},
-				},
-				eventType = 3,
-				loop = true,
-				mechanicTime = 1235.9,
-				name = "[WAR] Buster Capture + Spots",
-				timeRange = true,
-				timelineIndex = 206,
-				timerEndOffset = -3.0999999046326,
-				timerStartOffset = -9,
-				uuid = "5bed6c67-e0ac-39f9-8396-715cae858217",
-				version = 2,
-			},
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
+			objectType = "folder",
 		},
 
 		{
@@ -9966,131 +9687,6 @@ local tbl =
 				version = 2,
 			},
 		},
-
-		{
-			data =
-			{
-				actions =
-				{
-
-					{
-						data =
-						{
-							aType = "Alert",
-							alertDuration = 4000,
-							alertPriority = 2,
-							alertScale = 1.5,
-							alertTTS = true,
-							alertText = "Shared buster",
-							conditions =
-							{
-
-								{
-									"c538085b-2485-153a-8637-1c5ddf3f090e",
-									true,
-								},
-							},
-							endIfUsed = true,
-							name = "Shared buster",
-							uuid = "bc4b3423-03be-dd88-8833-adce55a1d72c",
-							version = 2.1,
-						},
-					},
-
-					{
-						data =
-						{
-							aType = "Alert",
-							alertDuration = 4000,
-							alertPriority = 2,
-							alertScale = 1.5,
-							alertTTS = true,
-							alertText = "Buster on you",
-							conditions =
-							{
-
-								{
-									"4210bc4c-d58e-271d-aafe-58b3ee2315cd",
-									true,
-								},
-							},
-							endIfUsed = true,
-							name = "Buster on you",
-							uuid = "cc0229de-46ca-b69e-8cf8-b7966e063a55",
-							version = 2.1,
-						},
-					},
-
-					{
-						data =
-						{
-							aType = "Alert",
-							alertDuration = 4000,
-							alertPriority = 2,
-							alertScale = 1.5,
-							alertTTS = true,
-							alertText = "Buster on other tank",
-							conditions =
-							{
-
-								{
-									"01c21a50-fece-bbc1-95ef-dc1c7c701a46",
-									true,
-								},
-							},
-							endIfUsed = true,
-							name = "Buster on other tank",
-							uuid = "44e59a28-6067-3668-8b3e-6da4cc816751",
-							version = 2.1,
-						},
-					},
-				},
-				conditions =
-				{
-
-					{
-						data =
-						{
-							category = "Lua",
-							conditionLua = "local s=data.frog_war_wb1\nreturn s~=nil and s.nidhogg==true and s.hraesvelgr==true",
-							name = "Shared buster",
-							uuid = "c538085b-2485-153a-8637-1c5ddf3f090e",
-							version = 3,
-						},
-					},
-
-					{
-						data =
-						{
-							category = "Lua",
-							conditionLua = "local s=data.frog_war_wb1\nreturn s~=nil and s.hraesvelgr==true and s.nidhogg~=true",
-							name = "Buster on you",
-							uuid = "4210bc4c-d58e-271d-aafe-58b3ee2315cd",
-							version = 3,
-						},
-					},
-
-					{
-						data =
-						{
-							category = "Lua",
-							conditionLua = "local s=data.frog_war_wb1\nreturn s~=nil and s.nidhogg==true and s.hraesvelgr~=true",
-							name = "Buster on other tank",
-							uuid = "01c21a50-fece-bbc1-95ef-dc1c7c701a46",
-							version = 3,
-						},
-					},
-				},
-				mechanicTime = 1235.9,
-				name = "[WAR] Buster Callout",
-				timeRange = true,
-				timelineIndex = 206,
-				timerEndOffset = -0.10000000149012,
-				timerStartOffset = -8,
-				uuid = "d188950d-6d9b-f64f-aed3-1789857637d3",
-				version = 2,
-			},
-		},
 	},
 	[207] =
 	{
@@ -10292,6 +9888,17 @@ local tbl =
 	},
 	[211] =
 	{
+
+		{
+			data =
+			{
+				displayPath = "",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "dbbde231-6cfa-d56d-2c73-375b3977b1c1",
+			},
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
+			objectType = "folder",
+		},
 
 		{
 			data =
@@ -11000,6 +10607,17 @@ local tbl =
 			data =
 			{
 				displayPath = "",
+				name = "Frog\\Ultimates\\DSR\\Draws",
+				uuid = "8be8c220-8e2f-5fcc-1ea1-014a662656f0",
+			},
+			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
+			objectType = "folder",
+		},
+
+		{
+			data =
+			{
+				displayPath = "",
 				name = "store\\anyone\\dsw\\universal",
 				uuid = "3a0ce8cb-586c-171f-ee0c-9715c6f5701b",
 			},
@@ -11046,227 +10664,6 @@ local tbl =
 			inheritedOverwrites =
 			{
 				enabled = false,
-			},
-		},
-
-		{
-			data =
-			{
-				actions =
-				{
-
-					{
-						data =
-						{
-							aType = "Lua",
-							actionLua = "data.frog_war_wb2 = data.frog_war_wb2 or {}\nlocal s=data.frog_war_wb2\ns.nidhoggSpell=eventArgs.spellID\ns.nidhogg=eventArgs.spellID==27955\nself.used=true",
-							conditions =
-							{
-
-								{
-									"d88092da-3261-86fa-8ac2-442625249af9",
-									true,
-								},
-							},
-							name = "Capture nidhogg",
-							uuid = "81576431-b937-b88d-87fd-f2fc118e0713",
-							version = 2.1,
-						},
-					},
-
-					{
-						data =
-						{
-							aType = "Lua",
-							actionLua = "data.frog_war_wb2 = data.frog_war_wb2 or {}\nlocal s=data.frog_war_wb2\ns.hraesvelgrSpell=eventArgs.spellID\ns.hraesvelgr=eventArgs.spellID==27957\nself.used=true",
-							conditions =
-							{
-
-								{
-									"53c8f609-acdb-e2d2-a455-e0e6c1da9620",
-									true,
-								},
-							},
-							name = "Capture hraesvelgr",
-							uuid = "f0a6c7fc-6e9b-8edd-9f36-5033dc9aae4a",
-							version = 2.1,
-						},
-					},
-				},
-				conditions =
-				{
-
-					{
-						data =
-						{
-							category = "Event",
-							dequeueIfLuaFalse = true,
-							eventArgOptionType = 3,
-							eventArgType = 2,
-							name = "Nidhogg 27954/27955",
-							spellIDList =
-							{
-								27954,
-								27955,
-							},
-							uuid = "d88092da-3261-86fa-8ac2-442625249af9",
-							version = 3,
-						},
-					},
-
-					{
-						data =
-						{
-							category = "Event",
-							dequeueIfLuaFalse = true,
-							eventArgOptionType = 3,
-							eventArgType = 2,
-							name = "Hraesvelgr 27956/27957",
-							spellIDList =
-							{
-								27956,
-								27957,
-							},
-							uuid = "53c8f609-acdb-e2d2-a455-e0e6c1da9620",
-							version = 3,
-						},
-					},
-				},
-				eventType = 3,
-				loop = true,
-				mechanicTime = 1355.7,
-				name = "[WAR] Cast Capture",
-				timeRange = true,
-				timelineIndex = 232,
-				timerEndOffset = -0.1,
-				timerStartOffset = -9,
-				uuid = "ec90699b-ca41-0314-bbe0-184d89c4cb10",
-				version = 2,
-			},
-		},
-
-		{
-			data =
-			{
-				actions =
-				{
-
-					{
-						data =
-						{
-							aType = "Alert",
-							alertDuration = 4000,
-							alertPriority = 2,
-							alertScale = 1.5,
-							alertTTS = true,
-							alertText = "SHARED",
-							conditions =
-							{
-
-								{
-									"db0c1083-3aa0-5ad6-8ded-2eb4db526c6b",
-									true,
-								},
-							},
-							endIfUsed = true,
-							name = "SHARED",
-							uuid = "025519fa-bdc0-8f0a-8be1-a2d09a6de4e3",
-							version = 2.1,
-						},
-					},
-
-					{
-						data =
-						{
-							aType = "Alert",
-							alertDuration = 4000,
-							alertPriority = 2,
-							alertScale = 1.5,
-							alertTTS = true,
-							alertText = "ON ME",
-							conditions =
-							{
-
-								{
-									"8d0d704f-ec2f-fba5-a54b-d3aad4d4dfeb",
-									true,
-								},
-							},
-							endIfUsed = true,
-							name = "ON ME",
-							uuid = "dc303159-85d4-6db1-b869-4682e483fe55",
-							version = 2.1,
-						},
-					},
-
-					{
-						data =
-						{
-							aType = "Alert",
-							alertDuration = 4000,
-							alertPriority = 2,
-							alertScale = 1.5,
-							alertTTS = true,
-							alertText = "ON OTHER TANK",
-							conditions =
-							{
-
-								{
-									"cc12c11a-5afb-ee37-a3f6-3a61c97c5068",
-									true,
-								},
-							},
-							endIfUsed = true,
-							name = "ON OTHER TANK",
-							uuid = "bb355ffc-0016-31b1-bf62-2a2994938c30",
-							version = 2.1,
-						},
-					},
-				},
-				conditions =
-				{
-
-					{
-						data =
-						{
-							category = "Lua",
-							conditionLua = "local s=data.frog_war_wb2\nreturn s~=nil and s.nidhoggSpell~=nil and s.hraesvelgrSpell~=nil and s.nidhogg==true and s.hraesvelgr==true",
-							name = "SHARED",
-							uuid = "db0c1083-3aa0-5ad6-8ded-2eb4db526c6b",
-							version = 3,
-						},
-					},
-
-					{
-						data =
-						{
-							category = "Lua",
-							conditionLua = "local s=data.frog_war_wb2\nreturn s~=nil and s.nidhoggSpell==27954 and s.hraesvelgrSpell==27957",
-							name = "ON ME",
-							uuid = "8d0d704f-ec2f-fba5-a54b-d3aad4d4dfeb",
-							version = 3,
-						},
-					},
-
-					{
-						data =
-						{
-							category = "Lua",
-							conditionLua = "local s=data.frog_war_wb2\nreturn s~=nil and s.nidhoggSpell==27955 and s.hraesvelgrSpell==27956",
-							name = "ON OTHER TANK",
-							uuid = "cc12c11a-5afb-ee37-a3f6-3a61c97c5068",
-							version = 3,
-						},
-					},
-				},
-				mechanicTime = 1355.7,
-				name = "[WAR] Buster Callout",
-				timeRange = true,
-				timelineIndex = 232,
-				timerEndOffset = -0.10000000149012,
-				timerStartOffset = -8,
-				uuid = "7f550608-2f75-a28c-9727-89554429c851",
-				version = 2,
 			},
 		},
 	},
@@ -11908,78 +11305,6 @@ local tbl =
 				timerEndOffset = 5,
 				timerStartOffset = -1,
 				uuid = "40f13c4f-b828-1d07-a05d-a404dedecd79",
-				version = 2,
-			},
-		},
-
-		{
-			data =
-			{
-				actions =
-				{
-
-					{
-						data =
-						{
-							aType = "Lua",
-							actionLua = "data.frog_war_p7_reverse=true\nself.used=true",
-							conditions =
-							{
-
-								{
-									"f2237c3e-2ab6-6ba7-8ea7-40b789aa76a6",
-									true,
-								},
-							},
-							name = "Latch reversed assignment",
-							uuid = "643c81d7-28b5-09dc-beca-f7f3008d6932",
-							version = 2.1,
-						},
-					},
-
-					{
-						data =
-						{
-							aType = "Alert",
-							alertDuration = 4000,
-							alertTTS = true,
-							alertText = "P7 tank handoffs reversed",
-							conditions =
-							{
-
-								{
-									"f2237c3e-2ab6-6ba7-8ea7-40b789aa76a6",
-									true,
-								},
-							},
-							uuid = "dda7f836-9bdc-8d42-8a60-0e85a8ff876f",
-							version = 2.1,
-						},
-					},
-				},
-				conditions =
-				{
-
-					{
-						data =
-						{
-							buffCheckType = 4,
-							buffID = 3135,
-							buffStacks = 2,
-							category = "Self",
-							name = "Two light stacks",
-							uuid = "f2237c3e-2ab6-6ba7-8ea7-40b789aa76a6",
-							version = 3,
-						},
-					},
-				},
-				mechanicTime = 1542.1,
-				name = "[WAR] Reverse Handoffs",
-				timeRange = true,
-				timelineIndex = 243,
-				timerEndOffset = 25.5,
-				timerStartOffset = 22,
-				uuid = "27cfa93d-696f-0e42-9060-0c24c0dd4032",
 				version = 2,
 			},
 		},
