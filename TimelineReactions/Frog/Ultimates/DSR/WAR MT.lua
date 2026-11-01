@@ -5964,6 +5964,9 @@ local tbl =
 			inheritedObjectUUID = "971e735e-a32e-3b8d-a43c-43c9bea24569",
 			inheritedOverwrites =
 			{
+				actions =
+				{
+				},
 				name = "[Draw] Personal Guidance",
 			},
 		},
@@ -7374,160 +7377,6 @@ local tbl =
 			inheritanceRoot = "Frog\\Ultimates\\DSR\\Draws",
 			objectType = "folder",
 		},
-
-		{
-			data =
-			{
-				name = "[Draw] Start + North Capture",
-				uuid = "436aadd4-deef-03ff-b69e-4a002a1fb30f",
-				version = 2,
-			},
-			inheritedObjectUUID = "80fa0d38-43f7-e787-afdd-18f32d399303",
-			inheritedOverwrites =
-			{
-				name = "[Draw] Start + North Capture",
-			},
-		},
-
-		{
-			data =
-			{
-				name = "[Draw] Knight Tether Capture",
-				uuid = "a0db17af-ec76-1b34-a1f7-e54b633d561d",
-				version = 2,
-			},
-			inheritedObjectUUID = "5d8c8c59-cd1b-b6a2-b009-a2fb763a15e2",
-			inheritedOverwrites =
-			{
-				name = "[Draw] Knight Tether Capture",
-			},
-		},
-
-		{
-			data =
-			{
-				name = "[Draw] Marker Capture",
-				uuid = "a5988ab3-d019-919e-aa5a-2b16ae54499e",
-				version = 2,
-			},
-			inheritedObjectUUID = "810b02a1-ba7c-261d-b62f-b6578ecabd62",
-			inheritedOverwrites =
-			{
-				name = "[Draw] Marker Capture",
-			},
-		},
-
-		{
-			data =
-			{
-				name = "[Draw] Grinnaux South Capture",
-				uuid = "438aacd8-e398-59f9-86a1-0b0c4c7ab19f",
-				version = 2,
-			},
-			inheritedObjectUUID = "0ae604d5-3338-10a1-ac44-198371411e3a",
-			inheritedOverwrites =
-			{
-				name = "[Draw] Grinnaux South Capture",
-			},
-		},
-
-		{
-			data =
-			{
-				name = "[Draw] Dive Progress",
-				uuid = "eed3fbe4-7817-c719-bc8e-bb19e5baa60d",
-				version = 2,
-			},
-			inheritedObjectUUID = "84ab5ace-904a-70fd-a489-d34e881f64a1",
-			inheritedOverwrites =
-			{
-				name = "[Draw] Dive Progress",
-			},
-		},
-
-		{
-			data =
-			{
-				name = "[Draw] Unmarked East",
-				uuid = "fb066092-f149-3f51-8e8f-c14321060160",
-				version = 2,
-			},
-			inheritedObjectUUID = "9185e6e4-b485-f7e9-bea3-ac62b8cbb914",
-			inheritedOverwrites =
-			{
-				actions =
-				{
-
-					{
-						type = "add",
-						value =
-						{
-							data =
-							{
-								name = "Draw Relative East Arrow",
-								uuid = "cbdbe385-ff48-c79d-8da2-97d5dcc4548b",
-								version = 2.1,
-							},
-							inheritedObjectUUID = "f92484f0-85f8-6a5e-b0dd-0f8898161086",
-							inheritedOverwrites =
-							{
-								actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p5_wrath\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_wrath_v1\nlocal ex,ez=-s.nz,s.nx\nlocal drawer=TensorCore.getStaticDrawer(0xFFFF6626,1,0,frogGuide.flags)\ns.arrow=drawer:addTimedArrow(8000,100+ex*5,0.08,100+ez*5,math.atan2(ex,ez),8,1.5,3,4,0,false,frogGuide.flags)\nself.used=true",
-							},
-						},
-					},
-				},
-				name = "[Draw] Unmarked East",
-			},
-		},
-
-		{
-			data =
-			{
-				name = "[Draw] Personal Guidance",
-				uuid = "b7fc4f3e-27e5-d4c3-9dfd-6d0ac3e7e76c",
-				version = 2,
-			},
-			inheritedObjectUUID = "036d633e-8e25-a056-ab4d-802083c0d1ae",
-			inheritedOverwrites =
-			{
-				actions =
-				{
-
-					{
-						type = "add",
-						value =
-						{
-							data =
-							{
-								name = "Draw Assigned Position",
-								uuid = "ee020296-3372-a141-ba04-5273c7e050c0",
-								version = 2.1,
-							},
-							inheritedObjectUUID = "cdd0c157-b2d0-6c08-bbae-1c5eedbf2a79",
-							inheritedOverwrites =
-							{
-								actionLua = "\nif data.frog_draw_style_v5 == nil then\n local g={settings={},flags=(Argus2.RenderFlags.FLAG_RENDER_OVERLAY + Argus2.RenderFlags.FLAG_WARP_TERRAIN)}\n local path=GetLuaModsPath() .. [[TensorReactions\\FrogDrawsSettings.lua]]\n if FileExists(path) then\n  local ok,settings=pcall(FileLoad,path)\n  if ok and type(settings)==\"table\" then g.settings=settings end\n end\n function g.mode(key)\n  local menu=data.frog_draw_settings\n  local settings=menu and menu.settings or g.settings\n  local styles=settings and settings.draw_styles\n  local mode=type(styles)==\"table\" and styles[key]\n  if mode==\"Arrow\" or mode==\"Tether\" or mode==\"Disabled\" then return mode end\n  return \"Tether\"\n end\n function g.draw(key,drawer,x1,y1,z1,x2,y2,z2,width,endpoint)\n  local mode=g.mode(key)\n  if mode==\"Disabled\" then return end\n  if mode==\"Arrow\" then\n   local dx,dz=x2-x1,z2-z1\n   local length=math.sqrt(dx*dx+dz*dz)\n   if length<0.1 then return end\n   local tip=math.min(2,length*0.35)\n   if not g.arrow then g.arrow=TensorCore.getStaticDrawer(0xFFFF6626,1,0,g.flags) end\n   g.arrow:addArrow(x1,y1+0.08,z1,math.atan2(dx,dz),length-tip,0.75,tip,1.5,false,g.flags)\n  else\n   drawer:addLine(x1,y1,z1,x2,y2,z2,width,endpoint)\n  end\n end\n data.frog_draw_style_v5=g\nend\nlocal frogGuide=data.frog_draw_style_v5\nif frogGuide.mode(\"p5_wrath\")==\"Disabled\" then self.used=true return end\n\nlocal s=data.frog_wrath_v1\nif not s then return end\nlocal p=TensorCore.mGetPlayer()\nif not p or not p.pos or p.hp.current<=0 then return end\nlocal x,z\nlocal radius=19.5\nif s.phase==1 and s.nx then\n    local kx,kz\n    if p.id==s.vellID then kx,kz=s.vellX,s.vellZ\n    elseif p.id==s.ignID then kx,kz=s.ignX,s.ignZ end\n    if kx then\n        local ex,ez=-s.nz,s.nx\n        local side=(-kx+100)*ex+(-kz+100)*ez\n        local sign=side<0 and -1 or 1\n        local c,t=0.9238795325,0.3826834324\n        x,z=100+radius*(-c*s.nx+sign*t*ex),100+radius*(-c*s.nz+sign*t*ez)\n    elseif p.id==s.defamID then\n        \n        local ex,ez=-s.nz,s.nx\n        x,z=100+radius*(0.5*s.nx-0.8660254038*ex),100+radius*(0.5*s.nz-0.8660254038*ez)\n    end\nelseif s.phase==2 and p.id==s.diveID and s.gx then\n    local dx,dz=s.gx-100,s.gz-100\n    local length=math.sqrt(dx*dx+dz*dz)\n    if length>0 then x,z=100-radius*dx/length,100-radius*dz/length end\nend\nif x then\n    \n    local drawer=TensorCore.getCachedFlatDrawer(nil,nil,0xFFFF8000,nil,1,0,0)\n    frogGuide.draw(\"p5_wrath\",drawer,p.pos.x,p.pos.y,p.pos.z,x,0.08,z,8,2)\nend\nself.used=true",
-							},
-						},
-					},
-				},
-				name = "[Draw] Personal Guidance",
-			},
-		},
-
-		{
-			data =
-			{
-				name = "[Draw] Dive Bait Lock",
-				uuid = "7ced81d0-e1ed-6db0-8401-d3609255678f",
-				version = 2,
-			},
-			inheritedObjectUUID = "4495bce3-340a-78ac-857b-0b4bf11a1ae5",
-			inheritedOverwrites =
-			{
-				name = "[Draw] Dive Bait Lock",
-			},
-		},
 	},
 	[155] =
 	{
@@ -8156,6 +8005,9 @@ local tbl =
 			inheritedObjectUUID = "82ac4b13-5f67-d31e-b22c-56c087e10c14",
 			inheritedOverwrites =
 			{
+				actions =
+				{
+				},
 				name = "[Draw] Personal Guidance",
 			},
 		},
@@ -11159,6 +11011,9 @@ local tbl =
 			inheritedObjectUUID = "36b39445-1b58-5601-9cf0-58dc33461b9e",
 			inheritedOverwrites =
 			{
+				actions =
+				{
+				},
 				name = "[Draw] Personal Guidance",
 			},
 		},
