@@ -2284,6 +2284,46 @@ local tbl =
 					{
 						data =
 						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_dfg_control\nif s then s.stopped=false end\nself.used=true",
+							conditions =
+							{
+
+								{
+									"e8384e73-48b3-1fc0-9939-71b1e6a3e4b6",
+									true,
+								},
+							},
+							name = "Clear our stop flag",
+							uuid = "c79b0e0d-e854-29e6-b948-1eae46802d8e",
+							version = 2.1,
+						},
+						inheritedIndex = 3,
+					},
+
+					{
+						data =
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_dfg_control\nif s then s.stopped=true end\nself.used=true",
+							conditions =
+							{
+
+								{
+									"ea0086cc-6188-88d5-ae0b-642b89934ced",
+									true,
+								},
+							},
+							name = "Track our stop",
+							uuid = "73bbb39e-4cc3-6eae-a325-ad0355113ffa",
+							version = 2.1,
+						},
+						inheritedIndex = 4,
+					},
+
+					{
+						data =
+						{
 							aType = "Misc",
 							conditions =
 							{
@@ -2401,6 +2441,17 @@ local tbl =
 							version = 3,
 						},
 					},
+
+					{
+						data =
+						{
+							actionUUID = "b33e373c-b862-aed6-8e08-e282c8499602",
+							category = "Action",
+							name = "Our stop issued",
+							uuid = "ea0086cc-6188-88d5-ae0b-642b89934ced",
+							version = 3,
+						},
+					},
 				},
 				mechanicTime = 620.5,
 				name = "[Opti] Dive from Grace Snapshot Hold",
@@ -2421,6 +2472,46 @@ local tbl =
 					{
 						data =
 						{
+							aType = "Misc",
+							conditions =
+							{
+
+								{
+									"65c62719-e554-9400-97e1-387fb0483635",
+									true,
+								},
+							},
+							name = "Resume our stopped actions",
+							resumeAllActions = true,
+							uuid = "5eb510ac-6e6e-d900-ad08-8d7073b173ce",
+							version = 2.1,
+						},
+						inheritedIndex = 1,
+					},
+
+					{
+						data =
+						{
+							aType = "Lua",
+							actionLua = "local old=eventArgs.oldData\nif old then\n if old.frog_dfg_control then old.frog_dfg_control.stopped=false end\n if old.frog_wb2_hold then old.frog_wb2_hold.stopped=false end\nend\nself.used=true",
+							conditions =
+							{
+
+								{
+									"cf0dc86b-d5b7-9fbf-b936-e78f7e4567f3",
+									true,
+								},
+							},
+							name = "Clear stopped state",
+							uuid = "8f931da2-4920-8579-b8b1-918a14e0f2eb",
+							version = 2.1,
+						},
+						inheritedIndex = 2,
+					},
+
+					{
+						data =
+						{
 							aType = "Lua",
 							actionLua = "local old=eventArgs.oldData\nlocal c=old and old.frog_dfg_control\nif c and c.active then\n    if c.arrow then\n        TensorCore.API.TensorACR.toggleLockFace(false)\n        TensorCore.API.TensorACR.setHardLockFace(false)\n    end\n    c.active=false\nend\nself.used=true",
 							name = "Release only our facing lock",
@@ -2431,12 +2522,33 @@ local tbl =
 				},
 				conditions =
 				{
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local old=eventArgs.oldData\nreturn old~=nil and ((old.frog_dfg_control and old.frog_dfg_control.stopped==true) or (old.frog_wb2_hold and old.frog_wb2_hold.stopped==true))",
+							name = "Our stop is active",
+							uuid = "65c62719-e554-9400-97e1-387fb0483635",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							actionUUID = "5eb510ac-6e6e-d900-ad08-8d7073b173ce",
+							category = "Action",
+							name = "Safety resumed",
+							uuid = "cf0dc86b-d5b7-9fbf-b936-e78f7e4567f3",
+							version = 3,
+						},
+					},
 				},
 				eventType = 9,
 				loop = true,
 				mechanicTime = 620.5,
-				name = "[Opti] Dive from Grace Wipe Cleanup",
-				timeRange = true,
+				name = "[Opti] Stop cleanup - wipe",
 				timelineIndex = 99,
 				timerEndOffset = 1000,
 				timerStartOffset = -620.5,
@@ -2454,6 +2566,46 @@ local tbl =
 					{
 						data =
 						{
+							aType = "Misc",
+							conditions =
+							{
+
+								{
+									"62b0b699-973c-b3bc-bab6-a93a5d3e4a6e",
+									true,
+								},
+							},
+							name = "Resume our stopped actions",
+							resumeAllActions = true,
+							uuid = "fd673783-af49-8090-9464-e1d25e26c158",
+							version = 2.1,
+						},
+						inheritedIndex = 1,
+					},
+
+					{
+						data =
+						{
+							aType = "Lua",
+							actionLua = "local old=data\nif old then\n if old.frog_dfg_control then old.frog_dfg_control.stopped=false end\n if old.frog_wb2_hold then old.frog_wb2_hold.stopped=false end\nend\nself.used=true",
+							conditions =
+							{
+
+								{
+									"e1e0a47d-ac51-f400-9e0e-a12e6614e506",
+									true,
+								},
+							},
+							name = "Clear stopped state",
+							uuid = "5d9a9729-5ff3-dea2-b738-1e1e23cee443",
+							version = 2.1,
+						},
+						inheritedIndex = 2,
+					},
+
+					{
+						data =
+						{
 							aType = "Lua",
 							actionLua = "local old=data\nlocal c=old and old.frog_dfg_control\nif c and c.active then\n    if c.arrow then\n        TensorCore.API.TensorACR.toggleLockFace(false)\n        TensorCore.API.TensorACR.setHardLockFace(false)\n    end\n    c.active=false\nend\nself.used=true",
 							name = "Release only our facing lock",
@@ -2464,12 +2616,33 @@ local tbl =
 				},
 				conditions =
 				{
+
+					{
+						data =
+						{
+							category = "Lua",
+							conditionLua = "local old=data\nreturn old~=nil and ((old.frog_dfg_control and old.frog_dfg_control.stopped==true) or (old.frog_wb2_hold and old.frog_wb2_hold.stopped==true))",
+							name = "Our stop is active",
+							uuid = "62b0b699-973c-b3bc-bab6-a93a5d3e4a6e",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							actionUUID = "fd673783-af49-8090-9464-e1d25e26c158",
+							category = "Action",
+							name = "Safety resumed",
+							uuid = "e1e0a47d-ac51-f400-9e0e-a12e6614e506",
+							version = 3,
+						},
+					},
 				},
 				eventType = 10,
 				loop = true,
 				mechanicTime = 620.5,
-				name = "[Opti] Dive from Grace Death Cleanup",
-				timeRange = true,
+				name = "[Opti] Stop cleanup - death",
 				timelineIndex = 99,
 				timerEndOffset = 1000,
 				timerStartOffset = -620.5,
@@ -6632,6 +6805,26 @@ local tbl =
 						data =
 						{
 							aType = "Lua",
+							actionLua = "local s=data.frog_wb2_hold\nif s then s.stopped=true end\nself.used=true",
+							conditions =
+							{
+
+								{
+									"a3521723-2b92-132c-9d3c-3714061ef2d2",
+									true,
+								},
+							},
+							name = "Track our stop",
+							uuid = "44d92279-7e17-f40f-89f7-e558e4e87de7",
+							version = 2.1,
+						},
+						inheritedIndex = 3,
+					},
+
+					{
+						data =
+						{
+							aType = "Lua",
 							actionLua = "local model=data.dsrBrdAutoSim\nif model and model.phase==\"p6\" then\n model.wb2ActualStopAt=TensorCore.API.TensorACR.getAutoSimTime()\n model.rebuildPersonalStop()\nend\nself.used=true",
 							conditions =
 							{
@@ -6645,7 +6838,32 @@ local tbl =
 							uuid = "eaf9229e-88b9-b6ed-a497-c57431daef24",
 							version = 2.1,
 						},
-						inheritedIndex = 3,
+						inheritedIndex = 4,
+					},
+
+					{
+						data =
+						{
+							aType = "Lua",
+							actionLua = "local s=data.frog_wb2_hold\nif s then s.stopped=false end\nself.used=true",
+							conditions =
+							{
+
+								{
+									"540278bc-84a0-6f1d-ab0a-af54ca50ddb6",
+									true,
+								},
+
+								{
+									"c07995c8-9a52-5e98-b92c-c426d13bff97",
+									true,
+								},
+							},
+							name = "Clear our stop flag",
+							uuid = "90985521-0e96-5455-b439-1b5c9bc4930d",
+							version = 2.1,
+						},
+						inheritedIndex = 5,
 					},
 
 					{
@@ -6779,6 +6997,17 @@ local tbl =
 							conditionLua = "local s=data.frog_wb2_hold\nreturn s~=nil and s.hitHrae==true",
 							name = "Hit by Hraesvelgr Cauterize",
 							uuid = "c07995c8-9a52-5e98-b92c-c426d13bff97",
+							version = 3,
+						},
+					},
+
+					{
+						data =
+						{
+							actionUUID = "5c91c650-d4ab-5f9f-a9a0-519bb6ff00ab",
+							category = "Action",
+							name = "Our stop issued",
+							uuid = "a3521723-2b92-132c-9d3c-3714061ef2d2",
 							version = 3,
 						},
 					},
